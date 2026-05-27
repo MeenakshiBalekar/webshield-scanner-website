@@ -1,49 +1,19 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Shield, Plus, AlertCircle, ChevronRight, Clock, CheckCircle2, Loader2, XCircle } from 'lucide-react'
+import { Shield, Plus, AlertCircle, ChevronRight, Clock } from 'lucide-react'
 import { getScans } from '../services/api'
 
-function StatusBadge({ status }) {
-  const s = (status || '').toLowerCase()
-  if (s === 'completed') return (
-    <span className="inline-flex items-center gap-1 text-xs font-semibold text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded-full">
-      <CheckCircle2 className="w-3 h-3" /> Completed
-    </span>
-  )
-  if (s === 'failed') return (
-    <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-full">
-      <XCircle className="w-3 h-3" /> Failed
-    </span>
-  )
+function GradeBadge({ grade }) {
+  const color =
+    grade === 'A' ? 'text-green-400 bg-green-500/10 border-green-500/20' :
+    grade === 'B' ? 'text-blue-400 bg-blue-500/10 border-blue-500/20' :
+    grade === 'C' ? 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20' :
+    grade === 'D' ? 'text-orange-400 bg-orange-500/10 border-orange-500/20' :
+                    'text-red-400 bg-red-500/10 border-red-500/20'
   return (
-    <span className="inline-flex items-center gap-1 text-xs font-semibold text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 px-2 py-0.5 rounded-full">
-      <Loader2 className="w-3 h-3 animate-spin" /> Running
+    <span className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border text-sm font-extrabold ${color}`}>
+      {grade ?? '?'}
     </span>
-  )
-}
-
-function SeverityDots({ summary }) {
-  if (!summary) return <span className="text-gray-600 text-xs">—</span>
-  const items = [
-    { key: 'critical', color: 'text-red-400',    bg: 'bg-red-500' },
-    { key: 'high',     color: 'text-orange-400', bg: 'bg-orange-500' },
-    { key: 'medium',   color: 'text-yellow-400', bg: 'bg-yellow-500' },
-    { key: 'low',      color: 'text-blue-400',   bg: 'bg-blue-500' },
-  ]
-  return (
-    <div className="flex items-center gap-2">
-      {items.map(({ key, color, bg }) =>
-        summary[key] > 0 ? (
-          <span key={key} className={`flex items-center gap-1 text-xs font-semibold ${color}`}>
-            <span className={`w-2 h-2 rounded-full ${bg} inline-block`} />
-            {summary[key]}
-          </span>
-        ) : null
-      )}
-      {!items.some(({ key }) => summary[key] > 0) && (
-        <span className="text-green-400 text-xs font-semibold">Clean</span>
-      )}
-    </div>
   )
 }
 
@@ -64,7 +34,6 @@ export default function HistoryPage() {
 
   return (
     <div className="min-h-screen bg-navy-950 flex flex-col">
-      {/* Top bar */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-white/10">
         <Link to="/" className="flex items-center gap-2">
           <div className="w-8 h-8 bg-crimson-500 rounded-lg flex items-center justify-center">
@@ -108,51 +77,50 @@ export default function HistoryPage() {
               to="/scanner"
               className="inline-flex items-center gap-2 bg-crimson-500 hover:bg-crimson-600 text-white font-semibold px-5 py-2.5 rounded-lg transition-colors"
             >
-              <Plus className="w-4 h-4" />
-              Start a Scan
+              <Plus className="w-4 h-4" /> Start a Scan
             </Link>
           </div>
         )}
 
         {scans && scans.length > 0 && (
           <div className="border border-white/10 rounded-2xl overflow-hidden">
-            {/* Table header */}
-            <div className="hidden sm:grid grid-cols-[1fr_140px_150px_40px] gap-4 px-4 py-3 bg-white/3 border-b border-white/10 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            <div className="hidden sm:grid grid-cols-[40px_1fr_130px_120px_80px_40px] gap-4 px-4 py-3 bg-white/3 border-b border-white/10 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              <span>Grade</span>
               <span>Target URL</span>
               <span>Date</span>
-              <span>Findings</span>
+              <span>Score</span>
+              <span>Failed</span>
               <span />
             </div>
 
-            {scans.map((scan, i) => {
-              const id = scan.id ?? scan.scanId ?? scan.Id
-              return (
-                <Link
-                  key={id ?? i}
-                  to={`/scanner/results/${id}`}
-                  className="grid sm:grid-cols-[1fr_140px_150px_40px] gap-4 items-center px-4 py-3.5 hover:bg-white/5 transition-colors border-b border-white/5 last:border-b-0 group"
-                >
-                  <div className="min-w-0">
-                    <p className="text-sm text-white font-medium truncate">{scan.url || id}</p>
-                    <div className="sm:hidden flex items-center gap-3 mt-1">
-                      <StatusBadge status={scan.status} />
-                      <span className="text-xs text-gray-500 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />{formatDate(scan.startedAt)}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="hidden sm:flex items-center gap-1 text-xs text-gray-400">
+            {scans.map((scan, i) => (
+              <div
+                key={scan.id ?? i}
+                className="grid sm:grid-cols-[40px_1fr_130px_120px_80px_40px] gap-4 items-center px-4 py-3.5 border-b border-white/5 last:border-b-0"
+              >
+                <GradeBadge grade={scan.securityGrade} />
+                <div className="min-w-0">
+                  <p className="text-sm text-white font-medium truncate">{scan.targetUrl}</p>
+                  <div className="sm:hidden flex items-center gap-2 mt-1 text-xs text-gray-500">
                     <Clock className="w-3 h-3" />
-                    {formatDate(scan.startedAt)}
+                    {formatDate(scan.scanDate)}
+                    <span className="text-red-400 font-semibold">{scan.failedChecks} failed</span>
                   </div>
-                  <div className="hidden sm:flex items-center gap-2">
-                    <StatusBadge status={scan.status} />
-                    {scan.status?.toLowerCase() === 'completed' && <SeverityDots summary={scan.summary} />}
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-white transition-colors justify-self-end" />
-                </Link>
-              )
-            })}
+                </div>
+                <div className="hidden sm:flex items-center gap-1 text-xs text-gray-400">
+                  <Clock className="w-3 h-3" />
+                  {formatDate(scan.scanDate)}
+                </div>
+                <div className="hidden sm:block text-sm font-semibold text-white">
+                  {scan.securityScore}<span className="text-gray-500 font-normal text-xs">/100</span>
+                </div>
+                <div className="hidden sm:block text-sm text-red-400 font-semibold">
+                  {scan.failedChecks}
+                  <span className="text-gray-500 font-normal text-xs">/{scan.totalChecks}</span>
+                </div>
+                <ChevronRight className="w-4 h-4 text-gray-600 justify-self-end" />
+              </div>
+            ))}
           </div>
         )}
       </main>

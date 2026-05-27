@@ -41,7 +41,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<MarketingPage />} />
         <Route path="/scanner" element={<ScanPage />} />
-        <Route path="/scanner/results/:id" element={<ResultsPage />} />
+        <Route path="/scanner/results" element={<ResultsPage />} />
         <Route path="/scanner/history" element={<HistoryPage />} />
       </Routes>
     </HashRouter>

@@ -1,4 +1,4 @@
-const BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+const BASE = import.meta.env.VITE_API_URL || ''
 
 async function request(path, options = {}) {
   const res = await fetch(`${BASE}${path}`, {
@@ -9,16 +9,16 @@ async function request(path, options = {}) {
     let msg = `HTTP ${res.status}`
     try {
       const body = await res.json()
-      msg = body.message || body.error || body.title || msg
+      msg = body.error || body.details || body.message || body.title || msg
     } catch {}
     throw new Error(msg)
   }
   return res.json()
 }
 
+// POST /api/scan/headers → returns full ScanSummary synchronously
 export const startScan = (url) =>
-  request('/api/scan', { method: 'POST', body: JSON.stringify({ url }) })
+  request('/api/scan/headers', { method: 'POST', body: JSON.stringify({ url }) })
 
-export const getScan = (id) => request(`/api/scan/${id}`)
-
-export const getScans = () => request('/api/scans')
+// GET /api/scan/history → returns ScanHistory[]
+export const getScans = () => request('/api/scan/history')

@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    @apply bg-white text-gray-900;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center gap-2 bg-crimson-500 hover:bg-crimson-600 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-crimson-500/30 hover:shadow-xl;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 border-2 border-white text-white hover:bg-white hover:text-navy-900 font-semibold px-6 py-3 rounded-lg transition-all duration-200;
+  }
+  .btn-outline {
+    @apply inline-flex items-center gap-2 border-2 border-navy-900 text-navy-900 hover:bg-navy-900 hover:text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200;
+  }
+  .section-tag {
+    @apply inline-block text-crimson-500 font-semibold text-sm uppercase tracking-widest mb-3;
+  }
+  .section-heading {
+    @apply text-3xl md:text-4xl font-bold text-navy-900 leading-tight;
+  }
+  .card-hover {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-xl;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: #0D1F3C; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #E31837; }
+
+/* Animated gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #ffffff 0%, #a8bfdf 50%, #ffffff 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradientShift 4s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% center; }
+  50% { background-position: 100% center; }
+  100% { background-position: 0% center; }
+}
+
+/* Scan line animation */
+.scan-line {
+  animation: scanLine 2s linear infinite;
+}
+
+@keyframes scanLine {
+  0% { top: 0%; opacity: 1; }
+  80% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+/* Glowing border */
+.glow-border {
+  box-shadow: 0 0 20px rgba(227, 24, 55, 0.3), 0 0 60px rgba(227, 24, 55, 0.1);
+}
+
+/* Network grid background */
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Shield, Menu, X, ChevronDown } from 'lucide-react'
+import { Shield, Menu, X, ChevronDown, ScanLine } from 'lucide-react'
 
 const navLinks = [
   {
@@ -83,10 +83,11 @@ export default function Navbar() {
               Sign In
             </a>
             <a
-              href="#contact"
-              className="bg-crimson-500 hover:bg-crimson-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+              href="#/scanner"
+              className="flex items-center gap-1.5 bg-crimson-500 hover:bg-crimson-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
             >
-              Free Trial
+              <ScanLine className="w-4 h-4" />
+              Launch Scanner
             </a>
           </div>
 
@@ -129,7 +130,10 @@ export default function Navbar() {
             ))}
             <div className="pt-3 flex flex-col gap-2">
               <a href="#" className="text-gray-300 text-sm font-medium text-center py-2">Sign In</a>
-              <a href="#contact" className="btn-primary justify-center text-sm">Free Trial</a>
+              <a href="#/scanner" className="btn-primary justify-center text-sm">
+                <ScanLine className="w-4 h-4" />
+                Launch Scanner
+              </a>
             </div>
           </div>
         </div>

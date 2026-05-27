@@ -79,7 +79,7 @@ export default function HowItWorks() {
         {/* CTA */}
         <div className="mt-14 text-center">
           <a
-            href="#contact"
+            href="#/scanner"
             className="inline-flex items-center gap-2 bg-navy-900 hover:bg-navy-800 text-white font-semibold px-8 py-4 rounded-xl transition-all duration-200 shadow-lg text-base"
           >
             Start Your First Scan — It's Free

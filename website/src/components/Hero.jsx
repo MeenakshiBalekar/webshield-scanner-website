@@ -103,7 +103,7 @@ export default function Hero() {
             {/* CTA Buttons */}
             <div className="flex flex-wrap gap-4 mb-10">
               <a
-                href="#contact"
+                href="#/scanner"
                 className="inline-flex items-center gap-2 bg-crimson-500 hover:bg-crimson-600 text-white font-semibold px-7 py-3.5 rounded-lg transition-all duration-200 shadow-lg hover:shadow-crimson-500/30 hover:shadow-xl text-base"
               >
                 Start Free Scan

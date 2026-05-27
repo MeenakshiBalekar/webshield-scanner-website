@@ -1,4 +1,5 @@
 import React from 'react'
+import { HashRouter, Routes, Route } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import Hero from './components/Hero'
 import TrustLogos from './components/TrustLogos'
@@ -10,8 +11,11 @@ import Pricing from './components/Pricing'
 import Resources from './components/Resources'
 import CTA from './components/CTA'
 import Footer from './components/Footer'
+import ScanPage from './pages/ScanPage'
+import ResultsPage from './pages/ResultsPage'
+import HistoryPage from './pages/HistoryPage'
 
-export default function App() {
+function MarketingPage() {
   return (
     <div className="min-h-screen">
       <Navbar />
@@ -28,5 +32,18 @@ export default function App() {
       </main>
       <Footer />
     </div>
+  )
+}
+
+export default function App() {
+  return (
+    <HashRouter>
+      <Routes>
+        <Route path="/" element={<MarketingPage />} />
+        <Route path="/scanner" element={<ScanPage />} />
+        <Route path="/scanner/results/:id" element={<ResultsPage />} />
+        <Route path="/scanner/history" element={<HistoryPage />} />
+      </Routes>
+    </HashRouter>
   )
 }

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { getPricing } from '../services/api'
 
-function PlanCard({ plan, annual }) {
+function PlanCard({ plan, annual, onCtaClick }) {
   const monthly = plan.MonthlyPrice ?? plan.monthlyPrice ?? plan.price?.monthly ?? 0
   const annualP = plan.AnnualPrice ?? plan.annualPrice ?? plan.price?.annual ?? monthly
   const price   = annual ? annualP : monthly
@@ -12,7 +13,7 @@ function PlanCard({ plan, annual }) {
   const features  = plan.Features ?? plan.features ?? []
   const name      = plan.Name ?? plan.name ?? ''
   const desc      = plan.Description ?? plan.description ?? ''
-  const cta       = plan.Cta ?? plan.cta ?? (isFree ? 'Start for Free' : highlight ? 'Start Free Trial' : 'Contact Sales')
+  const cta       = plan.Cta ?? plan.cta ?? (isCustom ? 'Contact Sales' : isFree ? 'Start for Free' : 'Start Free Trial')
 
   return (
     <div className={`relative rounded-2xl border-2 bg-white p-8 flex flex-col ${
@@ -45,16 +46,16 @@ function PlanCard({ plan, annual }) {
         )}
       </div>
 
-      <a
-        href="#contact"
-        className={`w-full text-center font-semibold py-3 rounded-xl transition-all duration-200 mb-7 block ${
+      <button
+        onClick={onCtaClick}
+        className={`w-full text-center font-semibold py-3 rounded-xl transition-all duration-200 mb-7 ${
           highlight
             ? 'bg-crimson-500 hover:bg-crimson-600 text-white shadow-lg shadow-crimson-500/20'
             : 'border-2 border-navy-900 text-navy-900 hover:bg-navy-900 hover:text-white'
         }`}
       >
         {cta}
-      </a>
+      </button>
 
       <ul className="space-y-2.5 flex-1">
         {features.map((f, i) => (
@@ -90,6 +91,7 @@ export default function Pricing() {
   const [annual, setAnnual] = useState(true)
   const [plans, setPlans] = useState([])
   const [faqs, setFaqs] = useState([])
+  const navigate = useNavigate()
 
   useEffect(() => {
     getPricing()
@@ -99,8 +101,19 @@ export default function Pricing() {
         if (d?.Faqs?.length)   setFaqs(d.Faqs)
         else if (d?.faqs?.length)  setFaqs(d.faqs)
       })
-      .catch(() => {}) // keep static fallback
+      .catch(() => {})
   }, [])
+
+  const handleCtaClick = (plan) => {
+    const isCustom = plan.IsCustom ?? plan.isCustom
+    if (isCustom) {
+      navigate('/company', { state: { scrollTo: 'contact' } })
+    } else {
+      const dest = '/products/web'
+      const token = localStorage.getItem('ws_token')
+      navigate(token ? dest : `/login?redirect=${encodeURIComponent(dest)}`)
+    }
+  }
 
   return (
     <section id="pricing" className="py-20 md:py-28 bg-gray-50">
@@ -132,7 +145,7 @@ export default function Pricing() {
         {plans.length > 0 ? (
           <div className="grid md:grid-cols-3 gap-6">
             {plans.map((plan, i) => (
-              <PlanCard key={i} plan={plan} annual={annual} />
+              <PlanCard key={i} plan={plan} annual={annual} onCtaClick={() => handleCtaClick(plan)} />
             ))}
           </div>
         ) : (

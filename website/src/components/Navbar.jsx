@@ -38,7 +38,7 @@ const navLinks = [
   { label: 'Company', href: '/company' },
 ]
 
-export default function Navbar() {
+export default function Navbar({ banner }) {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [activeDropdown, setActiveDropdown] = useState(null)
@@ -103,6 +103,7 @@ export default function Navbar() {
         scrolled ? 'bg-navy-900/98 backdrop-blur-md shadow-2xl' : 'bg-transparent'
       }`}
     >
+      {banner}
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-16 md:h-18">
           {/* Logo */}

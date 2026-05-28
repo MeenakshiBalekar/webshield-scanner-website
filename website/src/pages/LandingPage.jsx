@@ -259,8 +259,7 @@ export default function LandingPage() {
     <div className="min-h-screen">
       {showDemo && <DemoModal onClose={() => setShowDemo(false)} />}
 
-      <CtaBanner onStartFreeScan={handleStartFreeScan} />
-      <Navbar />
+      <Navbar banner={<CtaBanner onStartFreeScan={handleStartFreeScan} />} />
 
       <main>
         <Hero
@@ -275,7 +274,6 @@ export default function LandingPage() {
         <KnowledgeHub navigate={navigate} />
         <Pricing />
         <Resources />
-        <FaqSection />
         <CTA />
       </main>
 

@@ -1,8 +1,18 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Database, Code2, ShieldAlert, Globe, Layers, Cpu,
   ArrowRight, CheckCircle2
 } from 'lucide-react'
+
+const PRODUCT_ROUTES = {
+  'SQL Injection Detection': '/products/sqli',
+  'XSS Detection':           '/products/xss',
+  'OWASP Top 10':            '/products/owasp',
+  'API Security Testing':    '/products/api',
+  'Continuous Monitoring':   '/products/web',
+  'AI-Powered Analysis':     '/products/web',
+}
 
 const features = [
   {
@@ -62,6 +72,14 @@ const features = [
 ]
 
 export default function Features() {
+  const navigate = useNavigate()
+
+  const handleLearnMore = (title) => {
+    const dest = PRODUCT_ROUTES[title] || '/products/web'
+    const token = localStorage.getItem('ws_token')
+    navigate(token ? dest : `/login?redirect=${encodeURIComponent(dest)}`)
+  }
+
   return (
     <section id="products" className="py-20 md:py-28 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -99,12 +117,12 @@ export default function Features() {
                     </li>
                   ))}
                 </ul>
-                <a
-                  href="#"
+                <button
+                  onClick={() => handleLearnMore(f.title)}
                   className="inline-flex items-center gap-1 text-sm font-semibold text-crimson-500 hover:gap-2 transition-all"
                 >
                   Learn more <ArrowRight className="w-4 h-4" />
-                </a>
+                </button>
               </div>
             )
           })}

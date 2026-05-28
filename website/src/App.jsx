@@ -14,6 +14,8 @@ import Footer from './components/Footer'
 import ScanPage from './pages/ScanPage'
 import ResultsPage from './pages/ResultsPage'
 import HistoryPage from './pages/HistoryPage'
+import DashboardPage from './pages/DashboardPage'
+import SchedulePage from './pages/SchedulePage'
 
 function MarketingPage() {
   return (
@@ -43,6 +45,8 @@ export default function App() {
         <Route path="/scanner" element={<ScanPage />} />
         <Route path="/scanner/results" element={<ResultsPage />} />
         <Route path="/scanner/history" element={<HistoryPage />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/schedule" element={<SchedulePage />} />
       </Routes>
     </HashRouter>
   )

@@ -4,18 +4,36 @@ import { Shield, Menu, X, ChevronDown, ScanLine } from 'lucide-react'
 const navLinks = [
   {
     label: 'Products',
-    dropdown: ['Web Vulnerability Scanner', 'API Security', 'OWASP Scanner', 'XSS Detector', 'SQLi Tester'],
+    dropdown: [
+      { label: 'Web Vulnerability Scanner', href: '#/scanner?type=vuln' },
+      { label: 'API Security',              href: '#/scanner?type=api' },
+      { label: 'OWASP Scanner',             href: '#/scanner?type=owasp' },
+      { label: 'XSS Detector',              href: '#/scanner?type=xss' },
+      { label: 'SQLi Tester',               href: '#/scanner?type=sqli' },
+    ],
   },
   {
     label: 'Solutions',
-    dropdown: ['Enterprise', 'SMB', 'DevSecOps', 'Compliance', 'Penetration Testing'],
+    dropdown: [
+      { label: 'Enterprise',           href: '#' },
+      { label: 'SMB',                  href: '#' },
+      { label: 'DevSecOps',            href: '#' },
+      { label: 'Compliance',           href: '#' },
+      { label: 'Penetration Testing',  href: '#' },
+    ],
   },
   {
     label: 'Resources',
-    dropdown: ['Documentation', 'Blog', 'Whitepapers', 'Webinars', 'CVE Database'],
+    dropdown: [
+      { label: 'Scan History',   href: '#/scanner/history' },
+      { label: 'Dashboard',      href: '#/dashboard' },
+      { label: 'Schedules',      href: '#/schedule' },
+      { label: 'Blog',           href: '#' },
+      { label: 'CVE Database',   href: '#' },
+    ],
   },
-  { label: 'Pricing' },
-  { label: 'Company' },
+  { label: 'Pricing', href: '#pricing' },
+  { label: 'Company', href: '#' },
 ]
 
 export default function Navbar() {
@@ -61,14 +79,14 @@ export default function Navbar() {
                   {link.dropdown && <ChevronDown className="w-3.5 h-3.5" />}
                 </button>
                 {link.dropdown && activeDropdown === link.label && (
-                  <div className="absolute top-full left-0 mt-1 w-52 bg-navy-900 border border-white/10 rounded-xl shadow-2xl py-2 animate-fade-up">
+                  <div className="absolute top-full left-0 mt-1 w-56 bg-navy-900 border border-white/10 rounded-xl shadow-2xl py-2 animate-fade-up">
                     {link.dropdown.map((item) => (
                       <a
-                        key={item}
-                        href="#"
+                        key={item.label}
+                        href={item.href || '#'}
                         className="block px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-colors"
                       >
-                        {item}
+                        {item.label}
                       </a>
                     ))}
                   </div>
@@ -108,7 +126,7 @@ export default function Navbar() {
             {navLinks.map((link) => (
               <div key={link.label}>
                 <a
-                  href="#"
+                  href={link.href || '#'}
                   className="block text-gray-300 hover:text-white px-3 py-2.5 text-sm font-medium rounded-md hover:bg-white/5"
                 >
                   {link.label}
@@ -117,11 +135,11 @@ export default function Navbar() {
                   <div className="pl-4 space-y-1">
                     {link.dropdown.map((item) => (
                       <a
-                        key={item}
-                        href="#"
+                        key={item.label}
+                        href={item.href || '#'}
                         className="block text-gray-400 hover:text-white px-3 py-2 text-sm rounded-md hover:bg-white/5"
                       >
-                        {item}
+                        {item.label}
                       </a>
                     ))}
                   </div>

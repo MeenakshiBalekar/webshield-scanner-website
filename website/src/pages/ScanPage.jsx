@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import { Shield, Globe, ArrowRight, History, AlertCircle } from 'lucide-react'
+import { useNavigate, useSearchParams, Link } from 'react-router-dom'
+import { Shield, Globe, ArrowRight, History, AlertCircle, LayoutDashboard, Calendar } from 'lucide-react'
 import { startScan } from '../services/api'
+import { getScanType } from '../config/scanTypes'
 
 const SCAN_STEPS = [
   'Connecting to target and checking DNS…',
@@ -14,7 +15,7 @@ const SCAN_STEPS = [
   'Generating security report…',
 ]
 
-function ScanningOverlay({ url }) {
+function ScanningOverlay({ url, title }) {
   const [step, setStep] = useState(0)
   const [progress, setProgress] = useState(5)
 
@@ -34,7 +35,7 @@ function ScanningOverlay({ url }) {
           <Shield className="w-10 h-10 text-crimson-500" />
         </div>
       </div>
-      <h2 className="text-2xl font-bold text-white mb-2">Scanning in Progress</h2>
+      <h2 className="text-2xl font-bold text-white mb-2">{title}</h2>
       <p className="text-gray-400 text-sm mb-6 break-all max-w-sm">{url}</p>
       <div className="w-full bg-white/10 rounded-full h-2 mb-2">
         <div
@@ -57,6 +58,9 @@ export default function ScanPage() {
   const [scanning, setScanning] = useState(false)
   const [error, setError] = useState(null)
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const scanType = searchParams.get('type') || 'vuln'
+  const config = getScanType(scanType)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -68,7 +72,7 @@ export default function ScanPage() {
     setScanning(true)
     try {
       const result = await startScan(target)
-      navigate('/scanner/results', { state: { scan: result } })
+      navigate('/scanner/results', { state: { scan: result, scanType } })
     } catch (err) {
       setError(err.message)
       setScanning(false)
@@ -89,7 +93,7 @@ export default function ScanPage() {
           </Link>
         </header>
         <main className="flex-1 flex items-center justify-center">
-          <ScanningOverlay url={url} />
+          <ScanningOverlay url={url} title={`Running ${config.title}…`} />
         </main>
       </div>
     )
@@ -106,27 +110,27 @@ export default function ScanPage() {
             Web<span className="text-crimson-500">Shield</span>
           </span>
         </Link>
-        <Link
-          to="/scanner/history"
-          className="flex items-center gap-2 text-gray-400 hover:text-white text-sm transition-colors"
-        >
-          <History className="w-4 h-4" />
-          Scan History
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link to="/dashboard" className="flex items-center gap-1.5 text-gray-400 hover:text-white text-sm transition-colors">
+            <LayoutDashboard className="w-4 h-4" /> Dashboard
+          </Link>
+          <Link to="/scanner/history" className="flex items-center gap-1.5 text-gray-400 hover:text-white text-sm transition-colors">
+            <History className="w-4 h-4" /> History
+          </Link>
+          <Link to="/schedule" className="flex items-center gap-1.5 text-gray-400 hover:text-white text-sm transition-colors">
+            <Calendar className="w-4 h-4" /> Schedules
+          </Link>
+        </div>
       </header>
 
       <main className="flex-1 flex items-center justify-center px-4 py-16">
         <div className="w-full max-w-2xl">
           <div className="text-center mb-10">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-crimson-500/10 border border-crimson-500/30 rounded-2xl mb-5">
-              <Shield className="w-8 h-8 text-crimson-500" />
-            </div>
-            <h1 className="text-4xl font-extrabold text-white mb-3">
-              Scan Your Web Application
-            </h1>
-            <p className="text-gray-400 text-lg">
-              Enter a URL and WebShield will check security headers, OWASP Top 10, IIS configuration, and more.
-            </p>
+            <span className={`inline-block text-xs font-bold px-3 py-1 rounded-full border mb-4 ${config.badgeColor}`}>
+              {config.badge}
+            </span>
+            <h1 className="text-4xl font-extrabold text-white mb-3">{config.title}</h1>
+            <p className="text-gray-400 text-lg">{config.subtitle}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -154,21 +158,42 @@ export default function ScanPage() {
               disabled={!url.trim()}
               className="w-full flex items-center justify-center gap-2 bg-crimson-500 hover:bg-crimson-600 disabled:bg-crimson-500/40 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-xl text-lg transition-colors"
             >
-              Start Scan
-              <ArrowRight className="w-5 h-5" />
+              Start Scan <ArrowRight className="w-5 h-5" />
             </button>
           </form>
 
-          <div className="mt-8 grid grid-cols-3 gap-4 text-center">
-            {[
-              { label: 'Security Headers', color: 'text-red-400' },
-              { label: 'OWASP Top 10', color: 'text-orange-400' },
-              { label: 'IIS / Server Config', color: 'text-purple-400' },
-            ].map((t) => (
-              <div key={t.label} className="bg-white/5 border border-white/10 rounded-xl py-3 px-2">
-                <p className={`text-xs font-semibold ${t.color}`}>{t.label}</p>
+          <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+            {config.features.map((f) => (
+              <div key={f} className="bg-white/5 border border-white/10 rounded-xl py-3 px-2">
+                <p className="text-xs font-semibold text-gray-400">{f}</p>
               </div>
             ))}
+          </div>
+
+          {/* Switch scanner type */}
+          <div className="mt-10 pt-8 border-t border-white/10">
+            <p className="text-xs text-gray-500 text-center mb-4">Switch scanner</p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {[
+                { key: 'vuln', label: 'Web Vuln Scanner' },
+                { key: 'xss', label: 'XSS Detector' },
+                { key: 'sqli', label: 'SQLi Tester' },
+                { key: 'owasp', label: 'OWASP Scanner' },
+                { key: 'api', label: 'API Security' },
+              ].map(({ key, label }) => (
+                <Link
+                  key={key}
+                  to={`/scanner?type=${key}`}
+                  className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                    scanType === key
+                      ? 'bg-crimson-500 border-crimson-500 text-white font-semibold'
+                      : 'border-white/15 text-gray-400 hover:text-white hover:border-white/30'
+                  }`}
+                >
+                  {label}
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       </main>

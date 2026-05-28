@@ -9,6 +9,7 @@ import SchedulePage from './pages/SchedulePage'
 import DashboardPage from './pages/DashboardPage'
 import CveDatabasePage from './pages/CveDatabasePage'
 import CompanyPage from './pages/CompanyPage'
+import ContactPage from './pages/ContactPage'
 import SolutionsPage from './pages/SolutionsPage'
 import SolutionDetailPage from './pages/SolutionDetailPage'
 import PricingPage from './pages/PricingPage'
@@ -31,6 +32,7 @@ export default function App() {
           <Route path="/solutions/:type"   element={<SolutionDetailPage />} />
           <Route path="/pricing"           element={<PricingPage />} />
           <Route path="/company"           element={<CompanyPage />} />
+          <Route path="/contact"           element={<ContactPage />} />
           <Route path="/blog"              element={<BlogPage />} />
           <Route path="/cve"               element={<CveDatabasePage />} />
 

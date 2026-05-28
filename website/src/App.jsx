@@ -13,13 +13,16 @@ import Resources from './components/Resources'
 import CTA from './components/CTA'
 import Footer from './components/Footer'
 import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
 import ProductPage from './pages/ProductPage'
 import HistoryPage from './pages/HistoryPage'
-import DashboardPage from './pages/DashboardPage'
 import SchedulePage from './pages/SchedulePage'
-import CvePage from './pages/CvePage'
+import DashboardPage from './pages/DashboardPage'
+import CveDatabasePage from './pages/CveDatabasePage'
 import CompanyPage from './pages/CompanyPage'
+import SolutionsPage from './pages/SolutionsPage'
+import SolutionDetailPage from './pages/SolutionDetailPage'
+import PricingPage from './pages/PricingPage'
+import BlogPage from './pages/BlogPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -52,15 +55,21 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-          <Route path="/products/:type" element={<PrivateRoute><ProductPage /></PrivateRoute>} />
-          <Route path="/scanner/history" element={<HistoryPage />} />
-          <Route path="/scanner-dashboard" element={<DashboardPage />} />
-          <Route path="/schedule" element={<SchedulePage />} />
-          <Route path="/cve" element={<CvePage />} />
-          <Route path="/company" element={<CompanyPage />} />
+          {/* Marketing */}
+          <Route path="/"          element={<LandingPage />} />
+          <Route path="/solutions"         element={<SolutionsPage />} />
+          <Route path="/solutions/:type"   element={<SolutionDetailPage />} />
+          <Route path="/pricing"           element={<PricingPage />} />
+          <Route path="/company"           element={<CompanyPage />} />
+          <Route path="/blog"              element={<BlogPage />} />
+          <Route path="/cve"               element={<CveDatabasePage />} />
+
+          {/* App */}
+          <Route path="/login"             element={<Login />} />
+          <Route path="/dashboard"         element={<DashboardPage />} />
+          <Route path="/products/:type"    element={<PrivateRoute><ProductPage /></PrivateRoute>} />
+          <Route path="/scanner/history"   element={<HistoryPage />} />
+          <Route path="/schedule"          element={<SchedulePage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

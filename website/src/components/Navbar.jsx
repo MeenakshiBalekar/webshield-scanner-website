@@ -17,24 +17,24 @@ const navLinks = [
   {
     label: 'Solutions',
     dropdown: [
-      { label: 'Enterprise',          href: '#' },
-      { label: 'SMB',                 href: '#' },
-      { label: 'DevSecOps',           href: '#' },
-      { label: 'Compliance',          href: '#' },
-      { label: 'Penetration Testing', href: '#' },
+      { label: 'Enterprise',          href: '/solutions/enterprise' },
+      { label: 'SMB',                 href: '/solutions/smb' },
+      { label: 'DevSecOps',           href: '/solutions/devsecops' },
+      { label: 'Compliance',          href: '/solutions/compliance' },
+      { label: 'Penetration Testing', href: '/solutions/penetration-testing' },
     ],
   },
   {
     label: 'Resources',
     dropdown: [
       { label: 'Scan History', href: '/scanner/history' },
-      { label: 'Dashboard',    href: '/scanner-dashboard' },
+      { label: 'Dashboard',    href: '/dashboard' },
       { label: 'Schedules',    href: '/schedule' },
-      { label: 'Blog',         href: '#' },
+      { label: 'Blog',         href: '/blog' },
       { label: 'CVE Database', href: '/cve' },
     ],
   },
-  { label: 'Pricing', href: '#pricing' },
+  { label: 'Pricing', href: '/pricing' },
   { label: 'Company', href: '/company' },
 ]
 
@@ -124,7 +124,10 @@ export default function Navbar() {
                 onMouseEnter={() => link.dropdown && setActiveDropdown(link.label)}
                 onMouseLeave={() => setActiveDropdown(null)}
               >
-                <button className="flex items-center gap-1 text-gray-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors rounded-md hover:bg-white/5">
+                <button
+                  onClick={() => !link.dropdown && link.href && goToHref(link.href)}
+                  className="flex items-center gap-1 text-gray-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors rounded-md hover:bg-white/5"
+                >
                   {link.label}
                   {link.dropdown && <ChevronDown className="w-3.5 h-3.5" />}
                 </button>

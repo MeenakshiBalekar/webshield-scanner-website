@@ -7,7 +7,6 @@ import {
 } from 'lucide-react'
 import axios from 'axios'
 import { useAuth } from '../context/AuthContext'
-import { API } from '../context/AuthContext'
 import { getRemediation, downloadReportPdf, emailReport } from '../services/api'
 
 const PRODUCTS = {
@@ -256,7 +255,7 @@ export default function ProductPage() {
     setError(null)
     setResult(null)
     try {
-      const { data } = await axios.post(`${API}${product.endpoint}`, { url: url.trim() })
+      const { data } = await axios.post(`/api${product.endpoint}`, { url: url.trim() })
       setResult(data)
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Scan failed. Check the URL and try again.')

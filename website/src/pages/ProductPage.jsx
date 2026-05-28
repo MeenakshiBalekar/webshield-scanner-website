@@ -100,7 +100,7 @@ export default function ProductPage() {
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-navy-950 flex items-center justify-center text-white">
+      <div className="min-h-screen page-bg flex items-center justify-center text-white">
         <div className="text-center">
           <p className="text-lg font-semibold mb-2">Unknown product</p>
           <Link to="/dashboard" className="text-crimson-400 hover:text-crimson-300 text-sm">
@@ -133,7 +133,7 @@ export default function ProductPage() {
   const failed = results.filter((r) => !(r.passed ?? r.status === 'Pass')).length
 
   return (
-    <div className="min-h-screen bg-navy-950 flex flex-col">
+    <div className="min-h-screen page-bg flex flex-col">
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-white/10">
         <Link to="/" className="flex items-center gap-2">

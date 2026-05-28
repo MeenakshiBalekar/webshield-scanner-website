@@ -201,7 +201,7 @@ export default function ResultsPage() {
 
   if (!scan) {
     return (
-      <div className="min-h-screen bg-navy-950 flex flex-col items-center justify-center gap-4">
+      <div className="min-h-screen page-bg flex flex-col items-center justify-center gap-4">
         <Shield className="w-12 h-12 text-gray-600" />
         <p className="text-white font-semibold">No scan results found.</p>
         <Link to="/scanner" className="flex items-center gap-2 bg-crimson-500 hover:bg-crimson-600 text-white font-semibold px-5 py-2.5 rounded-lg transition-colors text-sm">
@@ -234,7 +234,7 @@ export default function ResultsPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-navy-950 flex flex-col">
+    <div className="min-h-screen page-bg flex flex-col">
       <header className="flex items-center justify-between px-6 py-4 border-b border-white/10">
         <Link to="/" className="flex items-center gap-2">
           <div className="w-8 h-8 bg-crimson-500 rounded-lg flex items-center justify-center">

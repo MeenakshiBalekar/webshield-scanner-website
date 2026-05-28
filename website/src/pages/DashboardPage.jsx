@@ -45,7 +45,7 @@ export default function DashboardPage() {
   const formatDate = (iso) => iso ? new Date(iso).toLocaleDateString() : '—'
 
   return (
-    <div className="min-h-screen bg-navy-950 flex flex-col">
+    <div className="min-h-screen page-bg flex flex-col">
       <header className="flex items-center justify-between px-6 py-4 border-b border-white/10">
         <Link to="/" className="flex items-center gap-2">
           <div className="w-8 h-8 bg-crimson-500 rounded-lg flex items-center justify-center">

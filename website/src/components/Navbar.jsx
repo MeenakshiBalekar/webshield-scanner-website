@@ -97,7 +97,7 @@ export default function Navbar() {
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center gap-3">
-            <a href="#" className="text-gray-300 hover:text-white text-sm font-medium transition-colors">
+            <a href="/login" className="text-gray-300 hover:text-white text-sm font-medium transition-colors">
               Sign In
             </a>
             <a
@@ -147,7 +147,7 @@ export default function Navbar() {
               </div>
             ))}
             <div className="pt-3 flex flex-col gap-2">
-              <a href="#" className="text-gray-300 text-sm font-medium text-center py-2">Sign In</a>
+              <a href="/login" className="text-gray-300 text-sm font-medium text-center py-2">Sign In</a>
               <a href="#/scanner" className="btn-primary justify-center text-sm">
                 <ScanLine className="w-4 h-4" />
                 Launch Scanner

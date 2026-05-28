@@ -18,6 +18,8 @@ import ProductPage from './pages/ProductPage'
 import HistoryPage from './pages/HistoryPage'
 import DashboardPage from './pages/DashboardPage'
 import SchedulePage from './pages/SchedulePage'
+import CvePage from './pages/CvePage'
+import CompanyPage from './pages/CompanyPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -57,6 +59,8 @@ export default function App() {
           <Route path="/scanner/history" element={<HistoryPage />} />
           <Route path="/scanner-dashboard" element={<DashboardPage />} />
           <Route path="/schedule" element={<SchedulePage />} />
+          <Route path="/cve" element={<CvePage />} />
+          <Route path="/company" element={<CompanyPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

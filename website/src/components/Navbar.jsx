@@ -31,11 +31,11 @@ const navLinks = [
       { label: 'Dashboard',    href: '/scanner-dashboard' },
       { label: 'Schedules',    href: '/schedule' },
       { label: 'Blog',         href: '#' },
-      { label: 'CVE Database', href: '#' },
+      { label: 'CVE Database', href: '/cve' },
     ],
   },
   { label: 'Pricing', href: '#pricing' },
-  { label: 'Company', href: '#' },
+  { label: 'Company', href: '/company' },
 ]
 
 export default function Navbar() {

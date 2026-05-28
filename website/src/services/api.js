@@ -54,6 +54,32 @@ export const getAllAssets = () => request('/api/asset')
 export const createAsset = (asset) =>
   request('/api/asset', { method: 'POST', body: JSON.stringify(asset) })
 
+// Dashboard
+export const getDashboard = () => request('/api/dashboard')
+export const getDashboardStats = () => request('/api/dashboard/stats')
+
+// CVE
+export const searchCVE = ({ q = '', severity = '' } = {}) => {
+  const params = new URLSearchParams()
+  if (q) params.set('q', q)
+  if (severity) params.set('severity', severity)
+  return request(`/api/cve/search?${params}`)
+}
+export const getCVE = (id) => request(`/api/cve/${encodeURIComponent(id)}`)
+export const getCVECategories = () => request('/api/cve/categories')
+
+// Solutions
+export const getSolutions = () => request('/api/solutions')
+export const getSolution = (type) => request(`/api/solutions/${type}`)
+
+// Pricing
+export const getPricing = () => request('/api/pricing')
+
+// Company
+export const getCompany = () => request('/api/company')
+export const submitContact = (data) =>
+  request('/api/company/contact', { method: 'POST', body: JSON.stringify(data) })
+
 // Reports
 export const downloadReportPdf = (payload) =>
   blobRequest('/api/report/generate', { method: 'POST', body: JSON.stringify(payload) })

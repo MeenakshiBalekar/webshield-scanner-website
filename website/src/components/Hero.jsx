@@ -10,7 +10,7 @@ const scanResults = [
   { severity: 'LOW', count: 22, color: 'bg-blue-400' },
 ]
 
-export default function Hero() {
+export default function Hero({ onWatchDemo, onStartFreeScan }) {
   const canvasRef = useRef(null)
 
   useEffect(() => {
@@ -102,20 +102,30 @@ export default function Hero() {
 
             {/* CTA Buttons */}
             <div className="flex flex-wrap gap-4 mb-10">
-              <a
-                href="#/scanner"
-                className="inline-flex items-center gap-2 bg-crimson-500 hover:bg-crimson-600 text-white font-semibold px-7 py-3.5 rounded-lg transition-all duration-200 shadow-lg hover:shadow-crimson-500/30 hover:shadow-xl text-base"
-              >
-                Start Free Scan
-                <ArrowRight className="w-4 h-4" />
-              </a>
-              <a
-                href="#demo"
+              {onStartFreeScan ? (
+                <button
+                  onClick={onStartFreeScan}
+                  className="inline-flex items-center gap-2 bg-crimson-500 hover:bg-crimson-600 text-white font-semibold px-7 py-3.5 rounded-lg transition-all duration-200 shadow-lg hover:shadow-crimson-500/30 hover:shadow-xl text-base"
+                >
+                  Start Free Scan
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              ) : (
+                <a
+                  href="/products/web"
+                  className="inline-flex items-center gap-2 bg-crimson-500 hover:bg-crimson-600 text-white font-semibold px-7 py-3.5 rounded-lg transition-all duration-200 shadow-lg hover:shadow-crimson-500/30 hover:shadow-xl text-base"
+                >
+                  Start Free Scan
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+              )}
+              <button
+                onClick={onWatchDemo}
                 className="inline-flex items-center gap-2 border border-white/20 text-white hover:bg-white/10 font-semibold px-7 py-3.5 rounded-lg transition-all duration-200 text-base"
               >
                 <Play className="w-4 h-4 fill-white" />
                 Watch Demo
-              </a>
+              </button>
             </div>
 
             {/* Trust badges */}

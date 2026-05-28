@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import React, { useState, useEffect, useRef } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { Shield, Send, Loader2, CheckCircle, AlertCircle, Users, Heart, Mail, Globe } from 'lucide-react'
 import { getCompany, submitContact } from '../services/api'
 
@@ -93,10 +93,18 @@ function ContactForm() {
 
 export default function CompanyPage() {
   const [data, setData] = useState(null)
+  const contactRef = useRef(null)
+  const location = useLocation()
 
   useEffect(() => {
     getCompany().then(setData).catch(() => {})
   }, [])
+
+  useEffect(() => {
+    if (location.state?.scrollTo === 'contact' && contactRef.current) {
+      contactRef.current.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [location.state])
 
   const about    = data?.About ?? data?.about ?? ''
   const values   = data?.Values ?? data?.values ?? []
@@ -211,7 +219,7 @@ export default function CompanyPage() {
         )}
 
         {/* Contact */}
-        <section id="contact">
+        <section id="contact" ref={contactRef}>
           <div className="grid lg:grid-cols-2 gap-12">
             <div>
               <h2 className="text-2xl font-bold text-white mb-3 flex items-center gap-2">

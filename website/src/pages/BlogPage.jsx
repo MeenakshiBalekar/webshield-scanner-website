@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Shield, Clock, ArrowRight, Tag, Search } from 'lucide-react'
+import { Shield, Clock, ArrowRight, Tag, Search, ChevronDown, ChevronUp } from 'lucide-react'
 
 const POSTS = [
   {
@@ -77,6 +77,9 @@ const CATEGORY_COLORS = {
 export default function BlogPage() {
   const [activeCategory, setActiveCategory] = useState('All')
   const [search, setSearch] = useState('')
+  const [expandedId, setExpandedId] = useState(null)
+
+  const toggle = (id) => setExpandedId((prev) => (prev === id ? null : id))
 
   const filtered = POSTS.filter((p) => {
     const matchCat = activeCategory === 'All' || p.category === activeCategory
@@ -139,44 +142,56 @@ export default function BlogPage() {
           <p className="text-gray-500 text-center py-16">No articles found.</p>
         )}
 
-        <div className="grid md:grid-cols-2 gap-6">
-          {filtered.map((post) => (
-            <article
-              key={post.id}
-              className="bg-white/3 border border-white/10 rounded-2xl p-6 flex flex-col hover:border-white/20 transition-all hover:-translate-y-0.5 group cursor-pointer"
-            >
-              <div className="flex items-center gap-2 mb-4">
-                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${CATEGORY_COLORS[post.category] || 'text-gray-400 bg-white/5 border-white/10'}`}>
-                  {post.category}
-                </span>
-              </div>
-
-              <h2 className="text-base font-bold text-white mb-2 leading-snug group-hover:text-crimson-300 transition-colors">
-                {post.title}
-              </h2>
-              <p className="text-sm text-gray-400 leading-relaxed mb-4 flex-1">{post.excerpt}</p>
-
-              <div className="flex flex-wrap gap-1.5 mb-4">
-                {post.tags.map((tag) => (
-                  <span key={tag} className="inline-flex items-center gap-1 text-xs text-gray-500 bg-white/5 px-2 py-0.5 rounded-full">
-                    <Tag className="w-2.5 h-2.5" /> {tag}
-                  </span>
-                ))}
-              </div>
-
-              <div className="flex items-center justify-between text-xs text-gray-500">
-                <div className="flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5" />
-                  <span>{post.readTime}</span>
-                  <span className="mx-1.5">·</span>
-                  <span>{new Date(post.date).toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+        <div className="space-y-4">
+          {filtered.map((post) => {
+            const isOpen = expandedId === post.id
+            return (
+              <article
+                key={post.id}
+                onClick={() => toggle(post.id)}
+                className={`bg-white/3 border rounded-2xl p-6 cursor-pointer transition-all ${
+                  isOpen ? 'border-crimson-500/40' : 'border-white/10 hover:border-white/20'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${CATEGORY_COLORS[post.category] || 'text-gray-400 bg-white/5 border-white/10'}`}>
+                        {post.category}
+                      </span>
+                      <div className="flex items-center gap-1 text-xs text-gray-500">
+                        <Clock className="w-3 h-3" />
+                        {post.readTime}
+                        <span className="mx-1">·</span>
+                        {new Date(post.date).toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </div>
+                    </div>
+                    <h2 className={`text-base font-bold leading-snug transition-colors ${isOpen ? 'text-crimson-300' : 'text-white'}`}>
+                      {post.title}
+                    </h2>
+                  </div>
+                  <div className="shrink-0 mt-1">
+                    {isOpen
+                      ? <ChevronUp className="w-4 h-4 text-gray-400" />
+                      : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                  </div>
                 </div>
-                <span className="flex items-center gap-1 text-crimson-400 font-semibold">
-                  Read <ArrowRight className="w-3.5 h-3.5" />
-                </span>
-              </div>
-            </article>
-          ))}
+
+                {isOpen && (
+                  <div className="mt-4 pt-4 border-t border-white/10">
+                    <p className="text-sm text-gray-300 leading-relaxed mb-4">{post.excerpt}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {post.tags.map((tag) => (
+                        <span key={tag} className="inline-flex items-center gap-1 text-xs text-gray-500 bg-white/5 px-2 py-0.5 rounded-full">
+                          <Tag className="w-2.5 h-2.5" /> {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </article>
+            )
+          })}
         </div>
       </main>
     </div>

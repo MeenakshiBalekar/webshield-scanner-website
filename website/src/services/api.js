@@ -77,6 +77,7 @@ export const getPricing = () => request('/api/pricing')
 
 // Company
 export const getCompany = () => request('/api/company')
+export const getFaq = () => request('/api/company/faq')
 export const submitContact = (data) =>
   request('/api/company/contact', { method: 'POST', body: JSON.stringify(data) })
 

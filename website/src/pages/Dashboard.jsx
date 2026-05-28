@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Shield, LogOut, Loader2, AlertCircle, CheckCircle, XCircle, ScanLine } from 'lucide-react'
 import axios from 'axios'
 import { useAuth } from '../context/AuthContext'
@@ -34,7 +34,10 @@ function ResultItem({ item }) {
 export default function Dashboard() {
   const { logout } = useAuth()
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState('web')
+  const [searchParams] = useSearchParams()
+  const validTabs = PRODUCTS.map((p) => p.id)
+  const initialTab = validTabs.includes(searchParams.get('tab')) ? searchParams.get('tab') : 'web'
+  const [activeTab, setActiveTab] = useState(initialTab)
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)

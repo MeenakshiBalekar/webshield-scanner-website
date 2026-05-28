@@ -1,11 +1,13 @@
 import React, { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { Shield, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 export default function Login() {
   const { login, register } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const redirect = searchParams.get('redirect') || '/dashboard'
   const [mode, setMode] = useState('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -23,7 +25,7 @@ export default function Login() {
       } else {
         await register(email, password)
       }
-      navigate('/dashboard')
+      navigate(redirect)
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Authentication failed')
     }

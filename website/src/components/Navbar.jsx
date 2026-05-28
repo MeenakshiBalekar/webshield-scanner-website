@@ -54,7 +54,7 @@ export default function Navbar() {
   const goToProduct = (tab) => {
     setActiveDropdown(null)
     setMobileOpen(false)
-    const dest = `/dashboard?tab=${tab}`
+    const dest = `/products/${tab}`
     navigate(user ? dest : `/login?redirect=${encodeURIComponent(dest)}`)
   }
 
@@ -93,7 +93,7 @@ export default function Navbar() {
 
   const handleLaunchScanner = (e) => {
     e.preventDefault()
-    const dest = '/dashboard'
+    const dest = '/products/web'
     navigate(user ? dest : `/login?redirect=${encodeURIComponent(dest)}`)
   }
 

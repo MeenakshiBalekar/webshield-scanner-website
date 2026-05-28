@@ -14,11 +14,10 @@ import CTA from './components/CTA'
 import Footer from './components/Footer'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
-import ScanPage from './pages/ScanPage'
-import ResultsPage from './pages/ResultsPage'
+import ProductPage from './pages/ProductPage'
 import HistoryPage from './pages/HistoryPage'
-import SchedulePage from './pages/SchedulePage'
 import DashboardPage from './pages/DashboardPage'
+import SchedulePage from './pages/SchedulePage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -54,8 +53,7 @@ export default function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-          <Route path="/scanner" element={<ScanPage />} />
-          <Route path="/scanner/results" element={<ResultsPage />} />
+          <Route path="/products/:type" element={<PrivateRoute><ProductPage /></PrivateRoute>} />
           <Route path="/scanner/history" element={<HistoryPage />} />
           <Route path="/scanner-dashboard" element={<DashboardPage />} />
           <Route path="/schedule" element={<SchedulePage />} />

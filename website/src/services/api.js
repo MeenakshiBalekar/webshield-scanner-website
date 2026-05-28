@@ -1,8 +1,13 @@
 const BASE = import.meta.env.VITE_API_URL || ''
 
+function authHeaders() {
+  const token = localStorage.getItem('ws_token')
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
 async function request(path, options = {}) {
   const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...options.headers },
+    headers: { 'Content-Type': 'application/json', ...authHeaders(), ...options.headers },
     ...options,
   })
   if (!res.ok) {
@@ -14,6 +19,15 @@ async function request(path, options = {}) {
     throw new Error(msg)
   }
   return res.json()
+}
+
+async function blobRequest(path, options = {}) {
+  const res = await fetch(`${BASE}${path}`, {
+    headers: { 'Content-Type': 'application/json', ...authHeaders(), ...options.headers },
+    ...options,
+  })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return res.blob()
 }
 
 // Scan
@@ -39,6 +53,13 @@ export const getAssets = () => request('/api/scan/assets')
 export const getAllAssets = () => request('/api/asset')
 export const createAsset = (asset) =>
   request('/api/asset', { method: 'POST', body: JSON.stringify(asset) })
+
+// Reports
+export const downloadReportPdf = (payload) =>
+  blobRequest('/api/report/generate', { method: 'POST', body: JSON.stringify(payload) })
+
+export const emailReport = (payload) =>
+  request('/api/report/email', { method: 'POST', body: JSON.stringify(payload) })
 
 // Schedules
 export const getSchedules = () => request('/api/schedule')

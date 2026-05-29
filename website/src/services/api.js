@@ -96,6 +96,11 @@ export const getSolution = (type) => request(`/api/solutions/${type}`)
 // Pricing
 export const getPricing = () => request('/api/pricing')
 
+// Billing
+export const getSubscription    = () => request('/api/billing/subscription')
+export const getBillingPortalUrl = () => request('/api/billing/portal', { method: 'POST', body: JSON.stringify({}) })
+export const getInvoices        = () => request('/api/billing/invoices')
+
 // Company
 export const getCompany = () => request('/api/company')
 export const getFaq = () => request('/api/company/faq')

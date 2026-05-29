@@ -1,19 +1,44 @@
 import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import { Shield, CheckCircle2, ChevronDown, ChevronUp, Zap, Building, AlertCircle } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Shield, CheckCircle2, ChevronDown, ChevronUp, Zap, Building, AlertCircle, Loader2 } from 'lucide-react'
 import { getPricing } from '../services/api'
+import { useAuth } from '../context/AuthContext'
 
-function PlanCard({ plan, annual }) {
+/* ── Paddle price IDs ── */
+const PADDLE_PRICE_IDS = {
+  monthly: 'pri_01kssx6snxksz9r1dyej5my2j3',
+  annual:  'pri_01kssx85wfng8c8nj2my9t09pb',
+}
+
+/* ── Load Paddle.js once ── */
+function usePaddle() {
+  useEffect(() => {
+    if (window.Paddle) return
+    const script = document.createElement('script')
+    script.src = 'https://cdn.paddle.com/paddle/v2/paddle.js'
+    script.async = true
+    script.onload = () => {
+      const token = import.meta.env.VITE_PADDLE_CLIENT_TOKEN
+      if (token && window.Paddle) {
+        window.Paddle.Initialize({ token })
+      }
+    }
+    document.head.appendChild(script)
+  }, [])
+}
+
+/* ── Plan card ── */
+function PlanCard({ plan, annual, onProClick, checkoutLoading }) {
   const monthly   = plan.MonthlyPrice ?? plan.monthlyPrice ?? plan.price?.monthly ?? 0
   const annualP   = plan.AnnualPrice  ?? plan.annualPrice  ?? plan.price?.annual  ?? monthly
   const price     = annual ? annualP : monthly
   const isFree    = price === 0
-  const isCustom  = plan.IsCustom ?? plan.isCustom ?? (plan.MonthlyPrice == null && plan.monthlyPrice == null)
+  const isCustom  = plan.IsCustom ?? plan.isCustom ?? false
+  const isPro     = !isFree && !isCustom
   const highlight = plan.IsMostPopular ?? plan.isMostPopular ?? plan.highlight ?? false
   const features  = plan.Features ?? plan.features ?? []
   const name      = plan.Name ?? plan.name ?? ''
   const desc      = plan.Description ?? plan.description ?? ''
-  const cta       = plan.Cta ?? plan.cta ?? (isFree ? 'Start for Free' : highlight ? 'Start Free Trial' : 'Contact Sales')
 
   return (
     <div className={`relative rounded-2xl border-2 bg-white p-8 flex flex-col ${
@@ -47,23 +72,44 @@ function PlanCard({ plan, annual }) {
             {!isFree && <span className="text-gray-400 mb-1.5 text-sm">/mo</span>}
           </div>
         )}
-        {annual && !isFree && !isCustom && annualP < monthly && (
+        {annual && isPro && annualP < monthly && (
           <p className="text-xs text-green-600 font-medium mt-1">
             Billed annually · Save {Math.round((1 - annualP / monthly) * 100)}%
           </p>
         )}
       </div>
 
-      <Link
-        to="/company#contact"
-        className={`w-full text-center font-semibold py-3 rounded-xl transition-all mb-6 block text-sm ${
-          highlight
-            ? 'bg-crimson-500 hover:bg-crimson-600 text-white shadow-lg shadow-crimson-500/20'
-            : 'border-2 border-navy-900 text-navy-900 hover:bg-navy-900 hover:text-white'
-        }`}
-      >
-        {cta}
-      </Link>
+      {/* CTA */}
+      {isFree ? (
+        <Link
+          to="/login"
+          className="w-full text-center font-semibold py-3 rounded-xl transition-all mb-6 block text-sm border-2 border-navy-900 text-navy-900 hover:bg-navy-900 hover:text-white"
+        >
+          Start for Free
+        </Link>
+      ) : isCustom ? (
+        <Link
+          to="/company"
+          state={{ scrollTo: 'contact' }}
+          className="w-full text-center font-semibold py-3 rounded-xl transition-all mb-6 block text-sm border-2 border-navy-900 text-navy-900 hover:bg-navy-900 hover:text-white"
+        >
+          Contact Sales
+        </Link>
+      ) : (
+        <button
+          onClick={onProClick}
+          disabled={checkoutLoading}
+          className={`w-full flex items-center justify-center gap-2 font-semibold py-3 rounded-xl transition-all mb-6 text-sm ${
+            highlight
+              ? 'bg-crimson-500 hover:bg-crimson-600 text-white shadow-lg shadow-crimson-500/20 disabled:bg-crimson-500/50'
+              : 'border-2 border-navy-900 text-navy-900 hover:bg-navy-900 hover:text-white disabled:opacity-50'
+          }`}
+        >
+          {checkoutLoading
+            ? <><Loader2 className="w-4 h-4 animate-spin" /> Opening checkout…</>
+            : 'Start Free Trial'}
+        </button>
+      )}
 
       <ul className="space-y-2.5 flex-1">
         {features.map((f, i) => (
@@ -93,10 +139,14 @@ function FaqRow({ item }) {
 }
 
 export default function PricingPage() {
-  const [annual, setAnnual] = useState(true)
-  const [plans, setPlans]   = useState([])
-  const [faqs, setFaqs]     = useState([])
-  const [error, setError]   = useState(null)
+  const [annual, setAnnual]               = useState(true)
+  const [plans, setPlans]                 = useState([])
+  const [faqs, setFaqs]                   = useState([])
+  const [error, setError]                 = useState(null)
+  const [checkoutLoading, setCheckoutLoading] = useState(false)
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  usePaddle()
 
   useEffect(() => {
     getPricing()
@@ -106,6 +156,35 @@ export default function PricingPage() {
       })
       .catch((e) => setError(e.message))
   }, [])
+
+  const handleProClick = () => {
+    if (!user) {
+      navigate(`/login?redirect=${encodeURIComponent('/pricing')}`)
+      return
+    }
+
+    const priceId = annual ? PADDLE_PRICE_IDS.annual : PADDLE_PRICE_IDS.monthly
+
+    if (!window.Paddle) {
+      setError('Payment provider failed to load. Please refresh and try again.')
+      return
+    }
+
+    setCheckoutLoading(true)
+    try {
+      window.Paddle.Checkout.open({
+        items: [{ priceId, quantity: 1 }],
+        customer: { email: user.email },
+        settings: {
+          successUrl: `${window.location.origin}/billing/success`,
+          allowLogout: false,
+        },
+      })
+    } catch (err) {
+      setError(err.message || 'Could not open checkout.')
+    }
+    setCheckoutLoading(false)
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -130,7 +209,7 @@ export default function PricingPage() {
             Start for free and scale as your security needs grow. All plans include a 30-day free trial.
           </p>
 
-          {/* Toggle */}
+          {/* Monthly / Annual toggle */}
           <div className="inline-flex items-center gap-3 bg-white border border-gray-200 rounded-full p-1 shadow-sm">
             <button
               onClick={() => setAnnual(false)}
@@ -155,10 +234,18 @@ export default function PricingPage() {
           </div>
         )}
 
-        {/* Plans */}
+        {/* Plan cards */}
         {plans.length > 0 ? (
           <div className="grid md:grid-cols-3 gap-6 mb-8">
-            {plans.map((plan, i) => <PlanCard key={i} plan={plan} annual={annual} />)}
+            {plans.map((plan, i) => (
+              <PlanCard
+                key={i}
+                plan={plan}
+                annual={annual}
+                onProClick={handleProClick}
+                checkoutLoading={checkoutLoading}
+              />
+            ))}
           </div>
         ) : !error ? (
           <div className="flex justify-center py-16">
@@ -185,7 +272,8 @@ export default function PricingPage() {
           <h3 className="text-2xl font-bold text-white mb-2">Need a custom plan?</h3>
           <p className="text-gray-400 mb-5">Our enterprise team will build a solution around your specific requirements.</p>
           <Link
-            to="/company#contact"
+            to="/company"
+            state={{ scrollTo: 'contact' }}
             className="inline-flex items-center gap-2 bg-crimson-500 hover:bg-crimson-600 text-white font-semibold px-6 py-3 rounded-xl text-sm transition-colors"
           >
             <Building className="w-4 h-4" /> Talk to Sales

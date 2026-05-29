@@ -40,6 +40,7 @@ const navLinks = [
     label: 'Resources',
     dropdown: [
       { label: 'Dashboard',     href: '/dashboard' },
+      { label: 'Billing',       href: '/billing' },
       { label: 'Assets',        href: '/assets' },
       { label: 'Remediation',   href: '/remediation' },
       { label: 'Scan History',  href: '/scanner/history' },

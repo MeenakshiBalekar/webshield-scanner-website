@@ -16,6 +16,8 @@ import PricingPage from './pages/PricingPage'
 import BlogPage from './pages/BlogPage'
 import AssetsPage from './pages/AssetsPage'
 import RemediationPage from './pages/RemediationPage'
+import BillingPage from './pages/BillingPage'
+import CheckoutSuccessPage from './pages/CheckoutSuccessPage'
 import ScannerHubPage from './pages/ScannerHubPage'
 import NetworkScanPage from './pages/NetworkScanPage'
 import HostScanPage from './pages/HostScanPage'
@@ -64,6 +66,10 @@ export default function App() {
           {/* Fleet & Remediation — new */}
           <Route path="/assets"            element={<AssetsPage />} />
           <Route path="/remediation"       element={<RemediationPage />} />
+
+          {/* Billing */}
+          <Route path="/billing"           element={<BillingPage />} />
+          <Route path="/billing/success"   element={<CheckoutSuccessPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

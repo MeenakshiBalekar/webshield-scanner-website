@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Shield, CheckCircle2, ChevronDown, ChevronUp, Zap, Building, AlertCircle, Loader2 } from 'lucide-react'
 import { getPricing } from '../services/api'
 
@@ -120,6 +120,7 @@ function FaqRow({ item }) {
 }
 
 export default function PricingPage() {
+  const navigate = useNavigate()
   const [annual, setAnnual]               = useState(true)
   const [plans, setPlans]                 = useState([])
   const [faqs, setFaqs]                   = useState([])
@@ -135,24 +136,24 @@ export default function PricingPage() {
       .catch((e) => setError(e.message))
   }, [])
 
-  const handleProClick = async () => {
+  const handleCheckout = async (annual = false) => {
+    const token = localStorage.getItem('ws_token')
+    if (!token) { navigate('/login'); return }
     setCheckoutLoading(true)
     setError(null)
-    try {
-      const res = await fetch(`${API}/api/subscription/checkout`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ annual }),
-      })
-      if (!res.ok) {
-        const text = await res.text()
-        throw new Error(text || `Server error ${res.status}`)
-      }
-      const data = await res.json()
-      if (!data.url) throw new Error('No checkout URL returned from server.')
+    const res = await fetch(`${API}/api/subscription/checkout`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ annual }),
+    })
+    const data = await res.json()
+    if (res.ok) {
       window.location.href = data.url
-    } catch (err) {
-      setError(err.message || 'Could not start checkout. Please try again.')
+    } else {
+      alert(data.error ?? 'Checkout failed')
       setCheckoutLoading(false)
     }
   }
@@ -213,7 +214,7 @@ export default function PricingPage() {
                 key={i}
                 plan={plan}
                 annual={annual}
-                onProClick={handleProClick}
+                onProClick={() => handleCheckout(annual)}
                 checkoutLoading={checkoutLoading}
               />
             ))}

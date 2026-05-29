@@ -1,24 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Shield, CheckCircle2, ChevronDown, ChevronUp, Zap, Building, AlertCircle, Loader2 } from 'lucide-react'
+import { initializePaddle } from '@paddle/paddle-js'
 import { getPricing } from '../services/api'
 
 const API = import.meta.env.VITE_API_URL ?? ''
-
-function usePaddle() {
-  useEffect(() => {
-    if (window.Paddle) return
-    const script = document.createElement('script')
-    script.src = 'https://cdn.paddle.com/paddle/v2/paddle.js'
-    script.async = true
-    script.onload = () => {
-      if (!window.Paddle) return
-      window.Paddle.Environment.set('sandbox')
-      window.Paddle.Initialize({ token: 'test_08a537e4556462f374577ae2bae' })
-    }
-    document.head.appendChild(script)
-  }, [])
-}
 
 /* ── Plan card ── */
 function PlanCard({ plan, annual, onProClick, checkoutLoading }) {
@@ -136,8 +122,15 @@ function FaqRow({ item }) {
 
 export default function PricingPage() {
   const navigate = useNavigate()
-  usePaddle()
+  const [paddle, setPaddle]               = useState(null)
   const [annual, setAnnual]               = useState(true)
+
+  useEffect(() => {
+    initializePaddle({
+      environment: 'sandbox',
+      token: 'test_08a537e4556462f374577ae2bae',
+    }).then(setPaddle)
+  }, [])
   const [plans, setPlans]                 = useState([])
   const [faqs, setFaqs]                   = useState([])
   const [error, setError]                 = useState(null)

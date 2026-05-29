@@ -1,0 +1,14 @@
+# Dependencies
+website/node_modules/
+
+# Build output
+website/dist/
+
+# Environment files
+website/.env.local
+website/.env.production
+
+# Editor / OS
+.DS_Store
+.vscode/
+*.swp

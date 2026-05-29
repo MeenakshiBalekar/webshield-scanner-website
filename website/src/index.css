@@ -35,9 +35,18 @@
 
 /* Custom scrollbar */
 ::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-track { background: #070f1e; }
 ::-webkit-scrollbar-thumb { background: #0D1F3C; border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: #E31837; }
+
+/* Page background for all inner (dark) pages */
+.page-bg {
+  background-color: #0D1F3C;
+  background-image:
+    radial-gradient(ellipse 80% 60% at 5% 0%,   rgba(227, 24,  55,  0.07) 0%, transparent 65%),
+    radial-gradient(ellipse 70% 50% at 95% 100%, rgba(49,  95,  161, 0.09) 0%, transparent 65%),
+    linear-gradient(to bottom, #0D1F3C 0%, #091628 60%, #070f1e 100%);
+}
 
 /* Animated gradient text */
 .gradient-text {

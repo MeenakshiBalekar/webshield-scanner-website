@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 import { BookOpen, Video, FileText, ArrowRight, Calendar } from 'lucide-react'
 
 const resources = [
@@ -61,12 +62,12 @@ export default function Resources() {
             <span className="section-tag">Resources</span>
             <h2 className="section-heading">Security Knowledge Hub</h2>
           </div>
-          <a
-            href="#"
+          <Link
+            to="/blog"
             className="inline-flex items-center gap-1.5 text-sm font-semibold text-navy-900 hover:text-crimson-500 transition-colors shrink-0"
           >
             View all resources <ArrowRight className="w-4 h-4" />
-          </a>
+          </Link>
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">

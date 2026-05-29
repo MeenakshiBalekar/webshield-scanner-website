@@ -5,6 +5,21 @@ import { getPricing } from '../services/api'
 
 const API = import.meta.env.VITE_API_URL ?? ''
 
+function usePaddle() {
+  useEffect(() => {
+    if (window.Paddle) return
+    const script = document.createElement('script')
+    script.src = 'https://cdn.paddle.com/paddle/v2/paddle.js'
+    script.async = true
+    script.onload = () => {
+      if (!window.Paddle) return
+      window.Paddle.Environment.set('sandbox')
+      window.Paddle.Initialize({ token: 'test_08a537e4556462f374577ae2bae' })
+    }
+    document.head.appendChild(script)
+  }, [])
+}
+
 /* ── Plan card ── */
 function PlanCard({ plan, annual, onProClick, checkoutLoading }) {
   const monthly   = plan.MonthlyPrice ?? plan.monthlyPrice ?? plan.price?.monthly ?? 0
@@ -121,6 +136,7 @@ function FaqRow({ item }) {
 
 export default function PricingPage() {
   const navigate = useNavigate()
+  usePaddle()
   const [annual, setAnnual]               = useState(true)
   const [plans, setPlans]                 = useState([])
   const [faqs, setFaqs]                   = useState([])

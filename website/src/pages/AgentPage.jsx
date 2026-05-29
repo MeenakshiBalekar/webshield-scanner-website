@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Shield, Network, Server, Lock, GitCompare,
@@ -129,7 +129,18 @@ function OllamaSection() {
 }
 
 export default function AgentPage() {
-  const downloadUrl = (os) => `${API}/api/agent/download?os=${os}`
+  const [agentInfo, setAgentInfo] = useState(null)
+
+  useEffect(() => {
+    fetch(`${API}/api/agent/info`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => d && setAgentInfo(d))
+      .catch(() => {})
+  }, [])
+
+  const version   = agentInfo?.version   ?? agentInfo?.Version   ?? null
+  const cliUsage  = agentInfo?.usage     ?? agentInfo?.Usage     ?? agentInfo?.cliUsage ?? agentInfo?.CliUsage ?? null
+  const commands  = agentInfo?.commands  ?? agentInfo?.Commands  ?? []
 
   return (
     <div className="min-h-screen page-bg flex flex-col">
@@ -168,14 +179,14 @@ export default function AgentPage() {
           {/* Download buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6">
             <a
-              href={downloadUrl('windows')}
+              href={`${API}/api/agent/download?platform=win`}
               className="flex items-center gap-2.5 bg-crimson-500 hover:bg-crimson-600 text-white font-semibold px-6 py-3 rounded-xl text-sm transition-colors w-full sm:w-auto justify-center"
             >
               <Download className="w-4 h-4" />
               Download for Windows (.exe)
             </a>
             <a
-              href={downloadUrl('linux')}
+              href={`${API}/api/agent/download?platform=linux`}
               className="flex items-center gap-2.5 bg-white/8 hover:bg-white/15 border border-white/15 text-white font-semibold px-6 py-3 rounded-xl text-sm transition-colors w-full sm:w-auto justify-center"
             >
               <Download className="w-4 h-4" />
@@ -183,9 +194,14 @@ export default function AgentPage() {
             </a>
           </div>
 
-          {/* Trust line */}
+          {/* Version badge + trust line */}
+          {version && (
+            <p className="text-xs text-gray-600 mb-2">
+              Latest: <span className="text-gray-400 font-mono">v{version}</span>
+            </p>
+          )}
           <p className="text-sm text-gray-500">
-            Free forever · No account needed · No data sent anywhere
+            No account needed &nbsp;·&nbsp; Free forever &nbsp;·&nbsp; Data stays on your machine
           </p>
         </div>
 
@@ -210,6 +226,31 @@ export default function AgentPage() {
             <CodeBlock steps={WIN_STEPS} platform="Windows" />
             <CodeBlock steps={LINUX_STEPS} platform="Linux / macOS" />
           </div>
+
+          {/* Live CLI usage from /api/agent/info */}
+          {(cliUsage || commands.length > 0) && (
+            <div className="mt-6 bg-[#0d1117] border border-white/10 rounded-xl overflow-hidden">
+              <div className="flex items-center gap-2 px-4 py-2.5 border-b border-white/10">
+                <Terminal className="w-3.5 h-3.5 text-gray-500" />
+                <span className="text-xs text-gray-400 font-medium">CLI Reference</span>
+              </div>
+              <div className="px-4 py-4 font-mono text-sm space-y-2">
+                {cliUsage && (
+                  <pre className="text-gray-300 whitespace-pre-wrap text-xs leading-relaxed">{cliUsage}</pre>
+                )}
+                {commands.map((c, i) => {
+                  const cmd  = c.command ?? c.Command ?? c.cmd ?? c
+                  const desc = c.description ?? c.Description ?? c.desc ?? ''
+                  return (
+                    <div key={i} className="flex gap-4">
+                      <span className="text-green-400 shrink-0">{cmd}</span>
+                      {desc && <span className="text-gray-500">{desc}</span>}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Output */}

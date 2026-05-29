@@ -24,6 +24,7 @@ import HostScanPage from './pages/HostScanPage'
 import CloudScanPage from './pages/CloudScanPage'
 import CodeScanPage from './pages/CodeScanPage'
 import CiCdPage from './pages/CiCdPage'
+import AgentPage from './pages/AgentPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -45,6 +46,7 @@ export default function App() {
           <Route path="/contact"           element={<ContactPage />} />
           <Route path="/blog"              element={<BlogPage />} />
           <Route path="/cve"               element={<CveDatabasePage />} />
+          <Route path="/agent"             element={<AgentPage />} />
 
           {/* Auth */}
           <Route path="/login"             element={<Login />} />

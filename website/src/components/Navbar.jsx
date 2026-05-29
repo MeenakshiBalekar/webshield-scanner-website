@@ -27,12 +27,13 @@ const navLinks = [
   {
     label: 'Scanners',
     dropdown: [
-      { label: 'Web Scanner',   tab: 'web' },
-      { label: 'Host Scanner',  href: '/scanner/host' },
-      { label: 'Cloud Scanner', href: '/scanner/cloud' },
-      { label: 'Code Scanner',  href: '/scanner/code' },
-      { label: 'CI/CD Setup',   href: '/scanner/cicd' },
-      { label: 'All Scanners',  href: '/scanner' },
+      { label: 'Web Scanner',     tab: 'web' },
+      { label: 'Network Scanner', href: '/scanner/network' },
+      { label: 'Host Scanner',    href: '/scanner/host' },
+      { label: 'Cloud Scanner',   href: '/scanner/cloud' },
+      { label: 'Code Scanner',    href: '/scanner/code' },
+      { label: 'CI/CD Setup',     href: '/scanner/cicd' },
+      { label: 'All Scanners',    href: '/scanner' },
     ],
   },
   {

@@ -109,6 +109,10 @@ export const downloadReportPdf = (payload) =>
 export const emailReport = (payload) =>
   request('/api/report/email', { method: 'POST', body: JSON.stringify(payload) })
 
+// Network / port scan
+export const startNetworkScan = (payload) =>
+  request('/api/networkscan', { method: 'POST', body: JSON.stringify(payload) })
+
 // Host scan
 export const startHostScan = (payload) =>
   request('/api/hostscan', { method: 'POST', body: JSON.stringify(payload) })

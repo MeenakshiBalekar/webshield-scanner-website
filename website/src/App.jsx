@@ -17,6 +17,7 @@ import BlogPage from './pages/BlogPage'
 import AssetsPage from './pages/AssetsPage'
 import RemediationPage from './pages/RemediationPage'
 import ScannerHubPage from './pages/ScannerHubPage'
+import NetworkScanPage from './pages/NetworkScanPage'
 import HostScanPage from './pages/HostScanPage'
 import CloudScanPage from './pages/CloudScanPage'
 import CodeScanPage from './pages/CodeScanPage'
@@ -54,6 +55,7 @@ export default function App() {
 
           {/* Scanners — new */}
           <Route path="/scanner"           element={<ScannerHubPage />} />
+          <Route path="/scanner/network"   element={<NetworkScanPage />} />
           <Route path="/scanner/host"      element={<HostScanPage />} />
           <Route path="/scanner/cloud"     element={<CloudScanPage />} />
           <Route path="/scanner/code"      element={<CodeScanPage />} />

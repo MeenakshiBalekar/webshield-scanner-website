@@ -1,6 +1,6 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Globe, Server, Cloud, Bot, FileCode2, GitBranch, ArrowRight, Lock, Shield, Zap, CheckCircle2 } from 'lucide-react'
+import { Globe, Server, Cloud, Bot, FileCode2, GitBranch, Network, ArrowRight, Lock, Shield, Zap, CheckCircle2 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
@@ -18,6 +18,19 @@ const SCANNERS = [
     href: '/products/web',
     requiresAuth: true,
     cta: 'Launch Scanner',
+  },
+  {
+    icon: Network,
+    iconColor: 'text-cyan-400',
+    iconBg: 'bg-cyan-500/10 border-cyan-500/20',
+    title: 'Network / Port Scanner',
+    description: 'Scan a host for open ports and exposed services. Each finding shows the risk rating, service name, and exactly what to close or restrict.',
+    badge: 'Production Ready',
+    badgeColor: 'text-green-400 bg-green-500/10 border-green-500/30',
+    features: ['Standard & extended modes', 'Service + banner detection', 'Per-port risk rating', 'Actionable advice cards'],
+    href: '/scanner/network',
+    requiresAuth: false,
+    cta: 'Run Port Scan',
   },
   {
     icon: Server,

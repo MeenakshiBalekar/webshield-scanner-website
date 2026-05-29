@@ -65,15 +65,15 @@ export default function Hero({ onWatchDemo, onStartFreeScan }) {
   }, [])
 
   return (
-    <section className="relative min-h-screen overflow-hidden flex items-center">
-      {/* Particle network overlay (on top of SpineUniverse) */}
-      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full opacity-40" />
+    <section className="relative min-h-screen bg-navy-900 overflow-hidden flex items-center">
+      {/* Animated particle network background */}
+      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full opacity-70" />
 
       {/* Grid pattern */}
-      <div className="absolute inset-0 grid-bg opacity-15" />
+      <div className="absolute inset-0 grid-bg opacity-30" />
 
-      {/* Dark scrim — lets spine canvas show through while keeping text readable */}
-      <div className="absolute inset-0 bg-gradient-to-br from-navy-950/60 via-navy-900/50 to-navy-800/40" />
+      {/* Gradient overlays */}
+      <div className="absolute inset-0 bg-gradient-to-br from-navy-950 via-navy-900 to-navy-800 opacity-80" />
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-navy-950 to-transparent" />
 
       {/* Red accent glow */}

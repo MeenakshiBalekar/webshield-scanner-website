@@ -6,7 +6,6 @@ import {
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Hero from '../components/Hero'
-import SpineUniverse from '../components/SpineUniverse'
 import TrustLogos from '../components/TrustLogos'
 import Features from '../components/Features'
 import HowItWorks from '../components/HowItWorks'
@@ -257,8 +256,7 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#010812' }}>
-      <SpineUniverse />
+    <div className="min-h-screen">
       {showDemo && <DemoModal onClose={() => setShowDemo(false)} />}
 
       <Navbar banner={<CtaBanner onStartFreeScan={handleStartFreeScan} />} />

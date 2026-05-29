@@ -87,9 +87,7 @@ function PlanCard({ plan, annual, onProClick, checkoutLoading }) {
               : 'border-2 border-navy-900 text-navy-900 hover:bg-navy-900 hover:text-white disabled:opacity-50'
           }`}
         >
-          {checkoutLoading
-            ? <><Loader2 className="w-4 h-4 animate-spin" /> Opening checkout…</>
-            : 'Start Free Trial'}
+          Start Free Trial
         </button>
       )}
 
@@ -136,6 +134,11 @@ export default function PricingPage() {
   const [error, setError]                 = useState(null)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
 
+  const PRICE_IDS = {
+    monthly: 'pri_01kstdc47q3e0q15p2gpxg2aee',
+    annual:  'pri_01kstddrj0gtxc6d4at0x59ma0',
+  }
+
   useEffect(() => {
     getPricing()
       .then((d) => {
@@ -145,26 +148,13 @@ export default function PricingPage() {
       .catch((e) => setError(e.message))
   }, [])
 
-  const handleCheckout = async (annual = false) => {
+  const handleCheckout = (annual = false) => {
     const token = localStorage.getItem('ws_token')
     if (!token) { navigate('/login'); return }
-    setCheckoutLoading(true)
-    setError(null)
-    const res = await fetch(`${API}/api/subscription/checkout`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ annual }),
+    const priceId = annual ? PRICE_IDS.annual : PRICE_IDS.monthly
+    paddle?.Checkout.open({
+      items: [{ priceId }],
     })
-    const data = await res.json()
-    if (res.ok) {
-      window.location.href = data.url
-    } else {
-      alert(data.error ?? 'Checkout failed')
-      setCheckoutLoading(false)
-    }
   }
 
   return (

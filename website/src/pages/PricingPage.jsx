@@ -2,30 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Shield, CheckCircle2, ChevronDown, ChevronUp, Zap, Building, AlertCircle, Loader2 } from 'lucide-react'
 import { getPricing } from '../services/api'
-import { useAuth } from '../context/AuthContext'
 
-/* ── Paddle price IDs ── */
-const PADDLE_PRICE_IDS = {
-  monthly: 'pri_01kssx6snxksz9r1dyej5my2j3',
-  annual:  'pri_01kssx85wfng8c8nj2my9t09pb',
-}
-
-/* ── Load Paddle.js once ── */
-function usePaddle() {
-  useEffect(() => {
-    if (window.Paddle) return
-    const script = document.createElement('script')
-    script.src = 'https://cdn.paddle.com/paddle/v2/paddle.js'
-    script.async = true
-    script.onload = () => {
-      const token = import.meta.env.VITE_PADDLE_CLIENT_TOKEN
-      if (token && window.Paddle) {
-        window.Paddle.Initialize({ token })
-      }
-    }
-    document.head.appendChild(script)
-  }, [])
-}
+const API = import.meta.env.VITE_API_URL ?? ''
 
 /* ── Plan card ── */
 function PlanCard({ plan, annual, onProClick, checkoutLoading }) {
@@ -147,8 +125,6 @@ export default function PricingPage() {
   const [faqs, setFaqs]                   = useState([])
   const [error, setError]                 = useState(null)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
-  const { user } = useAuth()
-  usePaddle()
 
   useEffect(() => {
     getPricing()
@@ -159,31 +135,26 @@ export default function PricingPage() {
       .catch((e) => setError(e.message))
   }, [])
 
-  const handleProClick = () => {
-    if (!window.Paddle) {
-      setError('Payment provider failed to load. Please refresh and try again.')
-      return
-    }
-
-    const priceId = annual ? PADDLE_PRICE_IDS.annual : PADDLE_PRICE_IDS.monthly
-
+  const handleProClick = async () => {
     setCheckoutLoading(true)
+    setError(null)
     try {
-      const checkoutOptions = {
-        items: [{ priceId, quantity: 1 }],
-        settings: {
-          successUrl: `${window.location.origin}/billing/success`,
-        },
+      const res = await fetch(`${API}/api/subscription/checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ annual }),
+      })
+      if (!res.ok) {
+        const text = await res.text()
+        throw new Error(text || `Server error ${res.status}`)
       }
-      // Pre-fill email if already logged in (nicer UX, not required)
-      const email = user?.email
-      if (email) checkoutOptions.customer = { email }
-
-      window.Paddle.Checkout.open(checkoutOptions)
+      const data = await res.json()
+      if (!data.url) throw new Error('No checkout URL returned from server.')
+      window.location.href = data.url
     } catch (err) {
-      setError(err.message || 'Could not open checkout.')
+      setError(err.message || 'Could not start checkout. Please try again.')
+      setCheckoutLoading(false)
     }
-    setCheckoutLoading(false)
   }
 
   return (

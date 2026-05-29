@@ -138,9 +138,10 @@ export default function AgentPage() {
       .catch(() => {})
   }, [])
 
-  const version   = agentInfo?.version   ?? agentInfo?.Version   ?? null
-  const cliUsage  = agentInfo?.usage     ?? agentInfo?.Usage     ?? agentInfo?.cliUsage ?? agentInfo?.CliUsage ?? null
-  const commands  = agentInfo?.commands  ?? agentInfo?.Commands  ?? []
+  const version      = agentInfo?.version          ?? agentInfo?.Version          ?? null
+  const winUrl       = agentInfo?.windowsDownloadUrl ?? agentInfo?.WindowsDownloadUrl ?? `${API}/api/agent/download?platform=win`
+  const linuxUrl     = agentInfo?.linuxDownloadUrl   ?? agentInfo?.LinuxDownloadUrl   ?? `${API}/api/agent/download?platform=linux`
+  const usageExamples = agentInfo?.usageExamples    ?? agentInfo?.UsageExamples    ?? []
 
   return (
     <div className="min-h-screen page-bg flex flex-col">
@@ -179,14 +180,14 @@ export default function AgentPage() {
           {/* Download buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6">
             <a
-              href={`${API}/api/agent/download?platform=win`}
+              href={winUrl}
               className="flex items-center gap-2.5 bg-crimson-500 hover:bg-crimson-600 text-white font-semibold px-6 py-3 rounded-xl text-sm transition-colors w-full sm:w-auto justify-center"
             >
               <Download className="w-4 h-4" />
               Download for Windows (.exe)
             </a>
             <a
-              href={`${API}/api/agent/download?platform=linux`}
+              href={linuxUrl}
               className="flex items-center gap-2.5 bg-white/8 hover:bg-white/15 border border-white/15 text-white font-semibold px-6 py-3 rounded-xl text-sm transition-colors w-full sm:w-auto justify-center"
             >
               <Download className="w-4 h-4" />
@@ -228,23 +229,20 @@ export default function AgentPage() {
           </div>
 
           {/* Live CLI usage from /api/agent/info */}
-          {(cliUsage || commands.length > 0) && (
+          {usageExamples.length > 0 && (
             <div className="mt-6 bg-[#0d1117] border border-white/10 rounded-xl overflow-hidden">
               <div className="flex items-center gap-2 px-4 py-2.5 border-b border-white/10">
                 <Terminal className="w-3.5 h-3.5 text-gray-500" />
                 <span className="text-xs text-gray-400 font-medium">CLI Reference</span>
               </div>
-              <div className="px-4 py-4 font-mono text-sm space-y-2">
-                {cliUsage && (
-                  <pre className="text-gray-300 whitespace-pre-wrap text-xs leading-relaxed">{cliUsage}</pre>
-                )}
-                {commands.map((c, i) => {
-                  const cmd  = c.command ?? c.Command ?? c.cmd ?? c
-                  const desc = c.description ?? c.Description ?? c.desc ?? ''
+              <div className="px-4 py-4 font-mono text-sm space-y-3">
+                {usageExamples.map((ex, i) => {
+                  const cmd  = ex.command     ?? ex.Command     ?? ''
+                  const desc = ex.description ?? ex.Description ?? ''
                   return (
-                    <div key={i} className="flex gap-4">
-                      <span className="text-green-400 shrink-0">{cmd}</span>
-                      {desc && <span className="text-gray-500">{desc}</span>}
+                    <div key={i} className="flex flex-col gap-0.5">
+                      <span className="text-green-400">{cmd}</span>
+                      {desc && <span className="text-gray-500 text-xs font-sans">{desc}</span>}
                     </div>
                   )
                 })}

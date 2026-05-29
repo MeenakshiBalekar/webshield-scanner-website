@@ -129,12 +129,17 @@ export default function CompanyPage() {
     }
   }, [location.state])
 
-  const about   = data?.About ?? data?.about ?? FALLBACK_ABOUT
+  const about   = data?.description ?? data?.Description ?? data?.mission ?? data?.Mission ?? FALLBACK_ABOUT
   const apiVals = data?.Values ?? data?.values ?? []
   const values  = apiVals.length > 0 ? apiVals : null   // null = use fallback
   const team    = data?.Team ?? data?.team ?? []
   const press   = data?.Press ?? data?.press ?? []
   const contact = data?.Contact ?? data?.contact ?? {}
+
+  const founded     = data?.founded     ?? data?.Founded
+  const headquarters= data?.headquarters?? data?.Headquarters
+  const employees   = data?.employees   ?? data?.Employees
+  const stage       = data?.stage       ?? data?.Stage
 
   return (
     <div className="min-h-screen page-bg flex flex-col">
@@ -146,9 +151,17 @@ export default function CompanyPage() {
           <div className="max-w-5xl mx-auto">
             <span className="text-xs font-bold uppercase tracking-widest text-crimson-400 mb-3 block">Company</span>
             <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-4 leading-tight">
-              Building a More Secure Web
+              {data?.name ?? data?.Name ?? 'Building a More Secure Web'}
             </h1>
             <p className="text-gray-400 text-lg leading-relaxed max-w-2xl">{about}</p>
+            {(founded || headquarters || employees || stage) && (
+              <div className="flex flex-wrap gap-3 mt-6">
+                {founded      && <span className="text-xs text-gray-400 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full">Founded {founded}</span>}
+                {headquarters && <span className="text-xs text-gray-400 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full">{headquarters}</span>}
+                {employees    && <span className="text-xs text-gray-400 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full">{employees} employees</span>}
+                {stage        && <span className="text-xs text-gray-400 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full">{stage}</span>}
+              </div>
+            )}
           </div>
         </div>
 

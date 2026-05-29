@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react'
+import { CheckCircle2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { getPricing } from '../services/api'
 
@@ -69,37 +69,16 @@ function PlanCard({ plan, annual, onCtaClick }) {
   )
 }
 
-function FaqItem({ item }) {
-  const [open, setOpen] = useState(false)
-  const q = item.Question ?? item.question ?? ''
-  const a = item.Answer ?? item.answer ?? ''
-  return (
-    <div className="border-b border-gray-200 last:border-0">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between py-4 text-left gap-4"
-      >
-        <span className="text-sm font-semibold text-navy-900">{q}</span>
-        {open ? <ChevronUp className="w-4 h-4 text-gray-400 shrink-0" /> : <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />}
-      </button>
-      {open && <p className="text-sm text-gray-500 pb-4 leading-relaxed">{a}</p>}
-    </div>
-  )
-}
-
 export default function Pricing() {
   const [annual, setAnnual] = useState(true)
   const [plans, setPlans] = useState([])
-  const [faqs, setFaqs] = useState([])
   const navigate = useNavigate()
 
   useEffect(() => {
     getPricing()
       .then((d) => {
-        if (d?.Plans?.length)  setPlans(d.Plans)
-        else if (d?.plans?.length) setPlans(d.plans)
-        if (d?.Faqs?.length)   setFaqs(d.Faqs)
-        else if (d?.faqs?.length)  setFaqs(d.faqs)
+        if (d?.Plans?.length)       setPlans(d.Plans)
+        else if (d?.plans?.length)  setPlans(d.plans)
       })
       .catch(() => {})
   }, [])
@@ -156,14 +135,6 @@ export default function Pricing() {
           All plans include a 30-day free trial. No credit card required to start.
         </p>
 
-        {faqs.length > 0 && (
-          <div className="mt-16 max-w-2xl mx-auto">
-            <h3 className="text-xl font-bold text-navy-900 text-center mb-6">Frequently Asked Questions</h3>
-            <div className="bg-white rounded-2xl border border-gray-200 px-6">
-              {faqs.map((f, i) => <FaqItem key={i} item={f} />)}
-            </div>
-          </div>
-        )}
       </div>
     </section>
   )

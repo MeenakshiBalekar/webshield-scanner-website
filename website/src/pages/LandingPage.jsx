@@ -274,6 +274,7 @@ export default function LandingPage() {
         <KnowledgeHub navigate={navigate} />
         <Pricing />
         <Resources />
+        <FaqSection />
         <CTA />
       </main>
 

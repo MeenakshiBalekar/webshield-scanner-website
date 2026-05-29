@@ -37,6 +37,10 @@ const navLinks = [
     ],
   },
   {
+    label: 'Agent',
+    href: '/agent',
+  },
+  {
     label: 'Resources',
     dropdown: [
       { label: 'Dashboard',     href: '/dashboard' },

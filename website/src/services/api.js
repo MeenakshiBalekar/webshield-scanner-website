@@ -53,6 +53,27 @@ export const getAssets = () => request('/api/scan/assets')
 export const getAllAssets = () => request('/api/asset')
 export const createAsset = (asset) =>
   request('/api/asset', { method: 'POST', body: JSON.stringify(asset) })
+export const updateAsset = (id, asset) =>
+  request(`/api/asset/${id}`, { method: 'PUT', body: JSON.stringify(asset) })
+export const deleteAsset = (id) =>
+  request(`/api/asset/${id}`, { method: 'DELETE' })
+export const scanAsset = (id) =>
+  request(`/api/asset/${id}/scan`, { method: 'POST' })
+export const getAssetHistory = (id) =>
+  request(`/api/asset/${id}/history`)
+export const scanAllAssets = () =>
+  request('/api/asset/scan-all', { method: 'POST' })
+
+// Risk
+export const getRiskScore = (assetId) => request(`/api/risk/score/${assetId}`)
+export const getRiskScores = () => request('/api/risk/scores')
+export const getRiskSla = () => request('/api/risk/sla')
+export const getAttackPath = (assetId) => request(`/api/risk/attack-path/${assetId}`)
+
+// Remediation playbooks
+export const getRemediations = () => request('/api/remediation')
+export const getRemediationPlaybook = (checkName) =>
+  request(`/api/remediation/${encodeURIComponent(checkName)}`)
 
 // Dashboard
 export const getDashboard = () => request('/api/dashboard')

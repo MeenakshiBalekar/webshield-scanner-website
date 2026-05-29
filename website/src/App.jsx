@@ -14,6 +14,8 @@ import SolutionsPage from './pages/SolutionsPage'
 import SolutionDetailPage from './pages/SolutionDetailPage'
 import PricingPage from './pages/PricingPage'
 import BlogPage from './pages/BlogPage'
+import AssetsPage from './pages/AssetsPage'
+import RemediationPage from './pages/RemediationPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -42,6 +44,8 @@ export default function App() {
           <Route path="/products/:type"    element={<PrivateRoute><ProductPage /></PrivateRoute>} />
           <Route path="/scanner/history"   element={<HistoryPage />} />
           <Route path="/schedule"          element={<SchedulePage />} />
+          <Route path="/assets"            element={<AssetsPage />} />
+          <Route path="/remediation"       element={<RemediationPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

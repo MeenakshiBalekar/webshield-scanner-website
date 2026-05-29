@@ -27,11 +27,13 @@ const navLinks = [
   {
     label: 'Resources',
     dropdown: [
-      { label: 'Scan History', href: '/scanner/history' },
-      { label: 'Dashboard',    href: '/dashboard' },
-      { label: 'Schedules',    href: '/schedule' },
-      { label: 'Blog',         href: '/blog' },
-      { label: 'CVE Database', href: '/cve' },
+      { label: 'Scan History',  href: '/scanner/history' },
+      { label: 'Dashboard',     href: '/dashboard' },
+      { label: 'Schedules',     href: '/schedule' },
+      { label: 'Assets',        href: '/assets' },
+      { label: 'Remediation',   href: '/remediation' },
+      { label: 'Blog',          href: '/blog' },
+      { label: 'CVE Database',  href: '/cve' },
     ],
   },
   { label: 'Pricing', href: '/pricing' },

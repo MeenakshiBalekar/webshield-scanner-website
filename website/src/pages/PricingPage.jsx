@@ -32,13 +32,16 @@ function PlanCard({ plan, annual, onProClick, checkoutLoading }) {
   const monthly   = plan.MonthlyPrice ?? plan.monthlyPrice ?? plan.price?.monthly ?? 0
   const annualP   = plan.AnnualPrice  ?? plan.annualPrice  ?? plan.price?.annual  ?? monthly
   const price     = annual ? annualP : monthly
-  const isFree    = price === 0
-  const isCustom  = plan.IsCustom ?? plan.isCustom ?? false
-  const isPro     = !isFree && !isCustom
-  const highlight = plan.IsMostPopular ?? plan.isMostPopular ?? plan.highlight ?? false
-  const features  = plan.Features ?? plan.features ?? []
   const name      = plan.Name ?? plan.name ?? ''
+  const nameLower = name.toLowerCase()
   const desc      = plan.Description ?? plan.description ?? ''
+  const features  = plan.Features ?? plan.features ?? []
+  const highlight = plan.IsMostPopular ?? plan.isMostPopular ?? plan.highlight ?? false
+
+  // Detect plan type by explicit flag first, then name, then price
+  const isCustom  = !!(plan.IsCustom ?? plan.isCustom ?? nameLower.includes('enterprise'))
+  const isPro     = !isCustom && (price > 0 || nameLower.includes('pro') || nameLower.includes('team') || nameLower.includes('business') || nameLower.includes('starter'))
+  const isFree    = !isCustom && !isPro
 
   return (
     <div className={`relative rounded-2xl border-2 bg-white p-8 flex flex-col ${
@@ -82,7 +85,7 @@ function PlanCard({ plan, annual, onProClick, checkoutLoading }) {
       {/* CTA */}
       {isFree ? (
         <Link
-          to="/login"
+          to="/login?redirect=/products/web"
           className="w-full text-center font-semibold py-3 rounded-xl transition-all mb-6 block text-sm border-2 border-navy-900 text-navy-900 hover:bg-navy-900 hover:text-white"
         >
           Start for Free

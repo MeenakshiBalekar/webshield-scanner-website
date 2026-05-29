@@ -1,6 +1,6 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Globe, Server, Cloud, Bot, ArrowRight, Lock, Shield, Zap, CheckCircle2 } from 'lucide-react'
+import { Globe, Server, Cloud, Bot, FileCode2, GitBranch, ArrowRight, Lock, Shield, Zap, CheckCircle2 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
@@ -46,6 +46,32 @@ const SCANNERS = [
     cta: 'Run Cloud Scan',
   },
   {
+    icon: FileCode2,
+    iconColor: 'text-teal-400',
+    iconBg: 'bg-teal-500/10 border-teal-500/20',
+    title: 'Code Security Scanner',
+    description: 'Upload source files or paste snippets. Detects hardcoded secrets, API keys, passwords, and known vulnerability patterns — findings shown with redacted values.',
+    badge: 'Production Ready',
+    badgeColor: 'text-green-400 bg-green-500/10 border-green-500/30',
+    features: ['Drag-and-drop file upload', 'Paste code snippets', 'Secrets detection', 'Redacted finding output'],
+    href: '/scanner/code',
+    requiresAuth: false,
+    cta: 'Scan Code',
+  },
+  {
+    icon: GitBranch,
+    iconColor: 'text-indigo-400',
+    iconBg: 'bg-indigo-500/10 border-indigo-500/20',
+    title: 'CI/CD Integration',
+    description: 'Security gates for GitHub Actions, GitLab CI, CircleCI, Jenkins, and Azure DevOps. Live gate tester, badge previews, and full API reference included.',
+    badge: 'Production Ready',
+    badgeColor: 'text-green-400 bg-green-500/10 border-green-500/30',
+    features: ['5 platform YAML snippets', 'Live gate tester', 'Badge previews', 'API reference'],
+    href: '/scanner/cicd',
+    requiresAuth: false,
+    cta: 'Set Up CI/CD',
+  },
+  {
     icon: Bot,
     iconColor: 'text-gray-500',
     iconBg: 'bg-gray-500/10 border-gray-500/20',
@@ -62,10 +88,10 @@ const SCANNERS = [
 ]
 
 const STATS = [
-  { value: '18', label: 'Host checks', icon: Server },
-  { value: '13', label: 'Cloud controls', icon: Cloud },
-  { value: '50+', label: 'Web checks', icon: Globe },
-  { value: 'CIS', label: 'Benchmark aligned', icon: Shield },
+  { value: '18',  label: 'Host checks',       icon: Server },
+  { value: '13',  label: 'Cloud controls',    icon: Cloud },
+  { value: '50+', label: 'Web checks',        icon: Globe },
+  { value: '5',   label: 'CI/CD platforms',   icon: GitBranch },
 ]
 
 export default function ScannerHubPage() {

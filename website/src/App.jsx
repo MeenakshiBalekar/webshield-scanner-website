@@ -19,6 +19,8 @@ import RemediationPage from './pages/RemediationPage'
 import ScannerHubPage from './pages/ScannerHubPage'
 import HostScanPage from './pages/HostScanPage'
 import CloudScanPage from './pages/CloudScanPage'
+import CodeScanPage from './pages/CodeScanPage'
+import CiCdPage from './pages/CiCdPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -54,6 +56,8 @@ export default function App() {
           <Route path="/scanner"           element={<ScannerHubPage />} />
           <Route path="/scanner/host"      element={<HostScanPage />} />
           <Route path="/scanner/cloud"     element={<CloudScanPage />} />
+          <Route path="/scanner/code"      element={<CodeScanPage />} />
+          <Route path="/scanner/cicd"      element={<CiCdPage />} />
 
           {/* Fleet & Remediation — new */}
           <Route path="/assets"            element={<AssetsPage />} />

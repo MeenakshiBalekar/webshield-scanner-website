@@ -119,6 +119,27 @@ export const startCloudScanAws = (payload) =>
   request('/api/cloudscan/aws', { method: 'POST', body: JSON.stringify(payload) })
 export const getCloudChecksAws = () => request('/api/cloudscan/checks/aws')
 
+// Code scan
+export const scanCodeFiles = (formData) => {
+  const token = localStorage.getItem('ws_token')
+  const headers = token ? { Authorization: `Bearer ${token}` } : {}
+  return fetch(`${BASE}/api/codescan`, { method: 'POST', headers, body: formData })
+    .then(async (res) => {
+      if (!res.ok) {
+        let msg = `HTTP ${res.status}`
+        try { const b = await res.json(); msg = b.error || b.message || msg } catch {}
+        throw new Error(msg)
+      }
+      return res.json()
+    })
+}
+export const scanCodeText = (payload) =>
+  request('/api/codescan', { method: 'POST', body: JSON.stringify(payload) })
+
+// CI/CD
+export const testCicdGate = (payload) =>
+  request('/api/cicd/gate', { method: 'POST', body: JSON.stringify(payload) })
+
 // Schedules
 export const getSchedules = () => request('/api/schedule')
 export const createSchedule = (data) =>

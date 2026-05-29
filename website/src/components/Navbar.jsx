@@ -30,6 +30,8 @@ const navLinks = [
       { label: 'Web Scanner',   tab: 'web' },
       { label: 'Host Scanner',  href: '/scanner/host' },
       { label: 'Cloud Scanner', href: '/scanner/cloud' },
+      { label: 'Code Scanner',  href: '/scanner/code' },
+      { label: 'CI/CD Setup',   href: '/scanner/cicd' },
       { label: 'All Scanners',  href: '/scanner' },
     ],
   },

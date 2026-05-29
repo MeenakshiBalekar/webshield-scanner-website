@@ -158,7 +158,8 @@ export default function PricingPage() {
   }, [])
 
   const handleProClick = () => {
-    if (!user) {
+    const isLoggedIn = !!user || !!localStorage.getItem('ws_token')
+    if (!isLoggedIn) {
       navigate(`/login?redirect=${encodeURIComponent('/pricing')}`)
       return
     }

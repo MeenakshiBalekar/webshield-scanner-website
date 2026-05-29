@@ -109,6 +109,16 @@ export const downloadReportPdf = (payload) =>
 export const emailReport = (payload) =>
   request('/api/report/email', { method: 'POST', body: JSON.stringify(payload) })
 
+// Host scan
+export const startHostScan = (payload) =>
+  request('/api/hostscan', { method: 'POST', body: JSON.stringify(payload) })
+export const getHostChecks = () => request('/api/hostscan/checks')
+
+// Cloud scan
+export const startCloudScanAws = (payload) =>
+  request('/api/cloudscan/aws', { method: 'POST', body: JSON.stringify(payload) })
+export const getCloudChecksAws = () => request('/api/cloudscan/checks/aws')
+
 // Schedules
 export const getSchedules = () => request('/api/schedule')
 export const createSchedule = (data) =>

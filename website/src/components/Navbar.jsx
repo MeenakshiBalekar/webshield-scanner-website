@@ -27,6 +27,7 @@ const navLinks = [
   {
     label: 'Resources',
     dropdown: [
+      { label: 'Scanner Hub',   href: '/scanner' },
       { label: 'Scan History',  href: '/scanner/history' },
       { label: 'Dashboard',     href: '/dashboard' },
       { label: 'Schedules',     href: '/schedule' },

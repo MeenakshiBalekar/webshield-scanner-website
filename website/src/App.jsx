@@ -16,6 +16,9 @@ import PricingPage from './pages/PricingPage'
 import BlogPage from './pages/BlogPage'
 import AssetsPage from './pages/AssetsPage'
 import RemediationPage from './pages/RemediationPage'
+import ScannerHubPage from './pages/ScannerHubPage'
+import HostScanPage from './pages/HostScanPage'
+import CloudScanPage from './pages/CloudScanPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -46,6 +49,9 @@ export default function App() {
           <Route path="/schedule"          element={<SchedulePage />} />
           <Route path="/assets"            element={<AssetsPage />} />
           <Route path="/remediation"       element={<RemediationPage />} />
+          <Route path="/scanner"           element={<ScannerHubPage />} />
+          <Route path="/scanner/host"      element={<HostScanPage />} />
+          <Route path="/scanner/cloud"     element={<CloudScanPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

@@ -14,6 +14,16 @@ import SolutionsPage from './pages/SolutionsPage'
 import SolutionDetailPage from './pages/SolutionDetailPage'
 import PricingPage from './pages/PricingPage'
 import BlogPage from './pages/BlogPage'
+import AssetsPage from './pages/AssetsPage'
+import RemediationPage from './pages/RemediationPage'
+import BillingPage from './pages/BillingPage'
+import CheckoutSuccessPage from './pages/CheckoutSuccessPage'
+import ScannerHubPage from './pages/ScannerHubPage'
+import NetworkScanPage from './pages/NetworkScanPage'
+import HostScanPage from './pages/HostScanPage'
+import CloudScanPage from './pages/CloudScanPage'
+import CodeScanPage from './pages/CodeScanPage'
+import CiCdPage from './pages/CiCdPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -36,12 +46,30 @@ export default function App() {
           <Route path="/blog"              element={<BlogPage />} />
           <Route path="/cve"               element={<CveDatabasePage />} />
 
-          {/* App */}
+          {/* Auth */}
           <Route path="/login"             element={<Login />} />
+
+          {/* App */}
           <Route path="/dashboard"         element={<DashboardPage />} />
           <Route path="/products/:type"    element={<PrivateRoute><ProductPage /></PrivateRoute>} />
           <Route path="/scanner/history"   element={<HistoryPage />} />
           <Route path="/schedule"          element={<SchedulePage />} />
+
+          {/* Scanners — new */}
+          <Route path="/scanner"           element={<ScannerHubPage />} />
+          <Route path="/scanner/network"   element={<NetworkScanPage />} />
+          <Route path="/scanner/host"      element={<HostScanPage />} />
+          <Route path="/scanner/cloud"     element={<CloudScanPage />} />
+          <Route path="/scanner/code"      element={<CodeScanPage />} />
+          <Route path="/scanner/cicd"      element={<CiCdPage />} />
+
+          {/* Fleet & Remediation — new */}
+          <Route path="/assets"            element={<AssetsPage />} />
+          <Route path="/remediation"       element={<RemediationPage />} />
+
+          {/* Billing */}
+          <Route path="/billing"           element={<BillingPage />} />
+          <Route path="/billing/success"   element={<CheckoutSuccessPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

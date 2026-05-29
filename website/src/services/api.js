@@ -53,6 +53,27 @@ export const getAssets = () => request('/api/scan/assets')
 export const getAllAssets = () => request('/api/asset')
 export const createAsset = (asset) =>
   request('/api/asset', { method: 'POST', body: JSON.stringify(asset) })
+export const updateAsset = (id, asset) =>
+  request(`/api/asset/${id}`, { method: 'PUT', body: JSON.stringify(asset) })
+export const deleteAsset = (id) =>
+  request(`/api/asset/${id}`, { method: 'DELETE' })
+export const scanAsset = (id) =>
+  request(`/api/asset/${id}/scan`, { method: 'POST' })
+export const getAssetHistory = (id) =>
+  request(`/api/asset/${id}/history`)
+export const scanAllAssets = () =>
+  request('/api/asset/scan-all', { method: 'POST' })
+
+// Risk
+export const getRiskScore = (assetId) => request(`/api/risk/score/${assetId}`)
+export const getRiskScores = () => request('/api/risk/scores')
+export const getRiskSla = () => request('/api/risk/sla')
+export const getAttackPath = (assetId) => request(`/api/risk/attack-path/${assetId}`)
+
+// Remediation playbooks
+export const getRemediations = () => request('/api/remediation')
+export const getRemediationPlaybook = (checkName) =>
+  request(`/api/remediation/${encodeURIComponent(checkName)}`)
 
 // Dashboard
 export const getDashboard = () => request('/api/dashboard')
@@ -75,6 +96,11 @@ export const getSolution = (type) => request(`/api/solutions/${type}`)
 // Pricing
 export const getPricing = () => request('/api/pricing')
 
+// Billing
+export const getSubscription    = () => request('/api/billing/subscription')
+export const getBillingPortalUrl = () => request('/api/billing/portal', { method: 'POST', body: JSON.stringify({}) })
+export const getInvoices        = () => request('/api/billing/invoices')
+
 // Company
 export const getCompany = () => request('/api/company')
 export const getFaq = () => request('/api/company/faq')
@@ -87,6 +113,41 @@ export const downloadReportPdf = (payload) =>
 
 export const emailReport = (payload) =>
   request('/api/report/email', { method: 'POST', body: JSON.stringify(payload) })
+
+// Network / port scan
+export const startNetworkScan = (payload) =>
+  request('/api/networkscan', { method: 'POST', body: JSON.stringify(payload) })
+
+// Host scan
+export const startHostScan = (payload) =>
+  request('/api/hostscan', { method: 'POST', body: JSON.stringify(payload) })
+export const getHostChecks = () => request('/api/hostscan/checks')
+
+// Cloud scan
+export const startCloudScanAws = (payload) =>
+  request('/api/cloudscan/aws', { method: 'POST', body: JSON.stringify(payload) })
+export const getCloudChecksAws = () => request('/api/cloudscan/checks/aws')
+
+// Code scan
+export const scanCodeFiles = (formData) => {
+  const token = localStorage.getItem('ws_token')
+  const headers = token ? { Authorization: `Bearer ${token}` } : {}
+  return fetch(`${BASE}/api/codescan`, { method: 'POST', headers, body: formData })
+    .then(async (res) => {
+      if (!res.ok) {
+        let msg = `HTTP ${res.status}`
+        try { const b = await res.json(); msg = b.error || b.message || msg } catch {}
+        throw new Error(msg)
+      }
+      return res.json()
+    })
+}
+export const scanCodeText = (payload) =>
+  request('/api/codescan', { method: 'POST', body: JSON.stringify(payload) })
+
+// CI/CD
+export const testCicdGate = (payload) =>
+  request('/api/cicd/gate', { method: 'POST', body: JSON.stringify(payload) })
 
 // Schedules
 export const getSchedules = () => request('/api/schedule')

@@ -4,6 +4,8 @@ import { Shield, LogOut, Loader2, AlertCircle, CheckCircle, XCircle, ScanLine } 
 import axios from 'axios'
 import { useAuth } from '../context/AuthContext'
 
+const API = import.meta.env.VITE_API_URL ?? ''
+
 const PRODUCTS = [
   { id: 'web',   label: 'Web Vulnerability Scanner', endpoint: '/scan/headers' },
   { id: 'api',   label: 'API Security',              endpoint: '/products/api-security' },
@@ -55,7 +57,7 @@ export default function Dashboard() {
     setResult(null)
     const product = PRODUCTS.find((p) => p.id === activeTab)
     try {
-      const { data } = await axios.post(`/api${product.endpoint}`, { url: url.trim() })
+      const { data } = await axios.post(`${API}/api${product.endpoint}`, { url: url.trim() })
       setResult(data)
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Scan failed')

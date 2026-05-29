@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { Shield, CheckCircle2, ChevronDown, ChevronUp, Zap, Building, AlertCircle, Loader2 } from 'lucide-react'
 import { getPricing } from '../services/api'
 import { useAuth } from '../context/AuthContext'
@@ -145,7 +145,6 @@ export default function PricingPage() {
   const [error, setError]                 = useState(null)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
   const { user } = useAuth()
-  const navigate = useNavigate()
   usePaddle()
 
   useEffect(() => {
@@ -158,29 +157,26 @@ export default function PricingPage() {
   }, [])
 
   const handleProClick = () => {
-    const isLoggedIn = !!user || !!localStorage.getItem('ws_token')
-    if (!isLoggedIn) {
-      navigate(`/login?redirect=${encodeURIComponent('/pricing')}`)
-      return
-    }
-
-    const priceId = annual ? PADDLE_PRICE_IDS.annual : PADDLE_PRICE_IDS.monthly
-
     if (!window.Paddle) {
       setError('Payment provider failed to load. Please refresh and try again.')
       return
     }
 
+    const priceId = annual ? PADDLE_PRICE_IDS.annual : PADDLE_PRICE_IDS.monthly
+
     setCheckoutLoading(true)
     try {
-      window.Paddle.Checkout.open({
+      const checkoutOptions = {
         items: [{ priceId, quantity: 1 }],
-        customer: { email: user.email },
         settings: {
           successUrl: `${window.location.origin}/billing/success`,
-          allowLogout: false,
         },
-      })
+      }
+      // Pre-fill email if already logged in (nicer UX, not required)
+      const email = user?.email
+      if (email) checkoutOptions.customer = { email }
+
+      window.Paddle.Checkout.open(checkoutOptions)
     } catch (err) {
       setError(err.message || 'Could not open checkout.')
     }

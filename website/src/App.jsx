@@ -41,17 +41,23 @@ export default function App() {
           <Route path="/blog"              element={<BlogPage />} />
           <Route path="/cve"               element={<CveDatabasePage />} />
 
-          {/* App */}
+          {/* Auth */}
           <Route path="/login"             element={<Login />} />
+
+          {/* App */}
           <Route path="/dashboard"         element={<DashboardPage />} />
           <Route path="/products/:type"    element={<PrivateRoute><ProductPage /></PrivateRoute>} />
           <Route path="/scanner/history"   element={<HistoryPage />} />
           <Route path="/schedule"          element={<SchedulePage />} />
-          <Route path="/assets"            element={<AssetsPage />} />
-          <Route path="/remediation"       element={<RemediationPage />} />
+
+          {/* Scanners — new */}
           <Route path="/scanner"           element={<ScannerHubPage />} />
           <Route path="/scanner/host"      element={<HostScanPage />} />
           <Route path="/scanner/cloud"     element={<CloudScanPage />} />
+
+          {/* Fleet & Remediation — new */}
+          <Route path="/assets"            element={<AssetsPage />} />
+          <Route path="/remediation"       element={<RemediationPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

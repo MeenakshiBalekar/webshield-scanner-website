@@ -25,14 +25,22 @@ const navLinks = [
     ],
   },
   {
+    label: 'Scanners',
+    dropdown: [
+      { label: 'Web Scanner',   tab: 'web' },
+      { label: 'Host Scanner',  href: '/scanner/host' },
+      { label: 'Cloud Scanner', href: '/scanner/cloud' },
+      { label: 'All Scanners',  href: '/scanner' },
+    ],
+  },
+  {
     label: 'Resources',
     dropdown: [
-      { label: 'Scanner Hub',   href: '/scanner' },
-      { label: 'Scan History',  href: '/scanner/history' },
       { label: 'Dashboard',     href: '/dashboard' },
-      { label: 'Schedules',     href: '/schedule' },
       { label: 'Assets',        href: '/assets' },
       { label: 'Remediation',   href: '/remediation' },
+      { label: 'Scan History',  href: '/scanner/history' },
+      { label: 'Schedules',     href: '/schedule' },
       { label: 'Blog',          href: '/blog' },
       { label: 'CVE Database',  href: '/cve' },
     ],

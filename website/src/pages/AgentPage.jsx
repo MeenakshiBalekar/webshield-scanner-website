@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 
 const API = import.meta.env.VITE_API_URL ?? ''
+const BACKEND = API || 'https://webshield-backend-api.onrender.com'
 
 const FEATURES = [
   {
@@ -132,15 +133,15 @@ export default function AgentPage() {
   const [agentInfo, setAgentInfo] = useState(null)
 
   useEffect(() => {
-    fetch(`${API}/api/agent/info`)
+    fetch(`${BACKEND}/api/agent/info`)
       .then((r) => r.ok ? r.json() : null)
       .then((d) => d && setAgentInfo(d))
       .catch(() => {})
   }, [])
 
   const version      = agentInfo?.version          ?? agentInfo?.Version          ?? null
-  const winUrl       = agentInfo?.windowsDownloadUrl ?? agentInfo?.WindowsDownloadUrl ?? `${API}/api/agent/download?platform=win`
-  const linuxUrl     = agentInfo?.linuxDownloadUrl   ?? agentInfo?.LinuxDownloadUrl   ?? `${API}/api/agent/download?platform=linux`
+  const winUrl       = agentInfo?.windowsDownloadUrl ?? agentInfo?.WindowsDownloadUrl ?? `${BACKEND}/api/agent/download?platform=win`
+  const linuxUrl     = agentInfo?.linuxDownloadUrl   ?? agentInfo?.LinuxDownloadUrl   ?? `${BACKEND}/api/agent/download?platform=linux`
   const usageExamples = agentInfo?.usageExamples    ?? agentInfo?.UsageExamples    ?? []
 
   return (

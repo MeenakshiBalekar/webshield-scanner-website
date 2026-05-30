@@ -194,8 +194,8 @@ function TasksTab() {
     setError(null)
     try {
       const [sumRes, tasksRes] = await Promise.all([
-        fetch(`${BACKEND}/api/remediation/tasks/summary`, { headers: authHeaders() }),
-        fetch(`${BACKEND}/api/remediation/tasks`,         { headers: authHeaders() }),
+        fetch(`${BACKEND}/api/remediationtasks/summary`, { headers: authHeaders() }),
+        fetch(`${BACKEND}/api/remediationtasks`,         { headers: authHeaders() }),
       ])
       if (sumRes.ok) setSummary(await sumRes.json())
       setLoadingSum(false)
@@ -212,7 +212,7 @@ function TasksTab() {
   useEffect(() => { fetchAll() }, [fetchAll])
 
   const patchTask = async (id, action) => {
-    const res = await fetch(`${BACKEND}/api/remediation/tasks/${id}/${action}`, {
+    const res = await fetch(`${BACKEND}/api/remediationtasks/${id}/${action}`, {
       method: 'PATCH',
       headers: authHeaders(),
     })

@@ -61,22 +61,22 @@ export default function Footer() {
               </span>
             </a>
             <p className="text-sm leading-relaxed mb-5 max-w-xs">
-              Enterprise-grade web vulnerability scanning that finds real threats before attackers do.
+              Continuous security intelligence — scan, monitor, and remediate across your entire web estate.
             </p>
 
             {/* Contact */}
             <div className="space-y-2 text-xs mb-6">
               <div className="flex items-center gap-2">
                 <Mail className="w-3.5 h-3.5 text-crimson-500" />
-                <span>security@webshield.io</span>
+                <span>hello@webshield.io</span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="w-3.5 h-3.5 text-crimson-500" />
-                <span>+1 (800) 555-SCAN</span>
+                <span>+91 98606 46298</span>
               </div>
               <div className="flex items-center gap-2">
                 <MapPin className="w-3.5 h-3.5 text-crimson-500" />
-                <span>San Francisco, CA</span>
+                <span>Gurgaon, India</span>
               </div>
             </div>
 

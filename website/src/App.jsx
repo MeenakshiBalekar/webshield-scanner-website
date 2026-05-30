@@ -26,6 +26,8 @@ import CodeScanPage from './pages/CodeScanPage'
 import CiCdPage from './pages/CiCdPage'
 import AgentPage from './pages/AgentPage'
 import AutoScanPage from './pages/AutoScanPage'
+import RemediationTasksPage from './pages/RemediationTasksPage'
+import ServerMonitorPage from './pages/ServerMonitorPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -48,7 +50,9 @@ export default function App() {
           <Route path="/blog"              element={<BlogPage />} />
           <Route path="/cve"               element={<CveDatabasePage />} />
           <Route path="/agent"             element={<AgentPage />} />
-          <Route path="/autoscan"          element={<AutoScanPage />} />
+          <Route path="/autoscan"            element={<AutoScanPage />} />
+          <Route path="/remediation-tasks"  element={<RemediationTasksPage />} />
+          <Route path="/servermonitor"      element={<ServerMonitorPage />} />
 
           {/* Auth */}
           <Route path="/login"             element={<Login />} />

@@ -67,18 +67,21 @@ function RegistrationCard({ result, onClose }) {
         </div>
       )}
 
-      {instructions && (
+      {agentKey && (
         <div>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            <Terminal className="w-3.5 h-3.5" /> Setup Instructions
+            <Terminal className="w-3.5 h-3.5" /> Run the Agent
           </p>
           <div className="bg-[#0d1117] border border-white/10 rounded-xl overflow-hidden">
             <div className="flex items-center justify-between px-3 py-2 border-b border-white/10">
               <span className="text-xs text-gray-500">Shell</span>
-              <CopyBtn text={instructions} />
+              <CopyBtn text={`webshield-agent --mode monitor --key ${agentKey}`} />
             </div>
-            <pre className="px-3 py-3 text-xs text-gray-300 font-mono whitespace-pre-wrap leading-relaxed overflow-x-auto">{instructions}</pre>
+            <pre className="px-3 py-3 text-xs text-gray-300 font-mono whitespace-pre-wrap leading-relaxed overflow-x-auto">{`webshield-agent --mode monitor --key ${agentKey}`}</pre>
           </div>
+          {instructions && (
+            <p className="text-xs text-gray-500 mt-3 leading-relaxed">{instructions}</p>
+          )}
         </div>
       )}
     </div>

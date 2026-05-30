@@ -39,8 +39,10 @@ const navLinks = [
   {
     label: 'Agent',
     dropdown: [
-      { label: 'WebShield Agent', href: '/agent' },
-      { label: 'Auto Scan',       href: '/autoscan' },
+      { label: 'WebShield Agent',   href: '/agent' },
+      { label: 'Auto Scan',         href: '/autoscan' },
+      { label: 'Remediation Tasks', href: '/remediation-tasks' },
+      { label: 'Server Monitor',    href: '/servermonitor' },
     ],
   },
   {

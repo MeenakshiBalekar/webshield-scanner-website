@@ -16,6 +16,36 @@ const FALLBACK_VALUES = [
   { icon: Globe, title: 'Privacy by Design',      desc: "Scan data is yours. We handle it with the same care we'd expect from any security partner." },
 ]
 
+/* ──────────────── Member Card ──────────────── */
+function MemberCard({ member }) {
+  const [photoFailed, setPhotoFailed] = useState(false)
+  const showPhoto = member.photoUrl && !photoFailed
+  const name     = member.Name ?? member.name ?? ''
+  const role     = member.Role ?? member.role ?? member.Title ?? member.title ?? ''
+  const bio      = member.Bio  ?? member.bio  ?? ''
+  const photoUrl = member.photoUrl ?? member.PhotoUrl ?? member.photo ?? member.Photo ?? null
+  const initials = name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+  return (
+    <div className="bg-slate-800 border border-slate-700 rounded-xl p-8 text-center w-full max-w-sm mx-auto">
+      {(showPhoto || photoUrl) ? (
+        <img
+          src={photoUrl}
+          alt={name}
+          className="w-24 h-24 rounded-full object-cover object-top mx-auto mb-5 border-2 border-crimson-500"
+          onError={() => setPhotoFailed(true)}
+        />
+      ) : (
+        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-crimson-600 to-crimson-900 flex items-center justify-center mx-auto mb-5 text-2xl font-bold text-white">
+          {initials}
+        </div>
+      )}
+      <h3 className="text-white font-semibold text-lg">{name}</h3>
+      <p className="text-crimson-400 text-sm font-medium mb-3">{role}</p>
+      {bio && <p className="text-slate-400 text-sm leading-relaxed">{bio}</p>}
+    </div>
+  )
+}
+
 /* ──────────────── Contact Form ──────────────── */
 function ContactForm() {
   const [form, setForm] = useState({ name: '', email: '', company: '', subject: '', message: '' })
@@ -214,24 +244,9 @@ export default function CompanyPage() {
                 <Users className="w-5 h-5 text-crimson-400" /> Team
               </h2>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {team.map((m, i) => {
-                  const name     = m.Name ?? m.name ?? ''
-                  const role     = m.Role ?? m.role ?? m.Title ?? m.title ?? ''
-                  const bio      = m.Bio ?? m.bio ?? ''
-                  const initials = name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
-                  return (
-                    <div key={i} className="bg-white/3 border border-white/10 rounded-2xl p-5 flex items-start gap-4">
-                      <div className="w-10 h-10 bg-crimson-500/20 border border-crimson-500/30 rounded-full flex items-center justify-center shrink-0">
-                        <span className="text-sm font-bold text-crimson-400">{initials}</span>
-                      </div>
-                      <div>
-                        <p className="text-white font-semibold">{name}</p>
-                        <p className="text-xs text-gray-400 mb-1">{role}</p>
-                        {bio && <p className="text-xs text-gray-500">{bio}</p>}
-                      </div>
-                    </div>
-                  )
-                })}
+                {team.map((member) => (
+                  <MemberCard key={member.Name ?? member.name} member={member} />
+                ))}
               </div>
             </section>
           )}

@@ -184,9 +184,11 @@ function ResultRow({ item }) {
 
   // Support both new backend fields (item.impact / item.consequence)
   // and legacy remediation endpoint response
-  const impact = item.impact || item.riskDescription || extra?.impact || extra?.riskDescription
-  const consequence = item.consequence || item.ifNotFixed || extra?.consequence || extra?.ifNotFixed
-  const fix = item.recommendation || item.remediation || extra?.recommendation || extra?.fix
+  const impact        = item.impact         || item.riskDescription  || extra?.impact        || extra?.riskDescription
+  const consequence   = item.consequence    || item.ifNotFixed       || extra?.consequence   || extra?.ifNotFixed
+  const fix           = item.recommendation || item.remediation      || extra?.recommendation || extra?.fix
+  const attackScenario = item.attackScenario || item.AttackScenario  || extra?.attackScenario || null
+  const fixSteps       = item.fixSteps      || item.FixSteps         || extra?.fixSteps      || null
 
   return (
     <div className="border-b border-white/5 last:border-0">
@@ -252,7 +254,30 @@ function ResultRow({ item }) {
               <p className="text-xs text-gray-300 leading-relaxed">{fix}</p>
             </div>
           )}
-          {!impact && !consequence && !fix && !item.details && !loadingExtra && (
+          {attackScenario && (
+            <div className="bg-[#0d1117] border border-white/10 rounded-lg px-3 py-2.5">
+              <p className="text-xs font-semibold text-purple-400 mb-1.5">How an attacker exploits this</p>
+              <p className="text-xs font-mono text-gray-300 leading-relaxed whitespace-pre-wrap">{attackScenario}</p>
+            </div>
+          )}
+          {fixSteps && (
+            <div className="bg-green-500/5 border border-green-500/15 rounded-lg px-3 py-2.5">
+              <p className="text-xs font-semibold text-green-400 mb-2">How to fix — step by step</p>
+              {Array.isArray(fixSteps) ? (
+                <ol className="space-y-1.5 list-none">
+                  {fixSteps.map((step, i) => (
+                    <li key={i} className="flex items-start gap-2 text-xs text-gray-300 leading-relaxed">
+                      <span className="shrink-0 w-4 h-4 rounded-full bg-green-500/20 text-green-400 text-[10px] font-bold flex items-center justify-center mt-0.5">{i + 1}</span>
+                      <span>{step}</span>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="text-xs text-gray-300 leading-relaxed whitespace-pre-wrap">{fixSteps}</p>
+              )}
+            </div>
+          )}
+          {!impact && !consequence && !fix && !attackScenario && !fixSteps && !item.details && !loadingExtra && (
             <p className="text-xs text-gray-500 italic">No additional details available.</p>
           )}
         </div>

@@ -1,15 +1,131 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
   Shield, LogOut, ScanLine, Loader2, AlertCircle,
   CheckCircle, XCircle, ChevronDown, ChevronUp,
   LayoutDashboard, FileText, Download, Mail, Send, ArrowRight,
+  TrendingUp, TrendingDown, Clock, Wifi, Cpu, Globe, Lock,
+  PlusCircle, MinusCircle, Zap,
 } from 'lucide-react'
 import axios from 'axios'
 import { useAuth } from '../context/AuthContext'
 
 const API = import.meta.env.VITE_API_URL ?? ''
-import { getRemediation, downloadReportPdf, emailReport } from '../services/api'
+const BACKEND = API || 'https://webshield-backend-api.onrender.com'
+import { getRemediation, downloadReportPdf, emailReport, createSchedule } from '../services/api'
+
+function authHeaders() {
+  const token = localStorage.getItem('ws_token')
+  return { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+}
+
+/* ── Trend sparkline ── */
+function Sparkline({ points }) {
+  if (!points || points.length < 2) return null
+  const vals = points.map((p) => Number(p.score ?? p.Score ?? p.value ?? p.Value ?? p) || 0)
+  const min = Math.min(...vals)
+  const max = Math.max(...vals)
+  const range = max - min || 1
+  const W = 80, H = 28, pad = 2
+  const xs = vals.map((_, i) => pad + (i / (vals.length - 1)) * (W - pad * 2))
+  const ys = vals.map((v) => H - pad - ((v - min) / range) * (H - pad * 2))
+  const d = xs.map((x, i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ')
+  const last = vals[vals.length - 1]
+  const prev = vals[vals.length - 2]
+  const up = last >= prev
+  return (
+    <svg width={W} height={H} className="inline-block align-middle ml-1">
+      <polyline points={xs.map((x, i) => `${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ')}
+        fill="none" stroke={up ? '#4ade80' : '#f87171'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={xs[xs.length - 1].toFixed(1)} cy={ys[ys.length - 1].toFixed(1)} r="2.5"
+        fill={up ? '#4ade80' : '#f87171'} />
+    </svg>
+  )
+}
+
+/* ── Infrastructure card ── */
+function InfrastructureCard({ profile }) {
+  if (!profile) return null
+  const waf         = profile.waf         ?? profile.Waf         ?? profile.WAF
+  const cdn         = profile.cdn         ?? profile.Cdn         ?? profile.CDN
+  const runtime     = profile.runtime     ?? profile.Runtime     ?? null
+  const httpVersion = profile.httpVersion ?? profile.HttpVersion ?? profile.http ?? null
+  const compression = profile.compression ?? profile.Compression ?? null
+  const tlsVersion  = profile.tlsVersion  ?? profile.TlsVersion  ?? null
+
+  const boolLabel = (v) => {
+    if (v === null || v === undefined) return null
+    if (typeof v === 'boolean') return v ? '✓' : '✗'
+    return String(v)
+  }
+  const boolColor = (v) => {
+    if (typeof v === 'boolean') return v ? 'text-green-400' : 'text-red-400'
+    return 'text-gray-300'
+  }
+
+  const items = [
+    { icon: Lock,  label: 'WAF',         value: boolLabel(waf),         color: boolColor(waf) },
+    { icon: Globe, label: 'CDN',         value: boolLabel(cdn),         color: boolColor(cdn) },
+    { icon: Cpu,   label: 'Runtime',     value: runtime,                color: 'text-gray-300' },
+    { icon: Wifi,  label: 'HTTP',        value: httpVersion,            color: 'text-gray-300' },
+    { icon: Zap,   label: 'Compression', value: boolLabel(compression), color: boolColor(compression) },
+    { icon: Lock,  label: 'TLS',         value: tlsVersion,             color: 'text-gray-300' },
+  ].filter((i) => i.value !== null && i.value !== undefined && i.value !== '')
+
+  if (!items.length) return null
+
+  return (
+    <div className="bg-white/3 border border-white/10 rounded-2xl px-4 py-3 mb-4">
+      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-3">Infrastructure Profile</p>
+      <div className="flex flex-wrap gap-x-6 gap-y-2">
+        {items.map(({ icon: Icon, label, value, color }) => (
+          <div key={label} className="flex items-center gap-1.5">
+            <Icon className="w-3.5 h-3.5 text-gray-600 shrink-0" />
+            <span className="text-xs text-gray-500">{label}:</span>
+            <span className={`text-xs font-semibold ${color}`}>{value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* ── Change alerts ── */
+function ChangeAlerts({ result }) {
+  const resolved = result?.resolvedSince   ?? result?.ResolvedSince   ??
+                   result?.resolvedCount   ?? result?.ResolvedCount   ?? null
+  const added    = result?.newIssueCount   ?? result?.NewIssueCount   ??
+                   result?.newIssues       ?? result?.NewIssues       ?? null
+  const changes  = result?.changesFromLastScan ?? result?.ChangesFromLastScan ?? null
+
+  // Parse from changesFromLastScan object if top-level fields absent
+  const resolvedFinal = resolved ?? changes?.resolved ?? changes?.Resolved ?? null
+  const addedFinal    = added    ?? changes?.added    ?? changes?.Added    ?? null
+
+  if (resolvedFinal === null && addedFinal === null) return null
+
+  return (
+    <div className="flex flex-wrap gap-2 mb-4">
+      {addedFinal > 0 && (
+        <div className="flex items-center gap-1.5 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl px-3 py-2 text-xs font-semibold">
+          <PlusCircle className="w-3.5 h-3.5 shrink-0" />
+          {addedFinal} new issue{addedFinal !== 1 ? 's' : ''} detected
+        </div>
+      )}
+      {resolvedFinal > 0 && (
+        <div className="flex items-center gap-1.5 bg-green-500/10 border border-green-500/20 text-green-400 rounded-xl px-3 py-2 text-xs font-semibold">
+          <MinusCircle className="w-3.5 h-3.5 shrink-0" />
+          {resolvedFinal} issue{resolvedFinal !== 1 ? 's' : ''} resolved since last scan
+        </div>
+      )}
+      {addedFinal === 0 && resolvedFinal === 0 && (
+        <div className="flex items-center gap-1.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-xl px-3 py-2 text-xs font-semibold">
+          <CheckCircle className="w-3.5 h-3.5 shrink-0" /> No changes since last scan
+        </div>
+      )}
+    </div>
+  )
+}
 
 const PRODUCTS = {
   web: {
@@ -259,6 +375,9 @@ export default function ProductPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [result, setResult] = useState(null)
+  const [trend, setTrend] = useState([])
+  const [scheduling, setScheduling] = useState(false)
+  const [scheduled, setScheduled] = useState(false)
 
   if (!product) {
     return (
@@ -279,13 +398,29 @@ export default function ProductPage() {
     setLoading(true)
     setError(null)
     setResult(null)
+    setTrend([])
+    setScheduled(false)
     try {
       const { data } = await axios.post(`${API}/api${product.endpoint}`, { url: url.trim() })
       setResult(data)
+      // Fetch trend in background — don't block on failure
+      fetch(`${BACKEND}/api/scan/trend?url=${encodeURIComponent(url.trim())}`, { headers: authHeaders() })
+        .then((r) => r.ok ? r.json() : null)
+        .then((d) => { if (d) setTrend(Array.isArray(d) ? d : d?.scores ?? d?.trend ?? d?.data ?? []) })
+        .catch(() => {})
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Scan failed. Check the URL and try again.')
     }
     setLoading(false)
+  }
+
+  const handleSchedule = async () => {
+    setScheduling(true)
+    try {
+      await createSchedule({ targetUrl: url.trim(), intervalHours: 24, enabled: true })
+      setScheduled(true)
+    } catch { /* silently ignore — non-critical */ }
+    setScheduling(false)
   }
 
   const results = result?.results || result?.checks || result?.findings || []
@@ -300,6 +435,13 @@ export default function ProductPage() {
   const confidence = result?.hostingConfidence ?? result?.HostingConfidence ?? null
   const edge       = result?.edgePlatform      ?? result?.EdgePlatform      ?? null
   const serverHdr  = result?.rawServerHeader   ?? result?.RawServerHeader   ?? null
+
+  const infraProfile = result?.infrastructureProfile ?? result?.InfrastructureProfile ?? null
+
+  const scoreDelta = result?.scoreDelta ?? result?.ScoreDelta
+    ?? (result?.previousScore != null && result?.securityScore != null
+        ? result.securityScore - result.previousScore : null)
+  const deltaUp = scoreDelta != null && scoreDelta >= 0
 
   return (
     <div className="min-h-screen page-bg flex flex-col">
@@ -371,6 +513,9 @@ export default function ProductPage() {
         {/* Results */}
         {result && (
           <>
+            {/* Infrastructure card — first thing above results */}
+            <InfrastructureCard profile={infraProfile} />
+
             {/* Hosting / edge banner */}
             {(hosting || edge || serverHdr) && (
               <div className="flex flex-wrap items-center gap-x-5 gap-y-2 bg-white/3 border border-white/10 rounded-2xl px-4 py-3 mb-4 text-sm">
@@ -378,9 +523,7 @@ export default function ProductPage() {
                   <span className="flex items-center gap-1.5 text-gray-300">
                     <span className="text-gray-500">🖥 Hosting:</span>
                     <span className="font-semibold text-white">{hosting}</span>
-                    {confidence != null && (
-                      <span className="text-xs text-gray-500">({confidence}% confidence)</span>
-                    )}
+                    {confidence != null && <span className="text-xs text-gray-500">({confidence}% confidence)</span>}
                   </span>
                 )}
                 {edge && (
@@ -398,19 +541,66 @@ export default function ProductPage() {
               </div>
             )}
 
+            {/* Change alerts */}
+            <ChangeAlerts result={result} />
+
             {/* Summary cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-              {[
-                { label: 'Grade',   value: result.securityGrade ?? '—',  color: 'text-white' },
-                { label: 'Score',   value: result.securityScore != null ? `${result.securityScore}/100` : '—', color: 'text-white' },
-                { label: 'Passed',  value: passed ?? '—', color: 'text-green-400' },
-                { label: 'Failed',  value: failed ?? '—', color: 'text-red-400' },
-              ].map(({ label, value, color }) => (
-                <div key={label} className="bg-white/3 border border-white/10 rounded-2xl p-4 text-center">
-                  <p className={`text-2xl font-extrabold ${color}`}>{value}</p>
-                  <p className="text-xs text-gray-400 mt-1">{label}</p>
+              {/* Grade */}
+              <div className="bg-white/3 border border-white/10 rounded-2xl p-4 text-center">
+                <p className="text-2xl font-extrabold text-white">{result.securityGrade ?? '—'}</p>
+                <p className="text-xs text-gray-400 mt-1">Grade</p>
+              </div>
+
+              {/* Score + delta + sparkline */}
+              <div className="bg-white/3 border border-white/10 rounded-2xl p-4 text-center">
+                <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                  <p className="text-2xl font-extrabold text-white">
+                    {result.securityScore != null ? `${result.securityScore}/100` : '—'}
+                  </p>
+                  {scoreDelta !== null && (
+                    <span className={`flex items-center gap-0.5 text-xs font-bold ${deltaUp ? 'text-green-400' : 'text-red-400'}`}>
+                      {deltaUp
+                        ? <TrendingUp className="w-3 h-3" />
+                        : <TrendingDown className="w-3 h-3" />}
+                      {deltaUp ? '+' : ''}{scoreDelta}
+                    </span>
+                  )}
                 </div>
-              ))}
+                {trend.length >= 2 && <Sparkline points={trend} />}
+                <p className="text-xs text-gray-400 mt-1">Score</p>
+              </div>
+
+              {/* Passed */}
+              <div className="bg-white/3 border border-white/10 rounded-2xl p-4 text-center">
+                <p className="text-2xl font-extrabold text-green-400">{passed ?? '—'}</p>
+                <p className="text-xs text-gray-400 mt-1">Passed</p>
+              </div>
+
+              {/* Failed */}
+              <div className="bg-white/3 border border-white/10 rounded-2xl p-4 text-center">
+                <p className="text-2xl font-extrabold text-red-400">{failed ?? '—'}</p>
+                <p className="text-xs text-gray-400 mt-1">Failed</p>
+              </div>
+            </div>
+
+            {/* Schedule scan button */}
+            <div className="flex items-center justify-end mb-4">
+              <button
+                onClick={handleSchedule}
+                disabled={scheduling || scheduled}
+                className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border transition-colors ${
+                  scheduled
+                    ? 'bg-green-500/10 border-green-500/25 text-green-400 cursor-default'
+                    : 'bg-white/5 border-white/15 text-gray-400 hover:text-white hover:border-white/30'
+                } disabled:opacity-60`}
+              >
+                {scheduling
+                  ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Scheduling…</>
+                  : scheduled
+                    ? <><CheckCircle className="w-3.5 h-3.5" /> Scanning every 24h</>
+                    : <><Clock className="w-3.5 h-3.5" /> Scan every 24h</>}
+              </button>
             </div>
 
             {/* Result rows */}

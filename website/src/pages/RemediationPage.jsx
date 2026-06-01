@@ -1,13 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
-  Search, Copy, Check, ChevronDown, ChevronUp, AlertCircle, Loader2,
-  RefreshCw, BookOpen, Shield, Zap, CheckCircle, Clock, ExternalLink,
-  Eye, XCircle,
+  Search, Copy, Check, ChevronLeft, ChevronRight,
+  ExternalLink, AlertCircle, Loader2, Info,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
-import Footer from '../components/Footer'
-import { getRemediations, getRemediationPlaybook } from '../services/api'
 
+/* ─── API constants ─────────────────────────────────────────── */
 const API = import.meta.env.VITE_API_URL ?? ''
 const BACKEND = API || 'https://webshield-backend-api.onrender.com'
 
@@ -19,579 +18,820 @@ function authHeaders() {
   }
 }
 
-const TABS_NAV = ['Tasks', 'Playbooks']
-const PLAYBOOK_TABS = ['Nginx', 'Apache', 'IIS', 'Ansible', 'Verify']
-
-const SEVERITY_STYLES = {
-  Critical: 'bg-red-500/15 text-red-400 border-red-500/30',
-  High:     'bg-orange-500/15 text-orange-400 border-orange-500/30',
-  Medium:   'bg-yellow-500/15 text-yellow-400 border-yellow-500/30',
-  Low:      'bg-blue-500/15 text-blue-400 border-blue-500/30',
-  Info:     'bg-gray-500/15 text-gray-400 border-gray-500/30',
+/* ─── Severity style maps ────────────────────────────────────── */
+const SEV_BADGE = {
+  Critical: 'bg-red-700 text-white',
+  High:     'bg-orange-600 text-white',
+  Medium:   'bg-yellow-600 text-black',
+  Low:      'bg-blue-600 text-white',
+  Info:     'bg-slate-500 text-white',
 }
 
-function severityStyle(sev) {
-  const key = sev ? (sev.charAt(0).toUpperCase() + sev.slice(1).toLowerCase()) : 'Info'
-  return SEVERITY_STYLES[key] || SEVERITY_STYLES.Info
+const SEV_TEXT = {
+  Critical: 'text-red-400',
+  High:     'text-orange-400',
+  Medium:   'text-yellow-400',
+  Low:      'text-blue-400',
+  Info:     'text-slate-400',
 }
 
-function field(obj, ...keys) {
+const SEV_STROKE = {
+  Critical: '#b91c1c',
+  High:     '#ea580c',
+  Medium:   '#ca8a04',
+  Low:      '#2563eb',
+  Info:     '#64748b',
+}
+
+/* ─── Dual-case field accessor ───────────────────────────────── */
+function f(obj, ...keys) {
+  if (!obj) return ''
   for (const k of keys) {
-    if (obj?.[k] !== undefined && obj?.[k] !== null) return obj[k]
+    if (obj[k] !== undefined && obj[k] !== null) return obj[k]
+    const cap = k.charAt(0).toUpperCase() + k.slice(1)
+    if (obj[cap] !== undefined && obj[cap] !== null) return obj[cap]
   }
   return ''
 }
 
-/* ── Summary banner ── */
-function SummaryBanner({ summary, loading }) {
-  const open     = summary?.openCount     ?? summary?.OpenCount     ?? summary?.open     ?? 0
-  const critical = summary?.criticalCount ?? summary?.CriticalCount ?? summary?.critical ?? 0
-  const resolved = summary?.resolvedCount ?? summary?.ResolvedCount ?? summary?.resolved ?? 0
-
-  if (loading) {
-    return (
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        {[0, 1, 2].map((i) => (
-          <div key={i} className="bg-white/3 border border-white/10 rounded-2xl p-4 animate-pulse h-16" />
-        ))}
-      </div>
-    )
-  }
-
-  return (
-    <div className="grid grid-cols-3 gap-3 mb-6">
-      {[
-        { label: 'Open Tasks',     value: open,     color: 'text-yellow-400', bg: 'border-yellow-500/20' },
-        { label: 'Critical',       value: critical,  color: 'text-red-400',    bg: 'border-red-500/20' },
-        { label: 'Resolved',       value: resolved,  color: 'text-green-400',  bg: 'border-green-500/20' },
-      ].map((s) => (
-        <div key={s.label} className={`bg-white/3 border ${s.bg} rounded-2xl p-4 text-center`}>
-          <p className={`text-2xl font-extrabold ${s.color}`}>{s.value}</p>
-          <p className="text-xs text-gray-400 mt-0.5">{s.label}</p>
-        </div>
-      ))}
-    </div>
-  )
+function normSev(raw) {
+  if (!raw) return 'Info'
+  const s = String(raw).trim()
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()
 }
 
-/* ── Task card ── */
-function TaskCard({ task, onAcknowledge, onResolve }) {
-  const [actioning, setActioning] = useState(null)
-  const [localStatus, setLocalStatus] = useState(null)
+/* ─── CVSS Gauge (270° arc speedometer) ─────────────────────── */
+function CvssGauge({ score, severity }) {
+  const sev = normSev(severity)
+  const num = parseFloat(score) || 0
+  const clamped = Math.min(Math.max(num, 0), 10)
+  const R = 32
+  const cx = 44
+  const cy = 44
+  const strokeWidth = 6
+  const startAngle = 135
+  const totalDeg = 270
+  const sweepDeg = (clamped / 10) * totalDeg
+  const toRad = (deg) => (deg * Math.PI) / 180
 
-  const id          = field(task, 'id', 'Id', 'taskId', 'TaskId')
-  const checkName   = field(task, 'checkName', 'CheckName', 'check_name', 'name', 'Name')
-  const severity    = field(task, 'severity', 'Severity')
-  const status      = localStatus ?? field(task, 'status', 'Status') ?? 'open'
-  const desc        = field(task, 'description', 'Description', 'details', 'Details')
-  const targetUrl   = field(task, 'targetUrl', 'TargetUrl', 'url', 'Url')
-  const playbookUrl = field(task, 'playbookUrl', 'PlaybookUrl', 'playbook_url')
-  const createdAt   = field(task, 'createdAt', 'CreatedAt', 'created', 'Created')
-
-  const statusLower = status.toLowerCase()
-  const isResolved  = statusLower === 'resolved' || statusLower === 'done'
-  const isAcked     = statusLower === 'acknowledged' || statusLower === 'ack'
-
-  const action = async (type) => {
-    setActioning(type)
-    try {
-      await onAcknowledge && type === 'acknowledge' && onAcknowledge(id)
-      await onResolve    && type === 'resolve'    && onResolve(id)
-      setLocalStatus(type === 'acknowledge' ? 'Acknowledged' : 'Resolved')
-    } finally {
-      setActioning(null)
+  function polar(angleDeg) {
+    return {
+      x: cx + R * Math.cos(toRad(angleDeg)),
+      y: cy + R * Math.sin(toRad(angleDeg)),
     }
   }
 
+  const start = polar(startAngle)
+  const bgEnd = polar(startAngle + totalDeg)
+  const fgEnd = polar(startAngle + sweepDeg)
+  const largeArcBg = totalDeg > 180 ? 1 : 0
+  const largeArcFg = sweepDeg > 180 ? 1 : 0
+
+  const bgPath = `M ${start.x} ${start.y} A ${R} ${R} 0 ${largeArcBg} 1 ${bgEnd.x} ${bgEnd.y}`
+  const fgPath = sweepDeg > 0
+    ? `M ${start.x} ${start.y} A ${R} ${R} 0 ${largeArcFg} 1 ${fgEnd.x} ${fgEnd.y}`
+    : ''
+
+  const color = SEV_STROKE[sev] ?? SEV_STROKE.Info
+
   return (
-    <div className={`border rounded-2xl p-4 transition-all ${isResolved ? 'border-green-500/20 opacity-60' : 'border-white/10'}`}>
-      <div className="flex items-start justify-between gap-3 mb-2">
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 mb-1.5">
-            {severity && (
-              <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${severityStyle(severity)}`}>
-                {severity}
-              </span>
-            )}
-            <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-              isResolved ? 'text-green-400 bg-green-400/10' :
-              isAcked    ? 'text-blue-400 bg-blue-400/10' :
-                           'text-yellow-400 bg-yellow-400/10'
-            }`}>
-              {status}
-            </span>
-          </div>
-          <p className="text-sm font-semibold text-white leading-snug">{checkName}</p>
-          {targetUrl && <p className="text-xs text-gray-500 mt-0.5 truncate">{targetUrl}</p>}
-        </div>
-        {createdAt && (
-          <p className="text-xs text-gray-600 shrink-0 hidden sm:block">
-            {new Date(createdAt).toLocaleDateString()}
-          </p>
-        )}
-      </div>
-
-      {desc && <p className="text-xs text-gray-400 leading-relaxed mb-3">{desc}</p>}
-
-      <div className="flex flex-wrap items-center gap-2">
-        {!isAcked && !isResolved && (
-          <button
-            onClick={() => action('acknowledge')}
-            disabled={!!actioning}
-            className="flex items-center gap-1.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/25 text-blue-400 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
-          >
-            {actioning === 'acknowledge'
-              ? <Loader2 className="w-3 h-3 animate-spin" />
-              : <Eye className="w-3 h-3" />}
-            Acknowledge
-          </button>
-        )}
-        {!isResolved && (
-          <button
-            onClick={() => action('resolve')}
-            disabled={!!actioning}
-            className="flex items-center gap-1.5 bg-green-500/10 hover:bg-green-500/20 border border-green-500/25 text-green-400 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
-          >
-            {actioning === 'resolve'
-              ? <Loader2 className="w-3 h-3 animate-spin" />
-              : <CheckCircle className="w-3 h-3" />}
-            Resolve
-          </button>
-        )}
-        {isResolved && (
-          <span className="flex items-center gap-1 text-xs text-green-400">
-            <CheckCircle className="w-3.5 h-3.5" /> Resolved
-          </span>
-        )}
-        {playbookUrl && (
-          <a
-            href={playbookUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-crimson-400 hover:text-crimson-300 text-xs font-semibold ml-auto transition-colors"
-          >
-            <BookOpen className="w-3 h-3" /> View Playbook
-            <ExternalLink className="w-3 h-3" />
-          </a>
-        )}
-      </div>
-    </div>
+    <svg width="88" height="88" viewBox="0 0 88 88" className="shrink-0">
+      <path
+        d={bgPath}
+        fill="none"
+        stroke="rgba(255,255,255,0.08)"
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+      />
+      {fgPath && (
+        <path
+          d={fgPath}
+          fill="none"
+          stroke={color}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+        />
+      )}
+      <text
+        x={cx}
+        y={cy - 4}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fill="white"
+        fontSize="13"
+        fontWeight="700"
+      >
+        {num.toFixed(1)}
+      </text>
+      <text
+        x={cx}
+        y={cy + 10}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fill="rgba(255,255,255,0.45)"
+        fontSize="8"
+      >
+        CVSS
+      </text>
+    </svg>
   )
 }
 
-/* ── Tasks tab ── */
-function TasksTab() {
-  const [summary, setSummary]     = useState(null)
-  const [tasks, setTasks]         = useState([])
-  const [loadingSum, setLoadingSum] = useState(true)
-  const [loading, setLoading]     = useState(true)
-  const [error, setError]         = useState(null)
-  const [sevFilter, setSevFilter] = useState('')
-
-  const fetchAll = useCallback(async () => {
-    setLoading(true)
-    setLoadingSum(true)
-    setError(null)
-    try {
-      const [sumRes, tasksRes] = await Promise.all([
-        fetch(`${BACKEND}/api/remediationtasks/summary`, { headers: authHeaders() }),
-        fetch(`${BACKEND}/api/remediationtasks`,         { headers: authHeaders() }),
-      ])
-      if (sumRes.ok) setSummary(await sumRes.json())
-      setLoadingSum(false)
-      if (!tasksRes.ok) throw new Error(`Server error ${tasksRes.status}`)
-      const data = await tasksRes.json()
-      setTasks(Array.isArray(data) ? data : data?.tasks ?? data?.Tasks ?? data?.items ?? [])
-    } catch (err) {
-      setError(err.message)
-    }
-    setLoading(false)
-    setLoadingSum(false)
-  }, [])
-
-  useEffect(() => { fetchAll() }, [fetchAll])
-
-  const patchTask = async (id, action) => {
-    const res = await fetch(`${BACKEND}/api/remediationtasks/${id}/${action}`, {
-      method: 'PATCH',
-      headers: authHeaders(),
-    })
-    if (!res.ok) {
-      const d = await res.json().catch(() => ({}))
-      throw new Error(d.message ?? d.error ?? `Failed to ${action}`)
-    }
-  }
-
-  const severities = ['Critical', 'High', 'Medium', 'Low', 'Info']
-  const filtered = tasks.filter((t) => {
-    const sev = field(t, 'severity', 'Severity').toLowerCase()
-    return !sevFilter || sev === sevFilter.toLowerCase()
-  })
-
-  return (
-    <div>
-      <SummaryBanner summary={summary} loading={loadingSum} />
-
-      {/* Severity filter */}
-      <div className="flex flex-wrap gap-2 mb-5">
-        <button
-          onClick={() => setSevFilter('')}
-          className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${!sevFilter ? 'bg-crimson-500 text-white' : 'bg-white/5 text-gray-400 border border-white/10 hover:text-white'}`}
-        >
-          All
-        </button>
-        {severities.map((s) => (
-          <button
-            key={s}
-            onClick={() => setSevFilter(s === sevFilter ? '' : s)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${sevFilter === s ? 'bg-crimson-500 text-white' : 'bg-white/5 text-gray-400 border border-white/10 hover:text-white'}`}
-          >
-            {s}
-          </button>
-        ))}
-        <button
-          onClick={fetchAll}
-          disabled={loading}
-          className="ml-auto flex items-center gap-1.5 text-gray-500 hover:text-gray-300 text-xs transition-colors"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> Refresh
-        </button>
-      </div>
-
-      {loading && (
-        <div className="flex justify-center py-16">
-          <Loader2 className="w-7 h-7 text-crimson-400 animate-spin" />
-        </div>
-      )}
-      {!loading && error && (
-        <div className="flex items-center gap-2 text-red-400 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-sm">
-          <AlertCircle className="w-4 h-4 shrink-0" /> {error}
-        </div>
-      )}
-      {!loading && !error && filtered.length === 0 && (
-        <div className="text-center py-16">
-          <CheckCircle className="w-8 h-8 text-green-400 mx-auto mb-3" />
-          <p className="text-white font-semibold">All clear</p>
-          <p className="text-sm text-gray-500 mt-1">No remediation tasks{sevFilter ? ` for ${sevFilter} severity` : ''}.</p>
-        </div>
-      )}
-      {!loading && !error && filtered.length > 0 && (
-        <div className="space-y-3">
-          {filtered.map((task, i) => (
-            <TaskCard
-              key={field(task, 'id', 'Id', 'taskId', 'TaskId') || i}
-              task={task}
-              onAcknowledge={(id) => patchTask(id, 'acknowledge')}
-              onResolve={(id) => patchTask(id, 'resolve')}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-/* ── Playbooks tab (existing logic) ── */
-function CodePanel({ playbook }) {
-  const [activeTab, setActiveTab] = useState(PLAYBOOK_TABS[0])
+/* ─── Copy button ────────────────────────────────────────────── */
+function CopyButton({ text, className = '' }) {
   const [copied, setCopied] = useState(false)
-
-  const getCode = (tab) => {
-    if (!playbook) return ''
-    const key = tab.toLowerCase()
-    return playbook[tab] ?? playbook[key] ?? playbook[tab.toUpperCase()] ?? ''
-  }
-
-  const code = getCode(activeTab)
-
-  const handleCopy = () => {
-    if (!code) return
-    navigator.clipboard.writeText(code).then(() => {
+  const handle = () => {
+    navigator.clipboard.writeText(text || '').then(() => {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     })
   }
-
-  if (!playbook) return null
-
   return (
-    <div className="mt-4 bg-navy-950 border border-white/10 rounded-xl overflow-hidden">
-      <div className="flex items-center justify-between border-b border-white/10 px-3">
-        <div className="flex">
-          {PLAYBOOK_TABS.map((tab) => {
-            const hasContent = !!getCode(tab)
-            return (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-3 py-2.5 text-xs font-semibold transition-colors border-b-2 -mb-px ${
-                  activeTab === tab
-                    ? 'border-crimson-500 text-white'
-                    : hasContent
-                      ? 'border-transparent text-gray-400 hover:text-white'
-                      : 'border-transparent text-gray-600 cursor-default'
-                }`}
-              >
-                {tab}
-              </button>
-            )
-          })}
-        </div>
-        <button
-          onClick={handleCopy}
-          disabled={!code}
-          className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors py-2 px-1"
-        >
-          {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
-          {copied ? 'Copied!' : 'Copy'}
-        </button>
-      </div>
-      <div className="p-4 overflow-x-auto max-h-64">
-        {code
-          ? <pre className="text-xs text-gray-300 font-mono whitespace-pre leading-relaxed">{code}</pre>
-          : <p className="text-xs text-gray-600 italic">No configuration snippet available for {activeTab}.</p>
-        }
-      </div>
-    </div>
+    <button
+      onClick={handle}
+      title="Copy"
+      className={`flex items-center gap-1 text-xs text-gray-400 hover:text-white transition-colors px-2 py-1 rounded ${className}`}
+    >
+      {copied ? (
+        <>
+          <Check className="w-3.5 h-3.5 text-green-400" />
+          <span className="text-green-400">Copied</span>
+        </>
+      ) : (
+        <>
+          <Copy className="w-3.5 h-3.5" />
+          <span>Copy</span>
+        </>
+      )}
+    </button>
   )
 }
 
-function PlaybookCard({ item, expanded, onToggle }) {
-  const [playbook, setPlaybook] = useState(null)
-  const [loading, setLoading]   = useState(false)
-  const [error, setError]       = useState(null)
-
-  const checkName = field(item, 'checkName', 'CheckName', 'check_name', 'name', 'Name', 'id', 'Id')
-  const title     = field(item, 'title', 'Title', 'name', 'Name', 'checkName', 'CheckName')
-  const desc      = field(item, 'description', 'Description', 'summary', 'Summary')
-  const severity  = field(item, 'severity', 'Severity', 'risk', 'Risk')
-  const category  = field(item, 'category', 'Category', 'type', 'Type')
-
-  useEffect(() => {
-    if (!expanded || playbook || !checkName) return
-    setLoading(true)
-    setError(null)
-    getRemediationPlaybook(checkName)
-      .then((data) => setPlaybook(data))
-      .catch((err) => setError(err.message || 'Failed to load playbook'))
-      .finally(() => setLoading(false))
-  }, [expanded, checkName, playbook])
+/* ─── CheckRow (left panel list item) ───────────────────────── */
+function CheckRow({ item, selected, onClick }) {
+  const id       = f(item, 'id')
+  const title    = f(item, 'title')
+  const category = f(item, 'category')
+  const cweId    = f(item, 'cweId')
+  const severity = normSev(f(item, 'severity'))
+  const cvss     = parseFloat(f(item, 'cvssScore')) || 0
 
   return (
-    <div className={`border rounded-2xl overflow-hidden transition-all ${expanded ? 'border-crimson-500/40' : 'border-white/10'}`}>
-      <button
-        onClick={onToggle}
-        className="w-full flex items-start justify-between gap-4 p-4 text-left hover:bg-white/3 transition-colors"
-      >
+    <button
+      onClick={() => onClick(id)}
+      className={[
+        'w-full text-left px-3 py-3 border-b border-white/5 last:border-0',
+        'border-l-2 transition-colors',
+        selected
+          ? 'border-l-crimson-500 bg-white/[0.03]'
+          : 'border-l-transparent hover:bg-white/[0.02]',
+      ].join(' ')}
+    >
+      <div className="flex items-start gap-2">
+        <span
+          className={[
+            'shrink-0 mt-0.5 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
+            SEV_BADGE[severity] ?? SEV_BADGE.Info,
+          ].join(' ')}
+        >
+          {severity}
+        </span>
         <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 mb-1">
-            {severity && (
-              <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${severityStyle(severity)}`}>
-                {severity}
-              </span>
-            )}
-            {category && (
-              <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">{category}</span>
-            )}
-          </div>
-          <p className="text-sm font-semibold text-white leading-snug">{title || checkName}</p>
-          {desc && !expanded && <p className="text-xs text-gray-500 mt-1 line-clamp-1">{desc}</p>}
-        </div>
-        {expanded
-          ? <ChevronUp className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
-          : <ChevronDown className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />}
-      </button>
-
-      {expanded && (
-        <div className="px-4 pb-4 border-t border-white/10 pt-3">
-          {desc && <p className="text-sm text-gray-400 leading-relaxed mb-4">{desc}</p>}
-          {(() => {
-            const impact = field(item, 'impact', 'Impact')
-            const fix    = field(item, 'fix', 'Fix', 'remediation', 'Remediation', 'recommendation', 'Recommendation')
-            const ref    = field(item, 'references', 'References', 'reference', 'Reference')
-            return (
-              <>
-                {impact && <div className="mb-3"><p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Impact</p><p className="text-sm text-gray-300">{impact}</p></div>}
-                {fix    && <div className="mb-3"><p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Remediation</p><p className="text-sm text-gray-300">{fix}</p></div>}
-                {ref    && (
-                  <div className="mb-3">
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">References</p>
-                    {Array.isArray(ref)
-                      ? ref.map((r, i) => <a key={i} href={r} target="_blank" rel="noopener noreferrer" className="block text-xs text-crimson-400 hover:underline truncate">{r}</a>)
-                      : <p className="text-sm text-gray-300">{ref}</p>}
-                  </div>
-                )}
-              </>
-            )
-          })()}
-          {loading && <div className="flex items-center gap-2 text-gray-400 text-xs py-2"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading configuration playbook…</div>}
-          {error   && <p className="text-xs text-red-400 py-2">{error}</p>}
-          {!loading && !error && <CodePanel playbook={playbook} />}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function PlaybooksTab() {
-  const [items, setItems]               = useState([])
-  const [loading, setLoading]           = useState(true)
-  const [error, setError]               = useState(null)
-  const [search, setSearch]             = useState('')
-  const [severityFilter, setSeverityFilter] = useState('')
-  const [expandedId, setExpandedId]     = useState(null)
-
-  const fetchData = useCallback(() => {
-    setLoading(true)
-    setError(null)
-    getRemediations()
-      .then((data) => {
-        const arr = Array.isArray(data) ? data : data?.items ?? data?.remediations ?? data?.Remediations ?? []
-        setItems(arr)
-      })
-      .catch((err) => setError(err.message || 'Failed to load remediations'))
-      .finally(() => setLoading(false))
-  }, [])
-
-  useEffect(() => { fetchData() }, [fetchData])
-
-  const severities = ['Critical', 'High', 'Medium', 'Low', 'Info']
-  const filtered = items.filter((item) => {
-    const title  = field(item, 'title', 'Title', 'name', 'Name', 'checkName', 'CheckName').toLowerCase()
-    const desc   = field(item, 'description', 'Description').toLowerCase()
-    const sev    = field(item, 'severity', 'Severity').toLowerCase()
-    const cat    = field(item, 'category', 'Category').toLowerCase()
-    const q      = search.toLowerCase()
-    return (!q || title.includes(q) || desc.includes(q) || cat.includes(q))
-        && (!severityFilter || sev === severityFilter.toLowerCase())
-  })
-
-  const getItemId = (item, idx) =>
-    field(item, 'checkName', 'CheckName', 'check_name', 'id', 'Id', 'name', 'Name') || String(idx)
-
-  return (
-    <div>
-      <div className="flex flex-col sm:flex-row gap-3 mb-5">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search checks, headers, vulnerabilities…"
-            className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 pl-9 pr-4 py-2.5 rounded-xl text-sm outline-none transition-colors"
-          />
-        </div>
-        <select
-          value={severityFilter}
-          onChange={(e) => setSeverityFilter(e.target.value)}
-          className="bg-white/5 border border-white/15 focus:border-crimson-500 text-gray-300 px-4 py-2.5 rounded-xl text-sm outline-none transition-colors"
-        >
-          <option value="">All Severities</option>
-          {severities.map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
-      </div>
-
-      {!loading && !error && (
-        <div className="flex flex-wrap gap-3 mb-5">
-          {[
-            { label: 'Total Playbooks', value: items.length,    icon: BookOpen, color: 'text-blue-400' },
-            { label: 'Critical',        value: items.filter(i => field(i,'severity','Severity').toLowerCase() === 'critical').length, icon: Shield, color: 'text-red-400' },
-            { label: 'Showing',         value: filtered.length, icon: Zap,      color: 'text-green-400' },
-          ].map((s) => (
-            <div key={s.label} className="flex items-center gap-2 bg-white/3 border border-white/10 rounded-xl px-4 py-2.5">
-              <s.icon className={`w-4 h-4 ${s.color}`} />
-              <span className="text-lg font-bold text-white">{s.value}</span>
-              <span className="text-xs text-gray-400">{s.label}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {loading && <div className="flex justify-center py-16"><Loader2 className="w-7 h-7 text-crimson-400 animate-spin" /></div>}
-      {!loading && error && (
-        <div className="flex flex-col items-center gap-4 py-12">
-          <div className="flex items-center gap-2 text-red-400 bg-red-500/10 border border-red-500/30 rounded-xl px-5 py-3 text-sm">
-            <AlertCircle className="w-4 h-4 shrink-0" /> {error}
-          </div>
-          <button onClick={fetchData} className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors">
-            <RefreshCw className="w-4 h-4" /> Retry
-          </button>
-        </div>
-      )}
-      {!loading && !error && filtered.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-          <Search className="w-8 h-8 text-gray-600" />
-          <p className="text-white font-semibold">No playbooks found</p>
-          <p className="text-sm text-gray-500">
-            {items.length === 0 ? 'No remediation data available from the server.' : 'Try adjusting your search or severity filter.'}
+          <p className="text-xs font-semibold text-white leading-snug truncate">{title}</p>
+          <p className="text-[10px] text-gray-500 mt-0.5 truncate">
+            {category}{cweId ? ` • CWE-${cweId}` : ''}
           </p>
         </div>
-      )}
-      {!loading && !error && filtered.length > 0 && (
-        <div className="space-y-3">
-          {filtered.map((item, idx) => {
-            const id = getItemId(item, idx)
-            return (
-              <PlaybookCard
-                key={id}
-                item={item}
-                expanded={expandedId === id}
-                onToggle={() => setExpandedId((p) => p === id ? null : id)}
-              />
-            )
-          })}
+        <span className={['text-xs font-bold shrink-0', SEV_TEXT[severity] ?? SEV_TEXT.Info].join(' ')}>
+          {cvss > 0 ? cvss.toFixed(1) : '—'}
+        </span>
+      </div>
+    </button>
+  )
+}
+
+/* ─── CheckDetail (right panel) ─────────────────────────────── */
+function CheckDetail({ checkId, list, onNavigate }) {
+  const [detail, setDetail]       = useState(null)
+  const [loading, setLoading]     = useState(false)
+  const [error, setError]         = useState(null)
+  const [activeFixTab, setActiveFixTab] = useState(0)
+  const [copiedCmd, setCopiedCmd] = useState(null)
+
+  useEffect(() => {
+    if (!checkId) { setDetail(null); return }
+    setLoading(true)
+    setError(null)
+    setActiveFixTab(0)
+    fetch(`${BACKEND}/api/remediation/${checkId}`, { headers: authHeaders() })
+      .then((r) => {
+        if (!r.ok) throw new Error(`Server error ${r.status}`)
+        return r.json()
+      })
+      .then((d) => setDetail(d))
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false))
+  }, [checkId])
+
+  const currentIdx = list.findIndex((c) => f(c, 'id') === checkId)
+  const prevItem   = currentIdx > 0 ? list[currentIdx - 1] : null
+  const nextItem   = currentIdx < list.length - 1 ? list[currentIdx + 1] : null
+
+  const handleCopyCmd = (idx, text) => {
+    navigator.clipboard.writeText(text || '').then(() => {
+      setCopiedCmd(idx)
+      setTimeout(() => setCopiedCmd(null), 2000)
+    })
+  }
+
+  /* ── Empty state ── */
+  if (!checkId) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-gray-600">
+        <Info className="w-10 h-10 mb-3 opacity-40" />
+        <p className="text-sm font-semibold">Select a check from the list</p>
+        <p className="text-xs mt-1 opacity-70">
+          Click any item on the left to view its remediation details.
+        </p>
+      </div>
+    )
+  }
+
+  /* ── Loading ── */
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <Loader2 className="w-7 h-7 text-crimson-400 animate-spin" />
+      </div>
+    )
+  }
+
+  /* ── Error ── */
+  if (error) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="flex items-center gap-2 text-red-400 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-sm">
+          <AlertCircle className="w-4 h-4 shrink-0" /> {error}
         </div>
-      )}
+      </div>
+    )
+  }
+
+  if (!detail) return null
+
+  /* ── Parse detail fields ── */
+  const title       = f(detail, 'title')
+  const severity    = normSev(f(detail, 'severity'))
+  const cweId       = f(detail, 'cweId')
+  const owasp       = f(detail, 'owaspTop10')
+  const shortDesc   = f(detail, 'shortDescription')
+  const detailedDesc = f(detail, 'detailedDescription')
+  const bizImpact   = f(detail, 'businessImpact')
+  const attackScen  = f(detail, 'attackScenario')
+  const cvssObj     = detail.cvss ?? detail.Cvss ?? {}
+  const cvssScore   = cvssObj.score ?? cvssObj.Score ?? f(detail, 'cvssScore') ?? 0
+  const cvssVector  = cvssObj.vector ?? cvssObj.Vector ?? ''
+  const compliance  = detail.compliance ?? detail.Compliance ?? {}
+  const fixes       = detail.fixes ?? detail.Fixes ?? []
+  const verCmds     = detail.verificationCommands ?? detail.VerificationCommands ?? []
+  const refs        = detail.references ?? detail.References ?? []
+
+  const pciDss   = compliance.pciDss   ?? compliance.PciDss   ?? compliance.pci_dss   ?? ''
+  const iso27001 = compliance.iso27001  ?? compliance.Iso27001  ?? compliance.iso_27001  ?? ''
+  const soc2     = compliance.soc2     ?? compliance.Soc2     ?? compliance.SOC2      ?? ''
+  const nist     = compliance.nist80053 ?? compliance.Nist80053 ?? compliance.nist_800_53 ?? ''
+
+  const activeFix = fixes[activeFixTab] ?? null
+
+  return (
+    <div className="flex-1 flex flex-col overflow-hidden">
+
+      {/* ── Sticky header ── */}
+      <div className="shrink-0 sticky top-0 z-10 backdrop-blur-md bg-[#0a0f1a]/80 border-b border-white/10 px-5 py-4">
+        <div className="flex items-start gap-4">
+          <div className="flex-1 min-w-0">
+            {/* Badges row */}
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <span
+                className={[
+                  'text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded',
+                  SEV_BADGE[severity] ?? SEV_BADGE.Info,
+                ].join(' ')}
+              >
+                {severity}
+              </span>
+              {cweId && (
+                <span className="font-mono text-[10px] bg-white/[0.08] border border-white/[0.15] px-2 py-0.5 rounded text-gray-300">
+                  CWE-{cweId}
+                </span>
+              )}
+              {owasp && (
+                <span
+                  className="text-[10px] text-gray-400 truncate max-w-[200px]"
+                  title={owasp}
+                >
+                  {owasp}
+                </span>
+              )}
+            </div>
+            {/* Title */}
+            <h2 className="text-base font-bold text-white leading-snug">{title}</h2>
+            {/* CVSS vector */}
+            {cvssVector && (
+              <p
+                className="font-mono text-[10px] text-gray-500 mt-1 truncate"
+                title={cvssVector}
+              >
+                {cvssVector}
+              </p>
+            )}
+          </div>
+          {/* CVSS gauge top-right */}
+          <div className="shrink-0">
+            <CvssGauge score={cvssScore} severity={severity} />
+          </div>
+        </div>
+      </div>
+
+      {/* ── Scrollable content ── */}
+      <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6">
+
+        {/* 1. Four-card grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+          {/* What it is */}
+          <div className="bg-white/[0.03] border border-white/10 rounded-xl p-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">
+              What it is
+            </p>
+            <p className="text-xs text-gray-300 leading-relaxed">
+              {shortDesc || detailedDesc || '—'}
+            </p>
+          </div>
+
+          {/* Business Impact */}
+          <div className="bg-white/[0.03] border border-white/10 rounded-xl p-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">
+              Business Impact
+            </p>
+            <p className="text-xs text-gray-300 leading-relaxed">{bizImpact || '—'}</p>
+          </div>
+
+          {/* Attack Scenario */}
+          <div className="bg-[#0d1117] border border-white/10 rounded-xl p-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">
+              Attack Scenario
+            </p>
+            <div className="max-h-32 overflow-y-auto">
+              <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap leading-relaxed">
+                {attackScen || '—'}
+              </pre>
+            </div>
+          </div>
+
+          {/* Compliance Impact */}
+          <div className="bg-white/[0.03] border border-white/10 rounded-xl p-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">
+              Compliance Impact
+            </p>
+            <div className="space-y-1.5">
+              {[
+                { label: 'PCI-DSS',     value: pciDss },
+                { label: 'ISO 27001',   value: iso27001 },
+                { label: 'SOC 2',       value: soc2 },
+                { label: 'NIST 800-53', value: nist },
+              ].map(({ label, value }) => (
+                <div key={label} className="flex items-center gap-2">
+                  <span className="text-[10px] text-gray-500 w-20 shrink-0">{label}</span>
+                  {value
+                    ? (
+                      <span className="font-mono text-[10px] bg-white/[0.08] border border-white/[0.15] px-1.5 py-0.5 rounded text-gray-300 truncate">
+                        {value}
+                      </span>
+                    )
+                    : <span className="text-[10px] text-gray-600">—</span>
+                  }
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* 2. Fix Snippets */}
+        {fixes.length > 0 && (
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3">
+              Fix Snippets
+            </p>
+
+            {/* Framework tab bar */}
+            <div className="flex border-b border-white/10">
+              {fixes.map((fix, idx) => {
+                const fw = fix.framework ?? fix.Framework ?? `Fix ${idx + 1}`
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveFixTab(idx)}
+                    className={[
+                      'px-4 py-2 text-xs font-semibold border-b-2 -mb-px transition-colors',
+                      activeFixTab === idx
+                        ? 'border-crimson-500 text-white'
+                        : 'border-transparent text-gray-500 hover:text-gray-300',
+                    ].join(' ')}
+                  >
+                    {fw}
+                  </button>
+                )
+              })}
+            </div>
+
+            {activeFix && (() => {
+              const lang  = activeFix.language ?? activeFix.Language ?? ''
+              const code  = activeFix.code     ?? activeFix.Code     ?? ''
+              const notes = activeFix.notes    ?? activeFix.Notes    ?? null
+              return (
+                <div>
+                  <div className="relative bg-[#0d1117] border border-white/10 rounded-b-xl rounded-tr-xl overflow-hidden">
+                    {/* top bar: language chip + copy button */}
+                    <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/[0.08]">
+                      {lang
+                        ? (
+                          <span className="font-mono text-[10px] bg-white/[0.08] border border-white/[0.15] px-2 py-0.5 rounded text-gray-400">
+                            {lang}
+                          </span>
+                        )
+                        : <span />
+                      }
+                      <CopyButton text={code} />
+                    </div>
+                    <div className="max-h-72 overflow-y-auto p-4">
+                      <pre className="text-xs text-gray-300 font-mono whitespace-pre leading-relaxed">
+                        {code}
+                      </pre>
+                    </div>
+                  </div>
+                  {notes && (
+                    <div className="mt-2 flex items-start gap-2 bg-yellow-500/[0.08] border border-yellow-500/25 rounded-lg px-3 py-2">
+                      <Info className="w-3.5 h-3.5 text-yellow-400 shrink-0 mt-0.5" />
+                      <p className="text-xs text-yellow-300 leading-relaxed">{notes}</p>
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
+          </div>
+        )}
+
+        {/* 3. Verification Commands */}
+        {verCmds.length > 0 && (
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3">
+              Verification Commands
+            </p>
+            <div className="space-y-2">
+              {verCmds.map((cmd, idx) => {
+                const text = typeof cmd === 'string'
+                  ? cmd
+                  : (cmd.command ?? cmd.Command ?? String(cmd))
+                return (
+                  <div
+                    key={idx}
+                    className="relative bg-[#0d1117] border border-white/10 rounded-xl overflow-hidden"
+                  >
+                    <div className="flex items-center justify-between px-3 py-1 border-b border-white/[0.08]">
+                      <span className="text-[10px] text-gray-600 font-mono">shell</span>
+                      <button
+                        onClick={() => handleCopyCmd(idx, text)}
+                        className="flex items-center gap-1 text-xs text-gray-500 hover:text-white transition-colors px-1 py-0.5 rounded"
+                      >
+                        {copiedCmd === idx ? (
+                          <>
+                            <Check className="w-3 h-3 text-green-400" />
+                            <span className="text-green-400">Copied</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3" />
+                            <span>Copy</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <div className="px-4 py-3">
+                      <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap">
+                        {text}
+                      </pre>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* 4. References */}
+        {refs.length > 0 && (
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3">
+              References
+            </p>
+            <div className="space-y-1.5">
+              {refs.map((ref, idx) => {
+                const url   = typeof ref === 'string'
+                  ? ref
+                  : (ref.url ?? ref.Url ?? ref.href ?? ref.Href ?? String(ref))
+                const label = typeof ref === 'string'
+                  ? ref
+                  : (ref.title ?? ref.Title ?? ref.label ?? ref.Label ?? url)
+                return (
+                  <a
+                    key={idx}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-xs text-crimson-400 hover:text-crimson-300 transition-colors group"
+                  >
+                    <ExternalLink className="w-3 h-3 shrink-0 opacity-60 group-hover:opacity-100" />
+                    <span className="truncate">{label}</span>
+                  </a>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* 5. Prev / Next navigation */}
+        <div className="flex items-center justify-between pt-2 pb-1 border-t border-white/[0.08]">
+          <button
+            onClick={() => prevItem && onNavigate(f(prevItem, 'id'))}
+            disabled={!prevItem}
+            className="flex items-center gap-1 text-xs text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" /> Previous
+          </button>
+          <span className="text-xs text-gray-600">
+            {currentIdx >= 0 ? `${currentIdx + 1} / ${list.length}` : ''}
+          </span>
+          <button
+            onClick={() => nextItem && onNavigate(f(nextItem, 'id'))}
+            disabled={!nextItem}
+            className="flex items-center gap-1 text-xs text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            Next <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
 
-/* ── Main page ── */
+/* ─── Main page ──────────────────────────────────────────────── */
 export default function RemediationPage() {
-  const [activeTab, setActiveTab] = useState('Tasks')
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  /* list state */
+  const [allItems, setAllItems]         = useState([])
+  const [displayItems, setDisplayItems] = useState([])
+  const [categories, setCategories]     = useState([])
+  const [listLoading, setListLoading]   = useState(true)
+  const [listError, setListError]       = useState(null)
+
+  /* filter state */
+  const [searchQuery, setSearchQuery]   = useState('')
+  const [sevFilter, setSevFilter]       = useState('All')
+  const [catFilter, setCatFilter]       = useState('')
+
+  /* selection */
+  const [selectedId, setSelectedId]     = useState(() => searchParams.get('check') ?? null)
+
+  const debounceRef = useRef(null)
+
+  /* ── Apply all active filters to a base array ── */
+  const applyFilters = useCallback((base, sev, cat) => {
+    let result = base
+    if (sev && sev !== 'All') {
+      result = result.filter((i) => normSev(f(i, 'severity')) === sev)
+    }
+    if (cat) {
+      result = result.filter(
+        (i) => (f(i, 'category') ?? '').toLowerCase() === cat.toLowerCase()
+      )
+    }
+    setDisplayItems(result)
+  }, [])
+
+  /* ── Initial load: list + summary in parallel ── */
+  useEffect(() => {
+    setListLoading(true)
+    setListError(null)
+    Promise.all([
+      fetch(`${BACKEND}/api/remediation`, { headers: authHeaders() }),
+      fetch(`${BACKEND}/api/remediation/summary`, { headers: authHeaders() }),
+    ])
+      .then(async ([itemsRes, summaryRes]) => {
+        if (!itemsRes.ok) throw new Error(`Server error ${itemsRes.status}`)
+        const itemsData = await itemsRes.json()
+        const arr = Array.isArray(itemsData)
+          ? itemsData
+          : (itemsData?.items ?? itemsData?.Items ?? [])
+        setAllItems(arr)
+        setDisplayItems(arr)
+
+        if (summaryRes.ok) {
+          const sumData = await summaryRes.json()
+          const cats = (Array.isArray(sumData) ? sumData : [])
+            .map((c) => c.category ?? c.Category ?? '')
+            .filter(Boolean)
+          setCategories([...new Set(cats)])
+        }
+
+        // Auto-select: URL param first, else first item
+        const preselect = searchParams.get('check')
+        if (preselect) {
+          setSelectedId(preselect)
+        } else if (arr.length > 0) {
+          const firstId = f(arr[0], 'id')
+          setSelectedId(firstId)
+          setSearchParams({ check: firstId }, { replace: true })
+        }
+      })
+      .catch((e) => setListError(e.message))
+      .finally(() => setListLoading(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  /* ── Search with 350ms debounce ── */
+  const handleSearchChange = (e) => {
+    const q = e.target.value
+    setSearchQuery(q)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(async () => {
+      if (!q.trim()) {
+        applyFilters(allItems, sevFilter, catFilter)
+        return
+      }
+      try {
+        const res = await fetch(
+          `${BACKEND}/api/remediation/search?q=${encodeURIComponent(q)}`,
+          { headers: authHeaders() }
+        )
+        if (!res.ok) return
+        const data = await res.json()
+        const arr = Array.isArray(data) ? data : (data?.items ?? [])
+        applyFilters(arr, sevFilter, catFilter)
+      } catch { /* ignore */ }
+    }, 350)
+  }
+
+  /* ── Severity chip click ── */
+  const handleSevFilter = useCallback(async (sev) => {
+    setSevFilter(sev)
+    if (sev === 'All') {
+      applyFilters(allItems, 'All', catFilter)
+      return
+    }
+    try {
+      const res = await fetch(
+        `${BACKEND}/api/remediation/severity/${sev}`,
+        { headers: authHeaders() }
+      )
+      if (!res.ok) {
+        applyFilters(allItems, sev, catFilter)
+        return
+      }
+      const data = await res.json()
+      const arr = Array.isArray(data) ? data : (data?.items ?? [])
+      applyFilters(arr, sev, catFilter)
+    } catch {
+      applyFilters(allItems, sev, catFilter)
+    }
+  }, [allItems, catFilter, applyFilters])
+
+  /* ── Category filter (client-side) ── */
+  const handleCatFilter = useCallback((cat) => {
+    setCatFilter(cat)
+    applyFilters(allItems, sevFilter, cat)
+  }, [allItems, sevFilter, applyFilters])
+
+  /* ── Select a check, update URL ── */
+  const selectCheck = useCallback((id) => {
+    setSelectedId(id)
+    setSearchParams({ check: id })
+  }, [setSearchParams])
+
+  const SEVS = ['All', 'Critical', 'High', 'Medium', 'Low', 'Info']
 
   return (
-    <div className="min-h-screen page-bg flex flex-col">
+    <div className="h-screen flex flex-col overflow-hidden">
       <Navbar />
 
-      <main className="flex-1 pt-16">
-        <div className="border-b border-white/10 py-10 px-4">
-          <div className="max-w-5xl mx-auto">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 bg-crimson-500/15 border border-crimson-500/30 rounded-lg flex items-center justify-center">
-                <BookOpen className="w-4 h-4 text-crimson-400" />
-              </div>
-              <span className="text-xs font-bold uppercase tracking-widest text-crimson-400">Remediation</span>
+      {/* Page header bar */}
+      <div className="shrink-0 border-b border-white/10 px-6 py-4 bg-[#0a0f1a]">
+        <h1 className="text-lg font-bold text-white leading-none">Remediation Playbooks</h1>
+        <p className="text-xs text-gray-500 mt-0.5">
+          Step-by-step fix guides, code snippets, and compliance mappings for every detected check.
+        </p>
+      </div>
+
+      {/* Split container */}
+      <div className="flex-1 flex overflow-hidden min-h-0">
+
+        {/* ── Left panel ── */}
+        <div className="w-[380px] shrink-0 border-r border-white/10 flex flex-col overflow-hidden">
+
+          {/* Filters area */}
+          <div className="px-4 py-3 border-b border-white/10 space-y-3 shrink-0">
+
+            {/* Search input */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+              <input
+                value={searchQuery}
+                onChange={handleSearchChange}
+                placeholder="Search checks…"
+                className="w-full bg-white/5 border border-white/10 focus:border-crimson-500 text-white placeholder-gray-600 pl-8 pr-3 py-2 rounded-lg text-xs outline-none transition-colors"
+              />
             </div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2">Fix Vulnerabilities Fast</h1>
-            <p className="text-gray-400 max-w-2xl">
-              Track open remediation tasks, acknowledge findings, and access configuration playbooks for Nginx, Apache, IIS, and Ansible.
-            </p>
+
+            {/* Severity chips */}
+            <div className="flex flex-wrap gap-1.5">
+              {SEVS.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => handleSevFilter(s)}
+                  className={[
+                    'px-2.5 py-1 rounded text-[10px] font-semibold transition-colors',
+                    sevFilter === s
+                      ? 'bg-crimson-500 text-white'
+                      : 'bg-white/5 text-gray-400 hover:text-white border border-white/10',
+                  ].join(' ')}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+
+            {/* Category dropdown */}
+            <select
+              value={catFilter}
+              onChange={(e) => handleCatFilter(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 focus:border-crimson-500 text-gray-300 px-3 py-2 rounded-lg text-xs outline-none transition-colors"
+            >
+              <option value="">All Categories</option>
+              {categories.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* List area */}
+          <div className="flex-1 overflow-y-auto">
+            {listLoading && (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-6 h-6 text-crimson-400 animate-spin" />
+              </div>
+            )}
+            {!listLoading && listError && (
+              <div className="p-4">
+                <div className="flex items-center gap-2 text-red-400 bg-red-500/10 border border-red-500/25 rounded-lg px-3 py-2.5 text-xs">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" /> {listError}
+                </div>
+              </div>
+            )}
+            {!listLoading && !listError && displayItems.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                <Search className="w-6 h-6 text-gray-600 mb-2" />
+                <p className="text-xs text-gray-500">No checks match your filters.</p>
+              </div>
+            )}
+            {!listLoading && !listError && displayItems.map((item) => {
+              const id = f(item, 'id')
+              return (
+                <CheckRow
+                  key={id}
+                  item={item}
+                  selected={id === selectedId}
+                  onClick={selectCheck}
+                />
+              )
+            })}
+          </div>
+
+          {/* Footer count */}
+          <div className="px-4 py-2 border-t border-white/10 text-xs text-gray-600 shrink-0">
+            {displayItems.length} check{displayItems.length !== 1 ? 's' : ''}
           </div>
         </div>
 
-        <div className="max-w-5xl mx-auto px-4 py-8">
-          {/* Tab switcher */}
-          <div className="flex gap-1 bg-white/5 border border-white/10 rounded-xl p-1 w-fit mb-8">
-            {TABS_NAV.map((t) => (
-              <button
-                key={t}
-                onClick={() => setActiveTab(t)}
-                className={`px-5 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                  activeTab === t ? 'bg-crimson-500 text-white' : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-
-          {activeTab === 'Tasks'     && <TasksTab />}
-          {activeTab === 'Playbooks' && <PlaybooksTab />}
+        {/* ── Right panel ── */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <CheckDetail
+            checkId={selectedId}
+            list={displayItems}
+            onNavigate={selectCheck}
+          />
         </div>
-      </main>
-
-      <Footer />
+      </div>
     </div>
   )
 }

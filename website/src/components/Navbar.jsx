@@ -7,11 +7,12 @@ const navLinks = [
   {
     label: 'Products',
     dropdown: [
-      { label: 'Web Vulnerability Scanner', tab: 'web' },
-      { label: 'API Security',              tab: 'api' },
-      { label: 'OWASP Scanner',             tab: 'owasp' },
-      { label: 'XSS Detector',              tab: 'xss' },
-      { label: 'SQLi Tester',               tab: 'sqli' },
+      { label: 'Web Scanner',     href: '/products/web-scanner' },
+      { label: 'API Scanner',     href: '/products/api-scanner' },
+      { label: 'Network Scanner', href: '/scanner/network' },
+      { label: 'Host Scanner',    href: '/scanner/host' },
+      { label: 'Cloud Scanner',   href: '/scanner/cloud' },
+      { label: 'Code Scanner',    href: '/scanner/code' },
     ],
   },
   {

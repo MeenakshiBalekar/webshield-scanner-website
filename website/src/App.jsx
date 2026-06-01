@@ -48,7 +48,9 @@ export default function App() {
           <Route path="/company"           element={<CompanyPage />} />
           <Route path="/contact"           element={<ContactPage />} />
           <Route path="/blog"              element={<BlogPage />} />
-          <Route path="/cve"               element={<CveDatabasePage />} />
+          <Route path="/cve"                            element={<Navigate to="/cve-database" replace />} />
+          <Route path="/cve-database"                   element={<CveDatabasePage />} />
+          <Route path="/cve-database/:checkId"          element={<CveDatabasePage />} />
           <Route path="/agent"             element={<AgentPage />} />
           <Route path="/autoscan"            element={<AutoScanPage />} />
           <Route path="/remediation-tasks"  element={<RemediationTasksPage />} />

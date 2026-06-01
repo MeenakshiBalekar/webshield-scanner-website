@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { useSearchParams, Link } from 'react-router-dom'
+import { useSearchParams, useParams, Link } from 'react-router-dom'
 import {
   Search, Copy, Check, ChevronLeft, ChevronRight,
   ExternalLink, AlertCircle, Loader2, Info,
@@ -496,6 +496,7 @@ const SEVS = ['All', 'Critical', 'High', 'Medium', 'Low', 'Info']
 
 export default function CveDatabasePage() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const { checkId: routeCheckId } = useParams()  // from /cve-database/:checkId
 
   /* list state */
   const [allItems, setAllItems]         = useState([])
@@ -509,8 +510,8 @@ export default function CveDatabasePage() {
   const [sevFilter, setSevFilter]       = useState('All')
   const [catFilter, setCatFilter]       = useState('')
 
-  /* selection */
-  const [selectedId, setSelectedId]     = useState(searchParams.get('check') ?? null)
+  /* selection — route param takes priority over query param */
+  const [selectedId, setSelectedId]     = useState(routeCheckId ?? searchParams.get('check') ?? null)
 
   const debounceRef = useRef(null)
 
@@ -535,13 +536,12 @@ export default function CveDatabasePage() {
           setCategories(cats)
         }
 
-        const preselect = searchParams.get('check')
+        const preselect = routeCheckId ?? searchParams.get('check')
         if (preselect) {
           setSelectedId(preselect)
         } else if (arr.length > 0) {
           const firstId = f(arr[0], 'id')
           setSelectedId(firstId)
-          setSearchParams({ check: firstId }, { replace: true })
         }
       })
       .catch((e) => setListError(e.message))

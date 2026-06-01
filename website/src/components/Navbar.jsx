@@ -56,7 +56,7 @@ const navLinks = [
       { label: 'Scan History',  href: '/scanner/history' },
       { label: 'Schedules',     href: '/schedule' },
       { label: 'Blog',          href: '/blog' },
-      { label: 'CVE Database',  href: '/cve' },
+      { label: 'CVE Database',  href: '/cve-database' },
     ],
   },
   { label: 'Pricing', href: '/pricing' },

@@ -4,7 +4,100 @@ import {
   Shield, Plus, AlertCircle, BarChart3, Target,
   Server, Calendar, TrendingUp, ArrowRight, AlertTriangle,
 } from 'lucide-react'
-import { getDashboard } from '../services/api'
+import { getDashboard, getScans, getRemediations } from '../services/api'
+
+const SVCVSS_BADGE = {
+  critical: 'bg-red-700 text-white',
+  high:     'bg-orange-600 text-white',
+  medium:   'bg-yellow-600 text-black',
+  low:      'bg-blue-600 text-white',
+}
+function sevBadge(s) {
+  return SVCVSS_BADGE[(s ?? '').toLowerCase()] || 'bg-slate-600 text-white'
+}
+
+function OpenVulnsWidget() {
+  const [findings, setFindings] = useState([])
+  const [loading, setLoading]   = useState(true)
+
+  useEffect(() => {
+    Promise.all([getScans(), getRemediations()])
+      .then(([scansData, remList]) => {
+        const scans = Array.isArray(scansData) ? scansData : scansData?.scans ?? scansData?.Scans ?? []
+        const remMap = {}
+        const remArr = Array.isArray(remList) ? remList : remList?.items ?? remList?.data ?? []
+        for (const r of remArr) {
+          const id = r.id ?? r.Id
+          if (id) remMap[id] = r.cvssScore ?? r.CvssScore ?? r.cvss?.score ?? 0
+        }
+        // Collect all failed results across scans
+        const rows = []
+        const seenId = new Set()
+        for (const scan of scans) {
+          const results = scan.results ?? scan.Results ?? scan.checks ?? scan.Checks ?? scan.findings ?? []
+          const assetUrl = scan.targetUrl ?? scan.TargetUrl ?? scan.url ?? scan.Url ?? ''
+          for (const r of results) {
+            const rid = r.remediationId ?? r.RemediationId ?? ''
+            const status = (r.status ?? r.Status ?? '').toLowerCase()
+            const failed = status === 'failed' || status === 'fail' || r.passed === false
+            if (!failed || seenId.has(rid || r.checkName)) continue
+            seenId.add(rid || r.checkName)
+            const cvss = rid ? (remMap[rid] ?? 0) : 0
+            rows.push({
+              checkName:    r.checkName ?? r.CheckName ?? r.name ?? r.Name ?? '—',
+              severity:     r.severity  ?? r.Severity  ?? '',
+              remediationId: rid,
+              cvss,
+              assetUrl,
+            })
+          }
+        }
+        rows.sort((a, b) => b.cvss - a.cvss)
+        setFindings(rows.slice(0, 5))
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) return (
+    <div className="bg-white/3 border border-white/10 rounded-2xl p-5 animate-pulse h-48" />
+  )
+  if (findings.length === 0) return null
+
+  return (
+    <div className="mb-8">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-bold text-white">Open Vulnerabilities</h2>
+        <Link to="/remediation" className="text-xs text-crimson-400 hover:text-crimson-300 flex items-center gap-1">
+          View All <ArrowRight className="w-3 h-3" />
+        </Link>
+      </div>
+      <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden">
+        {findings.map((f, i) => (
+          <Link
+            key={i}
+            to={f.remediationId ? `/remediation?check=${encodeURIComponent(f.remediationId)}` : '/remediation'}
+            className="flex items-center gap-3 px-4 py-3 border-b border-white/5 last:border-0 hover:bg-white/3 transition-colors"
+          >
+            {f.severity && (
+              <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded shrink-0 ${sevBadge(f.severity)}`}>
+                {f.severity}
+              </span>
+            )}
+            {f.cvss > 0 && (
+              <span className={`text-sm font-extrabold shrink-0 w-8 text-right ${
+                f.cvss >= 9 ? 'text-red-400' : f.cvss >= 7 ? 'text-orange-400' : f.cvss >= 4 ? 'text-yellow-400' : 'text-blue-400'
+              }`}>{Number(f.cvss).toFixed(1)}</span>
+            )}
+            <p className="flex-1 text-sm text-white font-medium truncate">{f.checkName}</p>
+            {f.assetUrl && <p className="text-xs text-gray-500 truncate max-w-[120px]">{f.assetUrl.replace(/https?:\/\//, '')}</p>}
+            <ArrowRight className="w-3.5 h-3.5 text-gray-600 shrink-0" />
+          </Link>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 function StatCard({ label, value, icon: Icon, color, sub }) {
   return (
@@ -219,6 +312,9 @@ export default function DashboardPage() {
                 </div>
               </div>
             )}
+
+            {/* Open Vulnerabilities widget */}
+            <OpenVulnsWidget />
 
             {/* Launch scanners */}
             <div>

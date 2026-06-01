@@ -74,6 +74,15 @@ export const getAttackPath = (assetId) => request(`/api/risk/attack-path/${asset
 export const getRemediations = () => request('/api/remediation')
 export const getRemediationPlaybook = (checkName) =>
   request(`/api/remediation/${encodeURIComponent(checkName)}`)
+export const getRemediationDetail = (id) =>
+  request(`/api/remediation/${encodeURIComponent(id)}`)
+export const getRemediationSummary = () => request('/api/remediation/summary')
+export const searchRemediations = (q) =>
+  request(`/api/remediation/search?q=${encodeURIComponent(q)}`)
+export const getRemediationsBySeverity = (sev) =>
+  request(`/api/remediation/severity/${encodeURIComponent(sev)}`)
+export const getRemediationsByCategory = (cat) =>
+  request(`/api/remediation/category/${encodeURIComponent(cat)}`)
 
 // Dashboard
 export const getDashboard = () => request('/api/dashboard')

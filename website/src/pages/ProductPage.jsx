@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
   Shield, LogOut, ScanLine, Loader2, AlertCircle,
   CheckCircle, XCircle, ChevronDown, ChevronUp,
-  LayoutDashboard, FileText, Download, Mail, Send,
+  LayoutDashboard, FileText, Download, Mail, Send, ArrowRight,
 } from 'lucide-react'
 import axios from 'axios'
 import { useAuth } from '../context/AuthContext'
@@ -49,8 +49,10 @@ function ResultRow({ item }) {
   const [extra, setExtra] = useState(null)
   const [loadingExtra, setLoadingExtra] = useState(false)
 
-  const passed = item.passed ?? item.status === 'Pass'
-  const checkName = item.checkName || item.name || item.header || 'Unknown check'
+  const passed        = item.passed ?? item.status === 'Pass'
+  const checkName     = item.checkName || item.name || item.header || 'Unknown check'
+  const severity      = item.severity  || item.Severity  || ''
+  const remediationId = item.remediationId || item.RemediationId || ''
 
   const handleToggle = async () => {
     if (!open && !passed && !extra && !item.impact) {
@@ -72,23 +74,44 @@ function ResultRow({ item }) {
 
   return (
     <div className="border-b border-white/5 last:border-0">
-      <button
-        onClick={handleToggle}
-        className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-white/3 transition-colors"
-      >
-        <div className="shrink-0 mt-0.5">
-          {passed
-            ? <CheckCircle className="w-4 h-4 text-green-400" />
-            : <XCircle className="w-4 h-4 text-red-400" />}
-        </div>
-        <span className="flex-1 text-sm font-medium text-white">{checkName}</span>
-        {loadingExtra
-          ? <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-500 shrink-0" />
-          : open
-            ? <ChevronUp className="w-3.5 h-3.5 text-gray-500 shrink-0" />
-            : <ChevronDown className="w-3.5 h-3.5 text-gray-500 shrink-0" />
-        }
-      </button>
+      <div className="flex items-center gap-2 px-4 py-3.5">
+        <button
+          onClick={handleToggle}
+          className="flex-1 flex items-center gap-3 text-left hover:bg-white/3 transition-colors -mx-1 px-1 rounded-lg"
+        >
+          <div className="shrink-0 mt-0.5">
+            {passed
+              ? <CheckCircle className="w-4 h-4 text-green-400" />
+              : <XCircle className="w-4 h-4 text-red-400" />}
+          </div>
+          <div className="flex-1 min-w-0">
+            <span className="text-sm font-medium text-white">{checkName}</span>
+            {severity && (
+              <span className={`ml-2 text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${
+                severity.toLowerCase() === 'critical' ? 'bg-red-700 text-white' :
+                severity.toLowerCase() === 'high'     ? 'bg-orange-600 text-white' :
+                severity.toLowerCase() === 'medium'   ? 'bg-yellow-600 text-black' :
+                severity.toLowerCase() === 'low'      ? 'bg-blue-600 text-white' :
+                'bg-slate-500 text-white'
+              }`}>{severity}</span>
+            )}
+          </div>
+          {loadingExtra
+            ? <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-500 shrink-0" />
+            : open
+              ? <ChevronUp className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+              : <ChevronDown className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+          }
+        </button>
+        {!passed && remediationId && (
+          <Link
+            to={`/remediation?check=${encodeURIComponent(remediationId)}`}
+            className="flex items-center gap-1 text-xs font-semibold text-crimson-400 hover:text-crimson-300 border border-crimson-500/30 bg-crimson-500/8 hover:bg-crimson-500/15 px-2.5 py-1.5 rounded-lg transition-colors shrink-0 whitespace-nowrap"
+          >
+            View Fix <ArrowRight className="w-3 h-3" />
+          </Link>
+        )}
+      </div>
 
       {open && (
         <div className="px-11 pb-4 space-y-2.5">

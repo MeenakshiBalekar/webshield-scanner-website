@@ -289,8 +289,17 @@ export default function ProductPage() {
   }
 
   const results = result?.results || result?.checks || result?.findings || []
-  const passed = results.filter((r) => r.passed ?? r.status === 'Pass').length
-  const failed = results.filter((r) => !(r.passed ?? r.status === 'Pass')).length
+  // Use API's pre-computed fields; fall back to case-insensitive filter
+  const passed = result?.passedChecks ?? result?.PassedChecks
+    ?? results.filter((r) => (r.passed === true) || (r.status?.toLowerCase() === 'passed') || (r.status?.toLowerCase() === 'pass')).length
+  const failed = result?.failedChecks ?? result?.FailedChecks
+    ?? results.filter((r) => (r.passed === false) || ((r.status?.toLowerCase() === 'failed') || (r.status?.toLowerCase() === 'fail'))).length
+  const total  = result?.totalChecks  ?? result?.TotalChecks  ?? results.length
+
+  const hosting    = result?.hostingPlatform   ?? result?.HostingPlatform   ?? null
+  const confidence = result?.hostingConfidence ?? result?.HostingConfidence ?? null
+  const edge       = result?.edgePlatform      ?? result?.EdgePlatform      ?? null
+  const serverHdr  = result?.rawServerHeader   ?? result?.RawServerHeader   ?? null
 
   return (
     <div className="min-h-screen page-bg flex flex-col">
@@ -362,13 +371,40 @@ export default function ProductPage() {
         {/* Results */}
         {result && (
           <>
+            {/* Hosting / edge banner */}
+            {(hosting || edge || serverHdr) && (
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 bg-white/3 border border-white/10 rounded-2xl px-4 py-3 mb-4 text-sm">
+                {hosting && (
+                  <span className="flex items-center gap-1.5 text-gray-300">
+                    <span className="text-gray-500">🖥 Hosting:</span>
+                    <span className="font-semibold text-white">{hosting}</span>
+                    {confidence != null && (
+                      <span className="text-xs text-gray-500">({confidence}% confidence)</span>
+                    )}
+                  </span>
+                )}
+                {edge && (
+                  <span className="flex items-center gap-1.5 text-gray-300">
+                    <span className="text-gray-500">🛡 Edge:</span>
+                    <span className="font-semibold text-white">{edge}</span>
+                  </span>
+                )}
+                {serverHdr && (
+                  <span className="flex items-center gap-1.5 text-gray-300">
+                    <span className="text-gray-500">Server:</span>
+                    <code className="text-xs font-mono text-gray-400 bg-white/5 px-1.5 py-0.5 rounded">{serverHdr}</code>
+                  </span>
+                )}
+              </div>
+            )}
+
             {/* Summary cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
               {[
                 { label: 'Grade',   value: result.securityGrade ?? '—',  color: 'text-white' },
                 { label: 'Score',   value: result.securityScore != null ? `${result.securityScore}/100` : '—', color: 'text-white' },
-                { label: 'Passed',  value: passed,  color: 'text-green-400' },
-                { label: 'Failed',  value: failed,  color: 'text-red-400' },
+                { label: 'Passed',  value: passed ?? '—', color: 'text-green-400' },
+                { label: 'Failed',  value: failed ?? '—', color: 'text-red-400' },
               ].map(({ label, value, color }) => (
                 <div key={label} className="bg-white/3 border border-white/10 rounded-2xl p-4 text-center">
                   <p className={`text-2xl font-extrabold ${color}`}>{value}</p>

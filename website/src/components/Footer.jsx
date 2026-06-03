@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 import { Shield, Twitter, Linkedin, Github, Youtube, Mail, Phone, MapPin } from 'lucide-react'
 
 const footerLinks = {
@@ -133,10 +134,15 @@ export default function Footer() {
             © {new Date().getFullYear()} Udyo360 Security, Inc. All rights reserved.
           </p>
           <div className="flex flex-wrap gap-4 text-xs">
-            {['Privacy Policy', 'Terms of Service', 'Cookie Policy', 'Responsible Disclosure'].map((l) => (
-              <a key={l} href="#" className="hover:text-white transition-colors">
-                {l}
-              </a>
+            {[
+              { label: 'Privacy Policy',          to: '/privacy-policy' },
+              { label: 'Terms of Service',        to: '/terms-of-service' },
+              { label: 'Cookie Policy',           to: '/cookie-policy' },
+              { label: 'Responsible Disclosure',  to: '/responsible-disclosure' },
+            ].map(({ label, to }) => (
+              <Link key={label} to={to} className="hover:text-white transition-colors">
+                {label}
+              </Link>
             ))}
           </div>
         </div>

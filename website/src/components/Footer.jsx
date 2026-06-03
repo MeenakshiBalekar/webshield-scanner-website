@@ -66,7 +66,7 @@ export default function Footer() {
             <div className="space-y-2 text-xs mb-6">
               <div className="flex items-center gap-2">
                 <Mail className="w-3.5 h-3.5 text-crimson-500" />
-                <span>hello@udyo360.com</span>
+                <span>support@udyo360.com</span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="w-3.5 h-3.5 text-crimson-500" />

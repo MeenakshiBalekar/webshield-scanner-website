@@ -1,10 +1,5 @@
-<svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
-  <rect width="60" height="60" rx="12" fill="#1a1a1a"/>
-  <path d="M30 10 L46 17 L46 32 C46 42 39 49 30 52 C21 49 14 42 14 32 L14 17 Z" fill="#ffffff"/>
-  <path d="M30 15 L42 21 L42 32 C42 39.5 37 45 30 47 C23 45 18 39.5 18 32 L18 21 Z" fill="#1a1a1a"/>
-  <line x1="18" y1="32" x2="42" y2="32" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
-  <circle cx="23" cy="32" r="2" fill="#ffffff"/>
-  <circle cx="30" cy="32" r="2" fill="#aaaaaa"/>
-  <circle cx="37" cy="32" r="2" fill="#666666"/>
-  <polyline points="20,40 27,48 44,30" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60" fill="none">
+  <path d="M13 8 L13 36 A17 17 0 0 0 47 36 L47 8"
+        stroke="#E31837" stroke-width="10.5" stroke-linecap="round"/>
+  <circle cx="30" cy="48" r="5.5" fill="white"/>
 </svg>

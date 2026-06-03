@@ -53,9 +53,9 @@ export default function Footer() {
           {/* Brand column */}
           <div className="col-span-2">
             <a href="#" className="flex items-center gap-2 mb-4">
-              <img src="/udyo360-icon-only.svg" alt="Udyo360" className="w-9 h-9 rounded-lg" />
+              <img src="/udyo360-icon-only.svg" alt="Udyo360" className="w-9 h-9" />
               <span className="text-white font-bold text-xl">
-                Udy<span className="text-crimson-500">◎</span><span className="text-gray-400 font-normal">360</span>
+                Udy◎<span className="text-crimson-500">360</span>
               </span>
             </a>
             <p className="text-sm leading-relaxed mb-5 max-w-xs">

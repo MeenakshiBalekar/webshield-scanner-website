@@ -654,7 +654,7 @@ export default function ProductPage() {
                 <p className="text-gray-500 text-sm py-10 text-center">No results returned.</p>
               )}
               {results.map((item, i) => (
-                <ResultRow key={i} item={item} />
+                <FindingCard key={i} item={item} />
               ))}
             </div>
 

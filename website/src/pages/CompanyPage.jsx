@@ -5,7 +5,7 @@ import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { getCompany, submitContact } from '../services/api'
 
-const FALLBACK_ABOUT = `WebShield is a modern web security platform helping development teams and security engineers find and fix vulnerabilities before attackers do. Founded by security researchers who were tired of slow, expensive, and hard-to-use tools, we built WebShield to make world-class vulnerability scanning accessible to every engineering team.`
+const FALLBACK_ABOUT = `Udyo360 is a modern web security platform helping development teams and security engineers find and fix vulnerabilities before attackers do. Founded by security researchers who were tired of slow, expensive, and hard-to-use tools, we built Udyo360 to make world-class vulnerability scanning accessible to every engineering team.`
 
 const FALLBACK_VALUES = [
   { icon: Lock,  title: 'Security First',        desc: 'We build products that make the web safer, prioritising correctness and coverage over raw speed.' },
@@ -298,7 +298,7 @@ export default function CompanyPage() {
                   ) : (
                     <div className="flex items-center gap-2 text-sm text-gray-300">
                       <Mail className="w-4 h-4 text-crimson-400" />
-                      <a href="mailto:hello@webshield.io" className="hover:text-white transition-colors">hello@webshield.io</a>
+                      <a href="mailto:hello@udyo360.com" className="hover:text-white transition-colors">hello@udyo360.com</a>
                     </div>
                   )}
                   {contact.Website && (

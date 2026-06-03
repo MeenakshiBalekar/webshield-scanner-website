@@ -501,7 +501,7 @@ export default function HelpPage() {
       <Navbar />
 
       {/* Hero */}
-      <div className="pt-20 pb-12 border-b border-white/10 bg-[#0a0f1a]">
+      <div className="pt-20 pb-12 border-b border-white/10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <p className="text-xs text-crimson-500 font-semibold uppercase tracking-widest mb-3">Help Center</p>
           <h1 className="text-4xl font-extrabold text-white mb-4">How can we help?</h1>

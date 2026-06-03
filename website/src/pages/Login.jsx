@@ -37,11 +37,9 @@ export default function Login() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 justify-center mb-8">
-          <div className="w-9 h-9 bg-crimson-500 rounded-lg flex items-center justify-center">
-            <Shield className="w-5 h-5 text-white" />
-          </div>
+          <img src="/udyo360-icon-only.svg" alt="Udyo360" className="w-9 h-9 rounded-lg" />
           <span className="text-white font-bold text-2xl tracking-tight">
-            Udyo<span className="text-crimson-500">360</span>
+            Udy<span className="text-crimson-500">◎</span><span className="text-gray-400 font-normal">360</span>
           </span>
         </Link>
 

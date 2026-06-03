@@ -572,6 +572,7 @@ export default function CveDatabasePage() {
   /* ── Severity chip click ── */
   const handleSevFilter = useCallback(async (sev) => {
     setSevFilter(sev)
+    setSearchParams({})
     if (sev === 'All') {
       applyFilters(allItems, 'All', catFilter)
       return
@@ -586,14 +587,15 @@ export default function CveDatabasePage() {
       applyFilters(allItems, sev, catFilter)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allItems, catFilter])
+  }, [allItems, catFilter, setSearchParams])
 
   /* ── Category filter (client-side on full list) ── */
   const handleCatFilter = useCallback((cat) => {
     setCatFilter(cat)
+    setSearchParams({})
     applyFilters(allItems, sevFilter, cat)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allItems, sevFilter])
+  }, [allItems, sevFilter, setSearchParams])
 
   /* ── Apply severity + category filters to a base array ── */
   function applyFilters(base, sev, cat) {

@@ -28,6 +28,10 @@ import AgentPage from './pages/AgentPage'
 import AutoScanPage from './pages/AutoScanPage'
 import RemediationTasksPage from './pages/RemediationTasksPage'
 import ServerMonitorPage from './pages/ServerMonitorPage'
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
+import TermsOfServicePage from './pages/TermsOfServicePage'
+import CookiePolicyPage from './pages/CookiePolicyPage'
+import ResponsibleDisclosurePage from './pages/ResponsibleDisclosurePage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -52,6 +56,10 @@ export default function App() {
           <Route path="/cve-database"                   element={<CveDatabasePage />} />
           <Route path="/cve-database/:checkId"          element={<CveDatabasePage />} />
           <Route path="/agent"             element={<AgentPage />} />
+          <Route path="/privacy-policy"         element={<PrivacyPolicyPage />} />
+          <Route path="/terms-of-service"       element={<TermsOfServicePage />} />
+          <Route path="/cookie-policy"          element={<CookiePolicyPage />} />
+          <Route path="/responsible-disclosure" element={<ResponsibleDisclosurePage />} />
           <Route path="/autoscan"            element={<AutoScanPage />} />
           <Route path="/remediation-tasks"  element={<RemediationTasksPage />} />
           <Route path="/servermonitor"      element={<ServerMonitorPage />} />

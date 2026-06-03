@@ -160,126 +160,142 @@ const PRODUCTS = {
   },
 }
 
-function ResultRow({ item }) {
+const SEV_THEME = {
+  Critical: { bg: 'bg-red-900/30',    border: 'border-red-500/50',    badge: 'bg-red-600',    text: 'text-red-400'    },
+  High:     { bg: 'bg-orange-900/25', border: 'border-orange-500/50', badge: 'bg-orange-500', text: 'text-orange-400' },
+  Medium:   { bg: 'bg-yellow-900/20', border: 'border-yellow-500/50', badge: 'bg-yellow-500', text: 'text-yellow-400' },
+  Low:      { bg: 'bg-blue-900/20',   border: 'border-blue-600/50',   badge: 'bg-blue-600',   text: 'text-blue-400'   },
+}
+function sevTheme(s) {
+  return SEV_THEME[(s ?? '').charAt(0).toUpperCase() + (s ?? '').slice(1).toLowerCase()] ?? SEV_THEME.Low
+}
+
+function FindingCard({ item }) {
   const [open, setOpen] = useState(false)
-  const [extra, setExtra] = useState(null)
-  const [loadingExtra, setLoadingExtra] = useState(false)
 
-  const passed        = item.passed ?? item.status === 'Pass'
-  const checkName     = item.checkName || item.name || item.header || 'Unknown check'
-  const severity      = item.severity  || item.Severity  || ''
-  const remediationId = item.remediationId || item.RemediationId || ''
+  const passed          = item.passed === true || (item.status?.toLowerCase() === 'passed') || (item.status?.toLowerCase() === 'pass')
+  const checkName       = item.checkName       || item.name           || item.header         || 'Unknown check'
+  const severity        = item.severity        || item.Severity       || ''
+  const remediationId   = item.remediationId   || item.RemediationId  || ''
+  const technicalDetails = item.technicalDetails || item.TechnicalDetails || item.details     || null
+  const whyItMatters    = item.whyItMatters     || item.WhyItMatters  || item.impact          || item.riskDescription || null
+  const whatCanGoWrong  = item.whatCanGoWrong   || item.WhatCanGoWrong || item.consequence    || item.ifNotFixed      || null
+  const businessImpact  = item.businessImpact   || item.BusinessImpact || null
+  const attackScenario  = item.attackScenario   || item.AttackScenario || null
+  const fixSteps        = item.fixSteps         || item.FixSteps      || item.recommendation  || item.remediation     || null
+  const riskScore       = item.riskScore        || item.RiskScore     || null
 
-  const handleToggle = async () => {
-    if (!open && !passed && !extra && !item.impact) {
-      setLoadingExtra(true)
-      try {
-        const data = await getRemediation(checkName)
-        setExtra(data)
-      } catch { /* backend may not have this check */ }
-      setLoadingExtra(false)
-    }
-    setOpen((v) => !v)
-  }
-
-  // Support both new backend fields (item.impact / item.consequence)
-  // and legacy remediation endpoint response
-  const impact        = item.impact         || item.riskDescription  || extra?.impact        || extra?.riskDescription
-  const consequence   = item.consequence    || item.ifNotFixed       || extra?.consequence   || extra?.ifNotFixed
-  const fix           = item.recommendation || item.remediation      || extra?.recommendation || extra?.fix
-  const attackScenario = item.attackScenario || item.AttackScenario  || extra?.attackScenario || null
-  const fixSteps       = item.fixSteps      || item.FixSteps         || extra?.fixSteps      || null
+  const c = sevTheme(severity)
+  const hasDetail = technicalDetails || whyItMatters || whatCanGoWrong || businessImpact || attackScenario || fixSteps
 
   return (
-    <div className="border-b border-white/5 last:border-0">
-      <div className="flex items-center gap-2 px-4 py-3.5">
-        <button
-          onClick={handleToggle}
-          className="flex-1 flex items-center gap-3 text-left hover:bg-white/3 transition-colors -mx-1 px-1 rounded-lg"
-        >
-          <div className="shrink-0 mt-0.5">
-            {passed
-              ? <CheckCircle className="w-4 h-4 text-green-400" />
-              : <XCircle className="w-4 h-4 text-red-400" />}
-          </div>
-          <div className="flex-1 min-w-0">
-            <span className="text-sm font-medium text-white">{checkName}</span>
-            {severity && (
-              <span className={`ml-2 text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${
-                severity.toLowerCase() === 'critical' ? 'bg-red-700 text-white' :
-                severity.toLowerCase() === 'high'     ? 'bg-orange-600 text-white' :
-                severity.toLowerCase() === 'medium'   ? 'bg-yellow-600 text-black' :
-                severity.toLowerCase() === 'low'      ? 'bg-blue-600 text-white' :
-                'bg-slate-500 text-white'
-              }`}>{severity}</span>
-            )}
-          </div>
-          {loadingExtra
-            ? <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-500 shrink-0" />
-            : open
-              ? <ChevronUp className="w-3.5 h-3.5 text-gray-500 shrink-0" />
-              : <ChevronDown className="w-3.5 h-3.5 text-gray-500 shrink-0" />
-          }
-        </button>
-        {!passed && remediationId && (
-          <Link
-            to={`/remediation?check=${encodeURIComponent(remediationId)}`}
-            className="flex items-center gap-1 text-xs font-semibold text-crimson-400 hover:text-crimson-300 border border-crimson-500/30 bg-crimson-500/8 hover:bg-crimson-500/15 px-2.5 py-1.5 rounded-lg transition-colors shrink-0 whitespace-nowrap"
-          >
-            View Fix <ArrowRight className="w-3 h-3" />
-          </Link>
-        )}
-      </div>
+    <div className={`rounded-xl border ${c.border} ${c.bg} mb-2 overflow-hidden transition-all`}>
+      {/* Header — always visible */}
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center gap-3 px-4 py-3.5 text-left"
+      >
+        <div className="shrink-0">
+          {passed
+            ? <CheckCircle className="w-4 h-4 text-green-400" />
+            : <XCircle className="w-4 h-4 text-red-400" />}
+        </div>
+        <div className="flex-1 min-w-0">
+          <span className="text-sm font-semibold text-white">{checkName}</span>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {severity && (
+            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded text-white ${c.badge}`}>
+              {severity}
+            </span>
+          )}
+          {riskScore != null && (
+            <span className={`text-xs font-bold ${c.text}`}>{riskScore}/10</span>
+          )}
+          {!passed && remediationId && (
+            <Link
+              to={`/remediation?check=${encodeURIComponent(remediationId)}`}
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1 text-[10px] font-semibold text-crimson-400 hover:text-crimson-300 border border-crimson-500/30 bg-crimson-500/8 hover:bg-crimson-500/15 px-2 py-1 rounded-lg transition-colors whitespace-nowrap"
+            >
+              View Fix <ArrowRight className="w-3 h-3" />
+            </Link>
+          )}
+          {hasDetail && (
+            <ChevronDown className={`w-3.5 h-3.5 text-gray-500 transition-transform ${open ? 'rotate-180' : ''}`} />
+          )}
+        </div>
+      </button>
 
-      {open && (
-        <div className="px-11 pb-4 space-y-2.5">
-          {item.details && (
-            <p className="text-xs text-gray-400">{item.details}</p>
-          )}
-          {impact && (
-            <div className="bg-orange-500/8 border border-orange-500/20 rounded-lg px-3 py-2.5">
-              <p className="text-xs font-semibold text-orange-400 mb-1">Why this is a risk</p>
-              <p className="text-xs text-gray-300 leading-relaxed">{impact}</p>
+      {/* Expanded detail panel */}
+      {open && hasDetail && (
+        <div className="px-4 pb-4 pt-3 border-t border-white/10 space-y-3">
+
+          {technicalDetails && (
+            <div className="bg-black/30 rounded-lg px-3 py-2.5">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">🔍 What Was Found</p>
+              <p className={`text-xs font-mono leading-relaxed ${c.text}`}>{technicalDetails}</p>
             </div>
           )}
-          {consequence && (
-            <div className="bg-red-500/8 border border-red-500/20 rounded-lg px-3 py-2.5">
-              <p className="text-xs font-semibold text-red-400 mb-1">If left unfixed</p>
-              <p className="text-xs text-gray-300 leading-relaxed">{consequence}</p>
+
+          {whyItMatters && (
+            <div>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">
+                ⚠️ Why This Is {severity || 'a'} Severity
+              </p>
+              <p className="text-sm text-gray-200 leading-relaxed">{whyItMatters}</p>
             </div>
           )}
-          {fix && (
-            <div className="bg-green-500/8 border border-green-500/20 rounded-lg px-3 py-2.5">
-              <p className="text-xs font-semibold text-green-400 mb-1">How to fix</p>
-              <p className="text-xs text-gray-300 leading-relaxed">{fix}</p>
+
+          {whatCanGoWrong && (
+            <div>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">💥 What Happens If Not Fixed</p>
+              <p className="text-sm text-gray-200 leading-relaxed">{whatCanGoWrong}</p>
             </div>
           )}
+
+          {businessImpact && (
+            <div>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">🏢 Business Impact</p>
+              <p className="text-sm text-gray-200 leading-relaxed">{businessImpact}</p>
+            </div>
+          )}
+
           {attackScenario && (
-            <div className="bg-[#0d1117] border border-white/10 rounded-lg px-3 py-2.5">
-              <p className="text-xs font-semibold text-purple-400 mb-1.5">How an attacker exploits this</p>
-              <p className="text-xs font-mono text-gray-300 leading-relaxed whitespace-pre-wrap">{attackScenario}</p>
+            <div className="bg-red-950/40 border border-red-800/40 rounded-lg px-3 py-2.5">
+              <p className="text-[10px] font-bold text-red-400 uppercase tracking-wide mb-2">🎯 Real Attack Scenario</p>
+              <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-line">{attackScenario}</p>
             </div>
           )}
+
           {fixSteps && (
-            <div className="bg-green-500/5 border border-green-500/15 rounded-lg px-3 py-2.5">
-              <p className="text-xs font-semibold text-green-400 mb-2">How to fix — step by step</p>
+            <div className="bg-green-950/40 border border-green-800/40 rounded-lg px-3 py-2.5">
+              <p className="text-[10px] font-bold text-green-400 uppercase tracking-wide mb-2">🛠 How To Fix — Step By Step</p>
               {Array.isArray(fixSteps) ? (
                 <ol className="space-y-1.5 list-none">
                   {fixSteps.map((step, i) => (
-                    <li key={i} className="flex items-start gap-2 text-xs text-gray-300 leading-relaxed">
+                    <li key={i} className="flex items-start gap-2 text-sm text-gray-300 leading-relaxed">
                       <span className="shrink-0 w-4 h-4 rounded-full bg-green-500/20 text-green-400 text-[10px] font-bold flex items-center justify-center mt-0.5">{i + 1}</span>
                       <span>{step}</span>
                     </li>
                   ))}
                 </ol>
               ) : (
-                <p className="text-xs text-gray-300 leading-relaxed whitespace-pre-wrap">{fixSteps}</p>
+                <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-line">{fixSteps}</p>
               )}
             </div>
           )}
-          {!impact && !consequence && !fix && !attackScenario && !fixSteps && !item.details && !loadingExtra && (
-            <p className="text-xs text-gray-500 italic">No additional details available.</p>
+
+          {riskScore != null && (
+            <div className="flex items-center gap-2 pt-1">
+              <span className="text-xs text-gray-500 shrink-0">Risk Score</span>
+              <div className="flex-1 bg-white/8 rounded-full h-1.5">
+                <div className={`h-1.5 rounded-full ${c.badge}`} style={{ width: `${(riskScore / 10) * 100}%` }} />
+              </div>
+              <span className={`text-xs font-bold ${c.text} shrink-0`}>{riskScore}/10</span>
+            </div>
           )}
+
         </div>
       )}
     </div>

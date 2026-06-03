@@ -118,11 +118,9 @@ export default function Navbar({ banner }) {
         <div className="flex items-center justify-between h-16 md:h-18">
           {/* Logo */}
           <a href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 bg-crimson-500 rounded-lg flex items-center justify-center group-hover:bg-crimson-600 transition-colors">
-              <Shield className="w-5 h-5 text-white" />
-            </div>
+            <img src="/udyo360-icon-only.svg" alt="Udyo360" className="w-9 h-9 rounded-lg" />
             <span className="text-white font-bold text-xl tracking-tight">
-              Udyo<span className="text-crimson-500">360</span>
+              Udyo<span className="text-gray-400 font-normal">360</span>
             </span>
           </a>
 

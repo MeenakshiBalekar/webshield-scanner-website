@@ -92,11 +92,9 @@ export default function BlogPage() {
     <div className="min-h-screen page-bg flex flex-col">
       <header className="flex items-center justify-between px-6 py-4 border-b border-white/10">
         <Link to="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-crimson-500 rounded-lg flex items-center justify-center">
-            <Shield className="w-5 h-5 text-white" />
-          </div>
+          <img src="/udyo360-icon-only.svg" alt="Udyo360" className="w-9 h-9 rounded-lg" />
           <span className="text-white font-bold text-xl tracking-tight">
-            Udyo<span className="text-crimson-500">360</span>
+            Udyo<span className="text-gray-400 font-normal">360</span>
           </span>
         </Link>
         <Link to="/" className="text-gray-400 hover:text-white text-sm transition-colors">← Back to home</Link>

@@ -1,0 +1,12 @@
+<svg width="200" height="60" viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="60" fill="#0d1220" rx="10"/>
+  <rect x="10" y="10" width="40" height="40" rx="8" fill="#1a1a1a" stroke="#333333" stroke-width="1.5"/>
+  <path d="M30 16 L42 21 L42 31 C42 38 36.5 43.5 30 45.5 C23.5 43.5 18 38 18 31 L18 21 Z" fill="#ffffff"/>
+  <path d="M30 20 L39 24 L39 31 C39 36.5 35 40.5 30 42 C25 40.5 21 36.5 21 31 L21 24 Z" fill="#1a1a1a"/>
+  <line x1="21" y1="31" x2="39" y2="31" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round"/>
+  <circle cx="25" cy="31" r="1.8" fill="#ffffff"/>
+  <circle cx="30" cy="31" r="1.8" fill="#aaaaaa"/>
+  <circle cx="35" cy="31" r="1.8" fill="#666666"/>
+  <polyline points="23,37 28,43 40,29" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="62" y="37" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="600" fill="#ffffff" letter-spacing="-0.3">Udyo<tspan fill="#cccccc" font-weight="400">360</tspan></text>
+</svg>

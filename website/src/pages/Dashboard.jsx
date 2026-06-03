@@ -77,7 +77,7 @@ export default function Dashboard() {
         <Link to="/" className="flex items-center gap-2">
           <img src="/udyo360-icon-only.svg" alt="Udyo360" className="w-9 h-9 rounded-lg" />
           <span className="text-white font-bold text-xl tracking-tight">
-            Udy<span className="text-crimson-500">◎</span><span className="text-gray-400 font-normal">360</span>
+            Udy◎<span className="text-crimson-500">360</span>
           </span>
         </Link>
         <button

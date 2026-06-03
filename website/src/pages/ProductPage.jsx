@@ -425,7 +425,7 @@ export default function ProductPage() {
       <div className="min-h-screen page-bg flex items-center justify-center text-white">
         <div className="text-center">
           <p className="text-lg font-semibold mb-2">Unknown product</p>
-          <Link to="/scanner-dashboard" className="text-crimson-400 hover:text-crimson-300 text-sm">
+          <Link to="/dashboard" className="text-crimson-400 hover:text-crimson-300 text-sm">
             Back to dashboard
           </Link>
         </div>

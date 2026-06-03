@@ -60,10 +60,10 @@ export default function App() {
           <Route path="/login"             element={<Login />} />
 
           {/* App */}
-          <Route path="/dashboard"         element={<DashboardPage />} />
+          <Route path="/dashboard"         element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
           <Route path="/products/:type"    element={<PrivateRoute><ProductPage /></PrivateRoute>} />
-          <Route path="/scanner/history"   element={<HistoryPage />} />
-          <Route path="/schedule"          element={<SchedulePage />} />
+          <Route path="/scanner/history"   element={<PrivateRoute><HistoryPage /></PrivateRoute>} />
+          <Route path="/schedule"          element={<PrivateRoute><SchedulePage /></PrivateRoute>} />
 
           {/* Scanners — new */}
           <Route path="/scanner"           element={<ScannerHubPage />} />
@@ -74,12 +74,12 @@ export default function App() {
           <Route path="/scanner/cicd"      element={<CiCdPage />} />
 
           {/* Fleet & Remediation — new */}
-          <Route path="/assets"            element={<AssetsPage />} />
+          <Route path="/assets"            element={<PrivateRoute><AssetsPage /></PrivateRoute>} />
           <Route path="/remediation"       element={<RemediationPage />} />
 
           {/* Billing */}
-          <Route path="/billing"           element={<BillingPage />} />
-          <Route path="/billing/success"   element={<CheckoutSuccessPage />} />
+          <Route path="/billing"           element={<PrivateRoute><BillingPage /></PrivateRoute>} />
+          <Route path="/billing/success"   element={<PrivateRoute><CheckoutSuccessPage /></PrivateRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

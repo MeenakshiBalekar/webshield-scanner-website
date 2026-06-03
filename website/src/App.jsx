@@ -32,6 +32,7 @@ import PrivacyPolicyPage from './pages/PrivacyPolicyPage'
 import TermsOfServicePage from './pages/TermsOfServicePage'
 import CookiePolicyPage from './pages/CookiePolicyPage'
 import ResponsibleDisclosurePage from './pages/ResponsibleDisclosurePage'
+import HelpPage from './pages/HelpPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -60,6 +61,7 @@ export default function App() {
           <Route path="/terms-of-service"       element={<TermsOfServicePage />} />
           <Route path="/cookie-policy"          element={<CookiePolicyPage />} />
           <Route path="/responsible-disclosure" element={<ResponsibleDisclosurePage />} />
+          <Route path="/help"                   element={<HelpPage />} />
           <Route path="/autoscan"            element={<AutoScanPage />} />
           <Route path="/remediation-tasks"  element={<RemediationTasksPage />} />
           <Route path="/servermonitor"      element={<ServerMonitorPage />} />

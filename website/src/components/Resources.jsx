@@ -35,7 +35,7 @@ const resources = [
     tag: 'Webinar',
     title: 'Live Hack: Finding and Exploiting SQL Injection in Modern APIs',
     excerpt:
-      'Watch our security researchers demonstrate real-world SQL injection techniques against REST APIs and show how WebShield detects each one automatically.',
+      'Watch our security researchers demonstrate real-world SQL injection techniques against REST APIs and show how Udyo360 detects each one automatically.',
     date: 'May 21, 2024',
     readTime: '45 min watch',
   },
@@ -45,7 +45,7 @@ const resources = [
     iconBg: 'bg-green-100',
     iconColor: 'text-green-600',
     tag: 'DevSecOps',
-    title: 'Integrating WebShield into GitHub Actions: Step-by-Step',
+    title: 'Integrating Udyo360 into GitHub Actions: Step-by-Step',
     excerpt:
       'Learn how to add automated security scanning to every pull request, configure severity thresholds, and post inline findings as PR review comments.',
     date: 'May 8, 2024',

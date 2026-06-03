@@ -156,7 +156,7 @@ export default function CodeScanPage() {
             </div>
             <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2">Scan Code for Secrets & Vulnerabilities</h1>
             <p className="text-gray-400 leading-relaxed">
-              Paste any source code below. WebShield detects hardcoded secrets, weak algorithms, SQL injection,
+              Paste any source code below. Udyo360 detects hardcoded secrets, weak algorithms, SQL injection,
               and insecure patterns — findings grouped by severity with redacted values.
             </p>
           </div>

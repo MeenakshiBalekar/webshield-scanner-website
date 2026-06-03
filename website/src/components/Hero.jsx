@@ -97,7 +97,7 @@ export default function Hero({ onWatchDemo, onStartFreeScan }) {
             </h1>
 
             <p className="text-lg text-gray-400 leading-relaxed mb-8 max-w-xl">
-              WebShield's intelligent scanner detects SQL injection, XSS, OWASP Top 10, and API security flaws in minutes — giving your team actionable insights to secure your web applications at scale.
+              Udyo360's intelligent scanner detects SQL injection, XSS, OWASP Top 10, and API security flaws in minutes — giving your team actionable insights to secure your web applications at scale.
             </p>
 
             {/* CTA Buttons */}
@@ -154,7 +154,7 @@ export default function Hero({ onWatchDemo, onStartFreeScan }) {
                   <div className="w-3 h-3 rounded-full bg-red-500" />
                   <div className="w-3 h-3 rounded-full bg-yellow-500" />
                   <div className="w-3 h-3 rounded-full bg-green-500" />
-                  <span className="ml-3 text-xs text-gray-400 font-mono">webshield — scan in progress</span>
+                  <span className="ml-3 text-xs text-gray-400 font-mono">udyo360 — scan in progress</span>
                 </div>
 
                 {/* URL Bar */}

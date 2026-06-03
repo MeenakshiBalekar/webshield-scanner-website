@@ -50,7 +50,7 @@ export default function HowItWorks() {
             From Target URL to Full Report in Minutes
           </h2>
           <p className="text-lg text-gray-500 max-w-2xl mx-auto">
-            No agent to install. No complex configuration. Just point WebShield at your
+            No agent to install. No complex configuration. Just point Udyo360 at your
             application and let the engine do the rest.
           </p>
         </div>

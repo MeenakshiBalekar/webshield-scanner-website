@@ -75,9 +75,9 @@ function RegistrationCard({ result, onClose }) {
           <div className="bg-[#0d1117] border border-white/10 rounded-xl overflow-hidden">
             <div className="flex items-center justify-between px-3 py-2 border-b border-white/10">
               <span className="text-xs text-gray-500">Shell</span>
-              <CopyBtn text={`webshield-agent --mode monitor --key ${agentKey}`} />
+              <CopyBtn text={`udyo360-agent --mode monitor --key ${agentKey}`} />
             </div>
-            <pre className="px-3 py-3 text-xs text-gray-300 font-mono whitespace-pre-wrap leading-relaxed overflow-x-auto">{`webshield-agent --mode monitor --key ${agentKey}`}</pre>
+            <pre className="px-3 py-3 text-xs text-gray-300 font-mono whitespace-pre-wrap leading-relaxed overflow-x-auto">{`udyo360-agent --mode monitor --key ${agentKey}`}</pre>
           </div>
           {instructions && (
             <p className="text-xs text-gray-500 mt-3 leading-relaxed">{instructions}</p>
@@ -341,11 +341,11 @@ export default function ServerMonitorPage() {
             <Shield className="w-5 h-5 text-white" />
           </div>
           <span className="text-white font-bold text-xl tracking-tight">
-            Web<span className="text-crimson-500">Shield</span>
+            Udyo<span className="text-crimson-500">360</span>
           </span>
         </Link>
         <div className="flex items-center gap-4">
-          <Link to="/agent" className="text-gray-400 hover:text-white text-sm transition-colors">WebShield Agent</Link>
+          <Link to="/agent" className="text-gray-400 hover:text-white text-sm transition-colors">Udyo360 Agent</Link>
           <button onClick={() => { logout(); navigate('/login') }}
             className="flex items-center gap-1.5 text-gray-400 hover:text-white text-sm transition-colors">
             <LogOut className="w-4 h-4" /> Sign Out

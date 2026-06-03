@@ -41,7 +41,7 @@ export default function Login() {
             <Shield className="w-5 h-5 text-white" />
           </div>
           <span className="text-white font-bold text-2xl tracking-tight">
-            Web<span className="text-crimson-500">Shield</span>
+            Udyo<span className="text-crimson-500">360</span>
           </span>
         </Link>
 
@@ -123,7 +123,7 @@ export default function Login() {
 
           {mode === 'login' && (
             <p className="text-xs text-gray-500 text-center mt-5">
-              Test account: <span className="text-gray-400">test@webshield.com / Test1234!</span>
+              Test account: <span className="text-gray-400">test@udyo360.com / Test1234!</span>
             </p>
           )}
         </div>

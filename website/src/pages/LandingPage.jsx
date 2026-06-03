@@ -53,7 +53,7 @@ function DemoModal({ onClose }) {
               <Play className="w-7 h-7 text-crimson-400 fill-crimson-400 ml-1" />
             </div>
             <p className="text-white font-semibold text-lg mb-1">Product Demo</p>
-            <p className="text-gray-400 text-sm">See WebShield find and explain vulnerabilities in under 2 minutes.</p>
+            <p className="text-gray-400 text-sm">See Udyo360 find and explain vulnerabilities in under 2 minutes.</p>
           </div>
           {/* Uncomment and replace with real YouTube/Vimeo embed:
           <iframe
@@ -65,7 +65,7 @@ function DemoModal({ onClose }) {
         </div>
 
         <div className="px-6 py-4 flex items-center justify-between">
-          <p className="text-sm text-gray-400">WebShield — Web Vulnerability Scanner</p>
+          <p className="text-sm text-gray-400">Udyo360 — Web Vulnerability Scanner</p>
           <button
             onClick={onClose}
             className="text-xs text-gray-500 hover:text-white transition-colors"
@@ -84,7 +84,7 @@ const HUB_ARTICLES = [
     icon: Shield,
     color: 'text-blue-400 bg-blue-500/10',
     title: 'OWASP Top 10 2024 Breakdown',
-    excerpt: 'What changed in the latest OWASP rankings and how each risk maps to a WebShield scanner.',
+    excerpt: 'What changed in the latest OWASP rankings and how each risk maps to a Udyo360 scanner.',
     category: 'Security Research',
     href: '/blog',
   },
@@ -100,7 +100,7 @@ const HUB_ARTICLES = [
     icon: Lock,
     color: 'text-purple-400 bg-purple-500/10',
     title: 'Shift Security Left with CI/CD Scanning',
-    excerpt: 'Step-by-step guide to running WebShield on every pull request in GitHub Actions and GitLab CI.',
+    excerpt: 'Step-by-step guide to running Udyo360 on every pull request in GitHub Actions and GitLab CI.',
     category: 'DevSecOps',
     href: '/blog',
   },

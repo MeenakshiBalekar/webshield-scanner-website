@@ -11,8 +11,8 @@ import { testCicdGate } from '../services/api'
 /* ── Pipeline YAML snippets ── */
 const PIPELINES = {
   'GitHub Actions': {
-    filename: '.github/workflows/webshield.yml',
-    yaml: `name: WebShield Security Scan
+    filename: '.github/workflows/udyo360.yml',
+    yaml: `name: Udyo360 Security Scan
 
 on:
   push:
@@ -20,37 +20,37 @@ on:
   pull_request:
 
 jobs:
-  webshield:
+  udyo360:
     name: Security Scan
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run WebShield Scan
+      - name: Run Udyo360 Scan
         id: scan
         run: |
           curl -sf -X POST \\
-            -H "Authorization: Bearer \${{ secrets.WEBSHIELD_API_KEY }}" \\
+            -H "Authorization: Bearer \${{ secrets.UDYO360_API_KEY }}" \\
             -H "Content-Type: application/json" \\
             -d '{"url":"\${{ vars.TARGET_URL }}","failOn":"high"}' \\
-            \${{ vars.WEBSHIELD_URL }}/api/cicd/gate > result.json
+            \${{ vars.UDYO360_URL }}/api/cicd/gate > result.json
           cat result.json
 
       - name: Evaluate Gate
         run: |
           PASSED=\$(jq -r '.passed' result.json)
           if [ "\$PASSED" != "true" ]; then
-            echo "WebShield gate FAILED — critical/high findings detected"
+            echo "Udyo360 gate FAILED — critical/high findings detected"
             jq '.summary' result.json
             exit 1
           fi
-          echo "WebShield gate PASSED"
+          echo "Udyo360 gate PASSED"
 
       - name: Upload Findings
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: webshield-results
+          name: udyo360-results
           path: result.json`,
   },
   'GitLab CI': {
@@ -58,25 +58,25 @@ jobs:
     yaml: `stages:
   - security
 
-webshield-scan:
+udyo360-scan:
   stage: security
   image: curlimages/curl:latest
   variables:
     TARGET_URL: \$TARGET_URL
-    WEBSHIELD_API_KEY: \$WEBSHIELD_API_KEY
-    WEBSHIELD_URL: \$WEBSHIELD_URL
+    UDYO360_API_KEY: \$UDYO360_API_KEY
+    UDYO360_URL: \$UDYO360_URL
   script:
     - |
       curl -sf -X POST \\
-        -H "Authorization: Bearer \$WEBSHIELD_API_KEY" \\
+        -H "Authorization: Bearer \$UDYO360_API_KEY" \\
         -H "Content-Type: application/json" \\
         -d "{\\\"url\\\":\\\"\$TARGET_URL\\\",\\\"failOn\\\":\\\"high\\\"}" \\
-        \$WEBSHIELD_URL/api/cicd/gate > result.json
+        \$UDYO360_URL/api/cicd/gate > result.json
     - cat result.json
     - |
       PASSED=\$(cat result.json | python3 -c "import sys,json; print(json.load(sys.stdin)['passed'])")
       if [ "\$PASSED" != "True" ]; then
-        echo "WebShield gate FAILED"
+        echo "Udyo360 gate FAILED"
         exit 1
       fi
   artifacts:
@@ -93,30 +93,30 @@ webshield-scan:
     yaml: `version: 2.1
 
 jobs:
-  webshield-scan:
+  udyo360-scan:
     docker:
       - image: cimg/base:current
     steps:
       - checkout
       - run:
-          name: Run WebShield Security Gate
+          name: Run Udyo360 Security Gate
           command: |
             curl -sf -X POST \\
-              -H "Authorization: Bearer \$WEBSHIELD_API_KEY" \\
+              -H "Authorization: Bearer \$UDYO360_API_KEY" \\
               -H "Content-Type: application/json" \\
               -d "{\"url\":\"\$TARGET_URL\",\"failOn\":\"high\"}" \\
-              \$WEBSHIELD_URL/api/cicd/gate > result.json
+              \$UDYO360_URL/api/cicd/gate > result.json
             cat result.json
             PASSED=\$(python3 -c "import json; d=json.load(open('result.json')); exit(0 if d['passed'] else 1)")
       - store_artifacts:
           path: result.json
-          destination: webshield-results
+          destination: udyo360-results
 
 workflows:
   security:
     jobs:
-      - webshield-scan:
-          context: webshield-credentials`,
+      - udyo360-scan:
+          context: udyo360-credentials`,
   },
   Jenkins: {
     filename: 'Jenkinsfile',
@@ -124,9 +124,9 @@ workflows:
   agent any
 
   environment {
-    WEBSHIELD_API_KEY = credentials('webshield-api-key')
+    UDYO360_API_KEY = credentials('udyo360-api-key')
     TARGET_URL        = credentials('target-url')
-    WEBSHIELD_URL     = 'https://your-webshield-instance'
+    UDYO360_URL     = 'https://your-udyo360-instance'
   }
 
   stages {
@@ -136,19 +136,19 @@ workflows:
           def response = sh(
             script: """
               curl -sf -X POST \\
-                -H "Authorization: Bearer \${WEBSHIELD_API_KEY}" \\
+                -H "Authorization: Bearer \${UDYO360_API_KEY}" \\
                 -H "Content-Type: application/json" \\
                 -d '{"url":"\${TARGET_URL}","failOn":"high"}' \\
-                \${WEBSHIELD_URL}/api/cicd/gate
+                \${UDYO360_URL}/api/cicd/gate
             """,
             returnStdout: true
           ).trim()
 
           def result = readJSON text: response
           if (!result.passed) {
-            error("WebShield gate FAILED — critical/high findings: \${result.summary}")
+            error("Udyo360 gate FAILED — critical/high findings: \${result.summary}")
           }
-          echo "WebShield gate PASSED"
+          echo "Udyo360 gate PASSED"
         }
       }
     }
@@ -156,7 +156,7 @@ workflows:
 
   post {
     always {
-      archiveArtifacts artifacts: 'webshield-result.json', allowEmptyArchive: true
+      archiveArtifacts artifacts: 'udyo360-result.json', allowEmptyArchive: true
     }
   }
 }`,
@@ -170,17 +170,17 @@ pool:
   vmImage: ubuntu-latest
 
 variables:
-  - group: webshield-secrets   # contains WEBSHIELD_API_KEY, TARGET_URL, WEBSHIELD_URL
+  - group: udyo360-secrets   # contains UDYO360_API_KEY, TARGET_URL, UDYO360_URL
 
 steps:
   - script: |
       curl -sf -X POST \\
-        -H "Authorization: Bearer \$(WEBSHIELD_API_KEY)" \\
+        -H "Authorization: Bearer \$(UDYO360_API_KEY)" \\
         -H "Content-Type: application/json" \\
         -d '{"url":"\$(TARGET_URL)","failOn":"high"}' \\
-        \$(WEBSHIELD_URL)/api/cicd/gate > result.json
+        \$(UDYO360_URL)/api/cicd/gate > result.json
       cat result.json
-    displayName: 'Run WebShield Security Gate'
+    displayName: 'Run Udyo360 Security Gate'
 
   - script: |
       python3 -c "
@@ -192,7 +192,7 @@ steps:
     displayName: 'Evaluate Gate Result'
 
   - publish: result.json
-    artifact: webshield-findings
+    artifact: udyo360-findings
     condition: always()`,
   },
 }
@@ -332,9 +332,9 @@ export default function CiCdPage() {
 
   const badgeDomain = badgeUrl.replace(/^https?:\/\//, '').split('/')[0] || 'your-domain.com'
   const badgeImgUrl = `${import.meta.env.VITE_API_URL || ''}/api/badge/${encodeURIComponent(badgeDomain)}`
-  const badgeMarkdown = `![WebShield](${badgeImgUrl})`
-  const badgeHtml     = `<img src="${badgeImgUrl}" alt="WebShield Security" />`
-  const badgeShieldIo = `https://img.shields.io/badge/webshield-passing-green?logo=shield`
+  const badgeMarkdown = `![Udyo360](${badgeImgUrl})`
+  const badgeHtml     = `<img src="${badgeImgUrl}" alt="Udyo360 Security" />`
+  const badgeShieldIo = `https://img.shields.io/badge/udyo360-passing-green?logo=shield`
 
   return (
     <div className="min-h-screen page-bg flex flex-col">
@@ -352,7 +352,7 @@ export default function CiCdPage() {
             </div>
             <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2">Shift Security Left</h1>
             <p className="text-gray-400 max-w-2xl leading-relaxed">
-              Drop a WebShield gate into any pipeline in under 5 minutes. Copy the YAML for your platform,
+              Drop a Udyo360 gate into any pipeline in under 5 minutes. Copy the YAML for your platform,
               configure secrets, and every deploy gets a security check before it ships.
             </p>
           </div>
@@ -403,9 +403,9 @@ export default function CiCdPage() {
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Required Secrets / Variables</p>
               <div className="space-y-2">
                 {[
-                  { name: 'WEBSHIELD_API_KEY', desc: 'Your WebShield API key — found in Settings → API Keys' },
+                  { name: 'UDYO360_API_KEY', desc: 'Your Udyo360 API key — found in Settings → API Keys' },
                   { name: 'TARGET_URL',         desc: 'The URL of the app to scan (e.g. https://staging.example.com)' },
-                  { name: 'WEBSHIELD_URL',       desc: 'Your WebShield instance URL (e.g. https://ws.example.com)' },
+                  { name: 'UDYO360_URL',       desc: 'Your Udyo360 instance URL (e.g. https://ws.example.com)' },
                 ].map((s) => (
                   <div key={s.name} className="flex items-start gap-3">
                     <code className="text-xs font-mono text-crimson-400 shrink-0 mt-0.5">{s.name}</code>
@@ -532,8 +532,8 @@ export default function CiCdPage() {
                     {b.preview && (
                       <div className="mb-3">
                         <img
-                          src={`https://img.shields.io/badge/webshield-${badgeDomain !== 'your-domain.com' ? 'passing' : 'unchecked'}-${badgeDomain !== 'your-domain.com' ? 'brightgreen' : 'lightgrey'}?logo=shield&logoColor=white`}
-                          alt="WebShield badge"
+                          src={`https://img.shields.io/badge/udyo360-${badgeDomain !== 'your-domain.com' ? 'passing' : 'unchecked'}-${badgeDomain !== 'your-domain.com' ? 'brightgreen' : 'lightgrey'}?logo=shield&logoColor=white`}
+                          alt="Udyo360 badge"
                           className="h-5"
                         />
                       </div>

@@ -42,7 +42,7 @@ const COMMON_NAV = [
   {
     label: 'Agent',
     dropdown: [
-      { label: 'WebShield Agent',   href: '/agent' },
+      { label: 'Udyo360 Agent',   href: '/agent' },
       { label: 'Auto Scan',         href: '/autoscan' },
       { label: 'Remediation Tasks', href: '/remediation-tasks' },
       { label: 'Server Monitor',    href: '/servermonitor' },
@@ -122,7 +122,7 @@ export default function Navbar({ banner }) {
               <Shield className="w-5 h-5 text-white" />
             </div>
             <span className="text-white font-bold text-xl tracking-tight">
-              Web<span className="text-crimson-500">Shield</span>
+              Udyo<span className="text-crimson-500">360</span>
             </span>
           </a>
 

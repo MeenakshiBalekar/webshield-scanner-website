@@ -227,11 +227,11 @@ export default function AutoScanPage() {
             <Shield className="w-5 h-5 text-white" />
           </div>
           <span className="text-white font-bold text-xl tracking-tight">
-            Web<span className="text-crimson-500">Shield</span>
+            Udyo<span className="text-crimson-500">360</span>
           </span>
         </Link>
         <div className="flex items-center gap-4">
-          <Link to="/agent" className="text-gray-400 hover:text-white text-sm transition-colors">WebShield Agent</Link>
+          <Link to="/agent" className="text-gray-400 hover:text-white text-sm transition-colors">Udyo360 Agent</Link>
           <button
             onClick={handleLogout}
             className="flex items-center gap-1.5 text-gray-400 hover:text-white text-sm transition-colors"

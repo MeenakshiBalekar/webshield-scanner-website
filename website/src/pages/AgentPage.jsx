@@ -40,13 +40,13 @@ const FEATURES = [
 ]
 
 const WIN_STEPS = [
-  { cmd: 'webshield-agent.exe --baseline', comment: '# first run: save baseline' },
-  { cmd: 'webshield-agent.exe',            comment: '# scan & compare drift' },
+  { cmd: 'udyo360-agent.exe --baseline', comment: '# first run: save baseline' },
+  { cmd: 'udyo360-agent.exe',            comment: '# scan & compare drift' },
 ]
 
 const LINUX_STEPS = [
-  { cmd: './webshield-agent --baseline', comment: '# first run: save baseline' },
-  { cmd: './webshield-agent',            comment: '# scan & compare drift' },
+  { cmd: './udyo360-agent --baseline', comment: '# first run: save baseline' },
+  { cmd: './udyo360-agent',            comment: '# scan & compare drift' },
 ]
 
 function CopyButton({ text }) {
@@ -118,7 +118,7 @@ function OllamaSection() {
             <div><span className="text-gray-500"># pull a model (one time)</span></div>
             <div><span className="text-green-400">ollama pull llama3</span></div>
             <div className="mt-2"><span className="text-gray-500"># run as usual — AI analysis is automatic</span></div>
-            <div><span className="text-green-400">./webshield-agent</span></div>
+            <div><span className="text-green-400">./udyo360-agent</span></div>
           </div>
           <p className="text-xs text-gray-500">
             All AI inference runs locally. No API keys. No data sent to any cloud model.
@@ -159,7 +159,7 @@ export default function AgentPage() {
             <Shield className="w-5 h-5 text-white" />
           </div>
           <span className="text-white font-bold text-xl tracking-tight">
-            Web<span className="text-crimson-500">Shield</span>
+            Udyo<span className="text-crimson-500">360</span>
           </span>
         </Link>
         <div className="flex items-center gap-4">
@@ -176,7 +176,7 @@ export default function AgentPage() {
             <Shield className="w-3.5 h-3.5" /> Free Download · No Account Required
           </div>
           <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-4 leading-tight">
-            WebShield Agent
+            Udyo360 Agent
           </h1>
           <p className="text-xl text-gray-300 font-medium mb-2">Security Scanner for Your Server</p>
           <p className="text-gray-400 max-w-xl mx-auto mb-8">
@@ -265,7 +265,7 @@ export default function AgentPage() {
               <CheckCircle2 className="w-4 h-4 text-green-400" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-white mb-1">Output: <code className="text-green-400 font-mono">webshield-report.html</code></p>
+              <p className="text-sm font-semibold text-white mb-1">Output: <code className="text-green-400 font-mono">udyo360-report.html</code></p>
               <p className="text-xs text-gray-400 leading-relaxed">
                 Every scan generates a self-contained HTML report in the current directory.
                 Open it in any browser — no server, no internet connection required.
@@ -284,7 +284,7 @@ export default function AgentPage() {
         <div className="bg-crimson-500/10 border border-crimson-500/20 rounded-2xl p-8 text-center">
           <h3 className="text-xl font-bold text-white mb-2">Need cloud-based scanning?</h3>
           <p className="text-gray-400 text-sm mb-5">
-            The WebShield platform adds scheduled scans, team dashboards, API security testing, and more — from your browser.
+            The Udyo360 platform adds scheduled scans, team dashboards, API security testing, and more — from your browser.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
@@ -306,7 +306,7 @@ export default function AgentPage() {
 
       <footer className="border-t border-white/10 px-6 py-5 text-center">
         <p className="text-xs text-gray-600">
-          WebShield Agent is open source and free forever.{' '}
+          Udyo360 Agent is open source and free forever.{' '}
           <a
             href="https://github.com/meenakshibalekar/webshield-scanner-website"
             target="_blank"

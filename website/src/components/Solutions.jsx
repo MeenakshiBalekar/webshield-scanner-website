@@ -104,7 +104,7 @@ export default function Solutions() {
           <span className="section-tag">Solutions</span>
           <h2 className="section-heading mb-4">Built for Every Security Team</h2>
           <p className="text-lg text-gray-500 max-w-2xl mx-auto">
-            Whether you're an enterprise CISO, a DevOps team lead, or a solo pen tester — WebShield has a solution tailored to your workflow.
+            Whether you're an enterprise CISO, a DevOps team lead, or a solo pen tester — Udyo360 has a solution tailored to your workflow.
           </p>
         </div>
 

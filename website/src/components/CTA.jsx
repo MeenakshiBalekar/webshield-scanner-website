@@ -28,7 +28,7 @@ export default function CTA() {
         </h2>
 
         <p className="text-lg text-gray-400 mb-10 max-w-xl mx-auto">
-          Join 12,000+ security professionals who trust WebShield to protect their applications.
+          Join 12,000+ security professionals who trust Udyo360 to protect their applications.
           Start your free scan in under 2 minutes.
         </p>
 

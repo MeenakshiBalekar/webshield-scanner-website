@@ -57,7 +57,7 @@ export default function Footer() {
                 <Shield className="w-5 h-5 text-white" />
               </div>
               <span className="text-white font-bold text-xl">
-                Web<span className="text-crimson-500">Shield</span>
+                Udyo<span className="text-crimson-500">360</span>
               </span>
             </a>
             <p className="text-sm leading-relaxed mb-5 max-w-xs">
@@ -68,7 +68,7 @@ export default function Footer() {
             <div className="space-y-2 text-xs mb-6">
               <div className="flex items-center gap-2">
                 <Mail className="w-3.5 h-3.5 text-crimson-500" />
-                <span>hello@webshield.io</span>
+                <span>hello@udyo360.com</span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="w-3.5 h-3.5 text-crimson-500" />
@@ -132,7 +132,7 @@ export default function Footer() {
         {/* Bottom bar */}
         <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="text-xs">
-            © {new Date().getFullYear()} WebShield Security, Inc. All rights reserved.
+            © {new Date().getFullYear()} Udyo360 Security, Inc. All rights reserved.
           </p>
           <div className="flex flex-wrap gap-4 text-xs">
             {['Privacy Policy', 'Terms of Service', 'Cookie Policy', 'Responsible Disclosure'].map((l) => (

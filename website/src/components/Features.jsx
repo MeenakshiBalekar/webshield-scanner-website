@@ -90,7 +90,7 @@ export default function Features() {
             Comprehensive Vulnerability Coverage
           </h2>
           <p className="text-lg text-gray-500 max-w-2xl mx-auto">
-            WebShield goes beyond surface-level scanning. Our engine tests every attack surface
+            Udyo360 goes beyond surface-level scanning. Our engine tests every attack surface
             your application exposes to the internet — before the bad guys find it.
           </p>
         </div>

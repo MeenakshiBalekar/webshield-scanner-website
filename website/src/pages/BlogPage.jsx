@@ -6,11 +6,11 @@ const POSTS = [
   {
     id: 1,
     title: 'OWASP Top 10 2024: What Changed and How to Stay Secure',
-    excerpt: 'The latest OWASP Top 10 brings updated rankings and new vulnerability categories. We break down each risk and show you how WebShield maps to every item on the list.',
+    excerpt: 'The latest OWASP Top 10 brings updated rankings and new vulnerability categories. We break down each risk and show you how Udyo360 maps to every item on the list.',
     category: 'Security Research',
     readTime: '8 min read',
     date: '2026-05-15',
-    author: 'WebShield Team',
+    author: 'Udyo360 Team',
     tags: ['OWASP', 'Web Security', 'Best Practices'],
   },
   {
@@ -20,7 +20,7 @@ const POSTS = [
     category: 'How-To',
     readTime: '6 min read',
     date: '2026-05-08',
-    author: 'WebShield Team',
+    author: 'Udyo360 Team',
     tags: ['Headers', 'Hardening', 'CSP'],
   },
   {
@@ -30,7 +30,7 @@ const POSTS = [
     category: 'DevSecOps',
     readTime: '10 min read',
     date: '2026-04-29',
-    author: 'WebShield Team',
+    author: 'Udyo360 Team',
     tags: ['CI/CD', 'DevSecOps', 'Automation'],
   },
   {
@@ -40,7 +40,7 @@ const POSTS = [
     category: 'Vulnerability Deep-Dive',
     readTime: '7 min read',
     date: '2026-04-18',
-    author: 'WebShield Team',
+    author: 'Udyo360 Team',
     tags: ['SQLi', 'OWASP', 'Injection'],
   },
   {
@@ -50,7 +50,7 @@ const POSTS = [
     category: 'How-To',
     readTime: '12 min read',
     date: '2026-04-05',
-    author: 'WebShield Team',
+    author: 'Udyo360 Team',
     tags: ['API Security', 'Checklist', 'Testing'],
   },
   {
@@ -60,7 +60,7 @@ const POSTS = [
     category: 'Security Research',
     readTime: '5 min read',
     date: '2026-03-22',
-    author: 'WebShield Team',
+    author: 'Udyo360 Team',
     tags: ['CVSS', 'CVE', 'Risk Management'],
   },
 ]
@@ -96,7 +96,7 @@ export default function BlogPage() {
             <Shield className="w-5 h-5 text-white" />
           </div>
           <span className="text-white font-bold text-xl tracking-tight">
-            Web<span className="text-crimson-500">Shield</span>
+            Udyo<span className="text-crimson-500">360</span>
           </span>
         </Link>
         <Link to="/" className="text-gray-400 hover:text-white text-sm transition-colors">← Back to home</Link>

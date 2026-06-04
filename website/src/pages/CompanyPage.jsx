@@ -138,17 +138,13 @@ function ContactForm() {
 /* ──────────────── Page ──────────────── */
 export default function CompanyPage() {
   const [data, setData] = useState(null)
-  const [loadError, setLoadError] = useState(null)
-  const [retrying, setRetrying] = useState(false)
   const contactRef = useRef(null)
   const location = useLocation()
 
   const fetchData = () => {
-    setLoadError(null)
-    setRetrying(true)
     getCompany()
-      .then((d) => { setData(d); setRetrying(false) })
-      .catch((err) => { setLoadError(err.message || 'Unable to reach the server'); setRetrying(false) })
+      .then((d) => setData(d))
+      .catch(() => {/* silently fall through to static defaults */})
   }
 
   useEffect(() => { fetchData() }, [])
@@ -195,22 +191,7 @@ export default function CompanyPage() {
           </div>
         </div>
 
-        {loadError && (
-          <div className="max-w-5xl mx-auto px-4 pt-6">
-            <div className="flex items-center justify-between gap-4 bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 rounded-xl px-4 py-3 text-sm">
-              <span><span className="font-semibold">API unreachable:</span> {loadError} — showing default content.</span>
-              <button
-                onClick={fetchData}
-                disabled={retrying}
-                className="shrink-0 text-xs font-semibold bg-yellow-500/20 hover:bg-yellow-500/30 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
-              >
-                {retrying ? 'Retrying…' : 'Retry'}
-              </button>
-            </div>
-          </div>
-        )}
-
-        <div className="max-w-5xl mx-auto w-full px-4 py-12 space-y-16">
+<div className="max-w-5xl mx-auto w-full px-4 py-12 space-y-16">
 
           {/* Values */}
           <section>
@@ -298,7 +279,7 @@ export default function CompanyPage() {
                   ) : (
                     <div className="flex items-center gap-2 text-sm text-gray-300">
                       <Mail className="w-4 h-4 text-crimson-400" />
-                      <a href="mailto:hello@udyo360.com" className="hover:text-white transition-colors">hello@udyo360.com</a>
+                      <a href="mailto:support@udyo360.com" className="hover:text-white transition-colors">support@udyo360.com</a>
                     </div>
                   )}
                   {contact.Website && (

@@ -19,8 +19,8 @@ const CONTACT_OPTIONS = [
   {
     icon: Mail,
     label: 'Email Us',
-    value: 'hello@udyo360.com',
-    href: 'mailto:hello@udyo360.com',
+    value: 'support@udyo360.com',
+    href: 'mailto:support@udyo360.com',
     desc: 'For general questions and sales',
   },
   {

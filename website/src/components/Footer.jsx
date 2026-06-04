@@ -1,64 +1,64 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { Shield, Twitter, Linkedin, Github, Youtube, Mail, Phone, MapPin } from 'lucide-react'
+import { Twitter, Linkedin, Github, Youtube, Mail, Phone, MapPin } from 'lucide-react'
 
 const footerLinks = {
   Products: [
-    'Web Vulnerability Scanner',
-    'API Security Testing',
-    'OWASP Scanner',
-    'XSS Detector',
-    'SQL Injection Tester',
-    'Malware Detection',
+    { label: 'Web Vulnerability Scanner', to: '/scanner' },
+    { label: 'API Security Testing',      to: '/scanner' },
+    { label: 'OWASP Scanner',             to: '/scanner' },
+    { label: 'XSS Detector',              to: '/scanner' },
+    { label: 'SQL Injection Tester',      to: '/scanner' },
+    { label: 'Malware Detection',         to: '/scanner' },
   ],
   Solutions: [
-    'Enterprise',
-    'SMB & Startups',
-    'DevSecOps',
-    'Compliance',
-    'Penetration Testing',
-    'Managed Security',
+    { label: 'Enterprise',          to: '/solutions/enterprise' },
+    { label: 'SMB & Startups',      to: '/solutions/smb' },
+    { label: 'DevSecOps',           to: '/solutions/devsecops' },
+    { label: 'Compliance',          to: '/solutions/compliance' },
+    { label: 'Penetration Testing', to: '/solutions/pen-testing' },
+    { label: 'Managed Security',    to: '/solutions/managed' },
   ],
   Resources: [
-    'Documentation',
-    'API Reference',
-    'Blog',
-    'Whitepapers',
-    'CVE Database',
-    'Webinars',
-    'Security Glossary',
+    { label: 'Documentation',    to: '/help' },
+    { label: 'API Reference',    to: '/help' },
+    { label: 'Blog',             to: '/blog' },
+    { label: 'Whitepapers',      to: '/blog' },
+    { label: 'CVE Database',     to: '/cve-database' },
+    { label: 'Webinars',         to: '/blog' },
+    { label: 'Security Glossary',to: '/blog' },
   ],
   Company: [
-    'About Us',
-    'Careers',
-    'Press',
-    'Partners',
-    'Contact',
-    'Trust Center',
+    { label: 'About Us',     to: '/company' },
+    { label: 'Careers',      to: '/company' },
+    { label: 'Press',        to: '/company' },
+    { label: 'Partners',     to: '/company' },
+    { label: 'Contact',      to: '/contact' },
+    { label: 'Trust Center', to: '/privacy-policy' },
   ],
 }
 
 const social = [
-  { icon: Twitter, label: 'Twitter', href: '#' },
+  { icon: Twitter,  label: 'Twitter',  href: '#' },
   { icon: Linkedin, label: 'LinkedIn', href: '#' },
-  { icon: Github, label: 'GitHub', href: '#' },
-  { icon: Youtube, label: 'YouTube', href: '#' },
+  { icon: Github,   label: 'GitHub',   href: '#' },
+  { icon: Youtube,  label: 'YouTube',  href: '#' },
 ]
 
 export default function Footer() {
   return (
     <footer className="bg-navy-950 text-gray-400">
-      {/* Main footer */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-16 pb-10">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 mb-12">
+
           {/* Brand column */}
           <div className="col-span-2">
-            <a href="#" className="flex items-center gap-2 mb-4">
+            <Link to="/" className="flex items-center gap-2 mb-4">
               <img src="/udyo360-icon-only.svg" alt="Udyo360" className="w-9 h-9" />
               <span className="text-white font-bold text-xl">
                 Udy◎<span className="text-crimson-500">360</span>
               </span>
-            </a>
+            </Link>
             <p className="text-sm leading-relaxed mb-5 max-w-xs">
               Continuous security intelligence — scan, monitor, and remediate across your entire web estate.
             </p>
@@ -67,11 +67,11 @@ export default function Footer() {
             <div className="space-y-2 text-xs mb-6">
               <div className="flex items-center gap-2">
                 <Mail className="w-3.5 h-3.5 text-crimson-500" />
-                <span>support@udyo360.com</span>
+                <a href="mailto:support@udyo360.com" className="hover:text-white transition-colors">support@udyo360.com</a>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="w-3.5 h-3.5 text-crimson-500" />
-                <span>+91 98606 46298</span>
+                <a href="tel:+919860646298" className="hover:text-white transition-colors">+91 98606 46298</a>
               </div>
               <div className="flex items-center gap-2">
                 <MapPin className="w-3.5 h-3.5 text-crimson-500" />
@@ -99,14 +99,11 @@ export default function Footer() {
             <div key={category}>
               <h4 className="text-white font-semibold text-sm mb-4">{category}</h4>
               <ul className="space-y-2.5">
-                {links.map((link) => (
-                  <li key={link}>
-                    <a
-                      href="#"
-                      className="text-xs hover:text-white transition-colors"
-                    >
-                      {link}
-                    </a>
+                {links.map(({ label, to }) => (
+                  <li key={label}>
+                    <Link to={to} className="text-xs hover:text-white transition-colors">
+                      {label}
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -135,10 +132,10 @@ export default function Footer() {
           </p>
           <div className="flex flex-wrap gap-4 text-xs">
             {[
-              { label: 'Privacy Policy',          to: '/privacy-policy' },
-              { label: 'Terms of Service',        to: '/terms-of-service' },
-              { label: 'Cookie Policy',           to: '/cookie-policy' },
-              { label: 'Responsible Disclosure',  to: '/responsible-disclosure' },
+              { label: 'Privacy Policy',         to: '/privacy-policy' },
+              { label: 'Terms of Service',       to: '/terms-of-service' },
+              { label: 'Cookie Policy',          to: '/cookie-policy' },
+              { label: 'Responsible Disclosure', to: '/responsible-disclosure' },
             ].map(({ label, to }) => (
               <Link key={label} to={to} className="hover:text-white transition-colors">
                 {label}

@@ -166,3 +166,24 @@ export const deleteSchedule = (id) =>
   request(`/api/schedule/${id}`, { method: 'DELETE' })
 export const toggleSchedule = (id) =>
   request(`/api/schedule/toggle/${id}`, { method: 'PATCH' })
+
+// AI Insight
+export const getAiTriage = () => request('/api/aiinsight/triage')
+export const generateAiReport = (scanId) =>
+  request('/api/aiinsight/report', { method: 'POST', body: JSON.stringify({ scanId }) })
+export const acknowledgeAlert = (id) =>
+  request(`/api/aiinsight/triage/${id}/acknowledge`, { method: 'POST' })
+export const resolveAlert = (id) =>
+  request(`/api/aiinsight/triage/${id}/resolve`, { method: 'POST' })
+export const dismissAlert = (id) =>
+  request(`/api/aiinsight/triage/${id}/dismiss`, { method: 'POST' })
+
+// Shareable scan links
+export const createShareLink = (scanId) =>
+  request(`/api/share/scan/${scanId}`, { method: 'POST' })
+export const getSharedScan = (token) => request(`/api/share/${token}`)
+
+// Shadow AI Governance
+export const scanShadowAi = (url) =>
+  request('/api/shadowai/scan', { method: 'POST', body: JSON.stringify({ url }) })
+export const getShadowAiTools = () => request('/api/shadowai/tools')

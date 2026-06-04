@@ -19,15 +19,29 @@ const FALLBACK_VALUES = [
 /* ──────────────── Member Card ──────────────── */
 function MemberCard({ member }) {
   const [photoFailed, setPhotoFailed] = useState(false)
-  const showPhoto = member.photoUrl && !photoFailed
-  const name     = member.Name ?? member.name ?? ''
-  const role     = member.Role ?? member.role ?? member.Title ?? member.title ?? ''
-  const bio      = member.Bio  ?? member.bio  ?? ''
-  const photoUrl = member.photoUrl ?? member.PhotoUrl ?? member.photo ?? member.Photo ?? null
+
+  const name = member.Name ?? member.name ?? ''
+  const role = member.Role ?? member.role ?? member.Title ?? member.title ?? member.Position ?? member.position ?? ''
+  const bio  = member.Bio  ?? member.bio  ?? member.Description ?? member.description ?? ''
+
+  // Cover all C#/JS casing variants for photo URL
+  const photoUrl = (
+    member.PhotoUrl   ?? member.photoUrl   ??
+    member.PhotoURL   ?? member.photoURL   ??
+    member.Photo      ?? member.photo      ??
+    member.ImageUrl   ?? member.imageUrl   ??
+    member.ImageURL   ?? member.imageURL   ??
+    member.Image      ?? member.image      ??
+    member.AvatarUrl  ?? member.avatarUrl  ??
+    member.Avatar     ?? member.avatar     ??
+    null
+  )
+
   const initials = name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+
   return (
-    <div className="bg-slate-800 border border-slate-700 rounded-xl p-8 text-center w-full max-w-sm mx-auto">
-      {(showPhoto || photoUrl) ? (
+    <div className="bg-white/3 border border-white/10 rounded-2xl p-8 text-center w-full max-w-sm mx-auto hover:border-crimson-500/30 transition-colors">
+      {(photoUrl && !photoFailed) ? (
         <img
           src={photoUrl}
           alt={name}
@@ -36,12 +50,12 @@ function MemberCard({ member }) {
         />
       ) : (
         <div className="w-24 h-24 rounded-full bg-gradient-to-br from-crimson-600 to-crimson-900 flex items-center justify-center mx-auto mb-5 text-2xl font-bold text-white">
-          {initials}
+          {initials || '?'}
         </div>
       )}
       <h3 className="text-white font-semibold text-lg">{name}</h3>
       <p className="text-crimson-400 text-sm font-medium mb-3">{role}</p>
-      {bio && <p className="text-slate-400 text-sm leading-relaxed">{bio}</p>}
+      {bio && <p className="text-gray-400 text-sm leading-relaxed">{bio}</p>}
     </div>
   )
 }
@@ -155,10 +169,21 @@ export default function CompanyPage() {
     }
   }, [location.state])
 
-  const about   = data?.description ?? data?.Description ?? data?.mission ?? data?.Mission ?? FALLBACK_ABOUT
+  const about   = data?.description ?? data?.Description ?? data?.about ?? data?.About ?? data?.mission ?? data?.Mission ?? FALLBACK_ABOUT
   const apiVals = data?.Values ?? data?.values ?? []
   const values  = apiVals.length > 0 ? apiVals : null   // null = use fallback
-  const team    = data?.Team ?? data?.team ?? []
+
+  // Cover all common field names the C# backend might use for team members
+  const rawTeam = (
+    data?.Team        ?? data?.team        ??
+    data?.Members     ?? data?.members     ??
+    data?.TeamMembers ?? data?.teamMembers ??
+    data?.Staff       ?? data?.staff       ??
+    data?.People      ?? data?.people      ??
+    data?.Leadership  ?? data?.leadership  ??
+    []
+  )
+  const team    = Array.isArray(rawTeam) ? rawTeam : []
   const press   = data?.Press ?? data?.press ?? []
   const contact = data?.Contact ?? data?.contact ?? {}
 

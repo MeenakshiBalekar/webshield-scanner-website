@@ -14,6 +14,7 @@ import SolutionsPage from './pages/SolutionsPage'
 import SolutionDetailPage from './pages/SolutionDetailPage'
 import PricingPage from './pages/PricingPage'
 import BlogPage from './pages/BlogPage'
+import BlogPostPage from './pages/BlogPostPage'
 import AssetsPage from './pages/AssetsPage'
 import RemediationPage from './pages/RemediationPage'
 import BillingPage from './pages/BillingPage'
@@ -53,6 +54,7 @@ export default function App() {
           <Route path="/company"           element={<CompanyPage />} />
           <Route path="/contact"           element={<ContactPage />} />
           <Route path="/blog"              element={<BlogPage />} />
+          <Route path="/blog/:slug"        element={<BlogPostPage />} />
           <Route path="/cve"                            element={<Navigate to="/cve-database" replace />} />
           <Route path="/cve-database"                   element={<CveDatabasePage />} />
           <Route path="/cve-database/:checkId"          element={<CveDatabasePage />} />

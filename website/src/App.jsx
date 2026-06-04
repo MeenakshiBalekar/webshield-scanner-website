@@ -34,6 +34,10 @@ import TermsOfServicePage from './pages/TermsOfServicePage'
 import CookiePolicyPage from './pages/CookiePolicyPage'
 import ResponsibleDisclosurePage from './pages/ResponsibleDisclosurePage'
 import HelpPage from './pages/HelpPage'
+import AiReportPage from './pages/AiReportPage'
+import AlertTriagePage from './pages/AlertTriagePage'
+import SharedScanPage from './pages/SharedScanPage'
+import ShadowAiPage from './pages/ShadowAiPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -84,6 +88,10 @@ export default function App() {
           <Route path="/scanner/cloud"     element={<CloudScanPage />} />
           <Route path="/scanner/code"      element={<CodeScanPage />} />
           <Route path="/scanner/cicd"      element={<CiCdPage />} />
+          <Route path="/scanner/shadow-ai" element={<ShadowAiPage />} />
+
+          {/* Shareable scan — public */}
+          <Route path="/shared/:token"     element={<SharedScanPage />} />
 
           {/* Fleet & Remediation — new */}
           <Route path="/assets"            element={<PrivateRoute><AssetsPage /></PrivateRoute>} />
@@ -92,6 +100,10 @@ export default function App() {
           {/* Billing */}
           <Route path="/billing"           element={<PrivateRoute><BillingPage /></PrivateRoute>} />
           <Route path="/billing/success"   element={<PrivateRoute><CheckoutSuccessPage /></PrivateRoute>} />
+
+          {/* Phase 1 — AI features (auth required) */}
+          <Route path="/ai-report"         element={<PrivateRoute><AiReportPage /></PrivateRoute>} />
+          <Route path="/alert-triage"      element={<PrivateRoute><AlertTriagePage /></PrivateRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

@@ -49,6 +49,16 @@ const COMMON_NAV = [
     ],
   },
   {
+    label: 'Intelligence',
+    dropdown: [
+      { label: 'AI Report',          href: '/ai-report' },
+      { label: 'Alert Triage',       href: '/alert-triage' },
+      { label: 'Threat Feed',        href: '/threat-feed' },
+      { label: 'Shadow AI Scanner',  href: '/scanner/shadow-ai' },
+      { label: 'Scheduled Reports',  href: '/reports/schedule' },
+    ],
+  },
+  {
     label: 'Resources',
     dropdown: [
       { label: 'Dashboard',     href: '/dashboard' },
@@ -57,6 +67,8 @@ const COMMON_NAV = [
       { label: 'Remediation',   href: '/remediation' },
       { label: 'Scan History',  href: '/scanner/history' },
       { label: 'Schedules',     href: '/schedule' },
+      { label: 'Integrations',  href: '/integrations' },
+      { label: 'Trust Badge',   href: '/trust' },
       { label: 'Blog',          href: '/blog' },
       { label: 'CVE Database',  href: '/cve-database' },
     ],

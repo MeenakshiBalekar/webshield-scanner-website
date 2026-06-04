@@ -187,3 +187,33 @@ export const getSharedScan = (token) => request(`/api/share/${token}`)
 export const scanShadowAi = (url) =>
   request('/api/shadowai/scan', { method: 'POST', body: JSON.stringify({ url }) })
 export const getShadowAiTools = () => request('/api/shadowai/tools')
+
+// Integrations
+export const getIntegrations = () => request('/api/integrations')
+export const createIntegration = (data) =>
+  request('/api/integrations', { method: 'POST', body: JSON.stringify(data) })
+export const deleteIntegration = (id) =>
+  request(`/api/integrations/${id}`, { method: 'DELETE' })
+export const testIntegration = (id) =>
+  request(`/api/integrations/${id}/test`, { method: 'POST' })
+export const getIntegrationEvents = () => request('/api/integrations/events')
+
+// Trust
+export const getTrustData = (domain) => request(`/api/trust/${encodeURIComponent(domain)}`)
+
+// Threat intel
+export const getThreatFeed = () => request('/api/threatintel/feed')
+export const getThreatCve = (cveId) => request(`/api/threatintel/cve/${encodeURIComponent(cveId)}`)
+export const enrichThreat = (checkName) =>
+  request(`/api/threatintel/enrich?checkName=${encodeURIComponent(checkName)}`)
+
+// Scheduled reports
+export const getScheduledReports = () => request('/api/scheduledreports')
+export const createScheduledReport = (data) =>
+  request('/api/scheduledreports', { method: 'POST', body: JSON.stringify(data) })
+export const updateScheduledReport = (id, data) =>
+  request(`/api/scheduledreports/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+export const deleteScheduledReport = (id) =>
+  request(`/api/scheduledreports/${id}`, { method: 'DELETE' })
+export const sendReportNow = (id) =>
+  request(`/api/scheduledreports/${id}/send-now`, { method: 'POST' })

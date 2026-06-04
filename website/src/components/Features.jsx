@@ -2,16 +2,20 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Database, Code2, ShieldAlert, Globe, Layers, Cpu,
-  ArrowRight, CheckCircle2
+  ArrowRight, CheckCircle2, Bell, BadgeCheck, Rss, CalendarClock,
 } from 'lucide-react'
 
 const PRODUCT_ROUTES = {
-  'SQL Injection Detection': '/products/sqli',
-  'XSS Detection':           '/products/xss',
-  'OWASP Top 10':            '/products/owasp',
-  'API Security Testing':    '/products/api',
-  'Continuous Monitoring':   '/products/web',
-  'AI-Powered Analysis':     '/products/web',
+  'SQL Injection Detection':  '/products/sqli',
+  'XSS Detection':            '/products/xss',
+  'OWASP Top 10':             '/products/owasp',
+  'API Security Testing':     '/products/api',
+  'Continuous Monitoring':    '/products/web',
+  'AI-Powered Analysis':      '/products/web',
+  'Slack & Webhook Alerts':   '/integrations',
+  'Security Trust Badge':     '/trust',
+  'CVE Threat Feed':          '/threat-feed',
+  'Scheduled Reports':        '/reports/schedule',
 }
 
 const features = [
@@ -68,6 +72,42 @@ const features = [
     description:
       'Machine learning models reduce false positives by 90%, correlate related vulnerabilities, and suggest context-aware remediation steps tailored to your stack.',
     points: ['90% fewer false positives', 'Smart deduplication', 'Stack-aware remediation', 'Risk prioritization'],
+  },
+  {
+    icon: Bell,
+    color: 'text-violet-600',
+    bg: 'bg-violet-50',
+    title: 'Slack & Webhook Alerts',
+    description:
+      'Push scan alerts and regression notifications directly to Slack, Teams, or any webhook endpoint the moment a new vulnerability is detected.',
+    points: ['Slack Block Kit messages', 'Microsoft Teams support', 'Generic webhook (any HTTPS)', 'Delivery event log'],
+  },
+  {
+    icon: BadgeCheck,
+    color: 'text-emerald-600',
+    bg: 'bg-emerald-50',
+    title: 'Security Trust Badge',
+    description:
+      'Embed a live security score badge in your README or website — updated automatically every scan so stakeholders always see your latest posture.',
+    points: ['Live score badge (SVG)', 'HTML & Markdown snippet', 'Grade + compliance highlights', 'Public trust page'],
+  },
+  {
+    icon: Rss,
+    color: 'text-sky-600',
+    bg: 'bg-sky-50',
+    title: 'CVE Threat Feed',
+    description:
+      'Every scan finding enriched with live CVE data, CVSS scores, and exploit availability — so you know which vulnerabilities are being actively exploited.',
+    points: ['Live CVE enrichment', 'CVSS ring scoring', 'Exploit & patch flags', 'Mapped to your checks'],
+  },
+  {
+    icon: CalendarClock,
+    color: 'text-rose-600',
+    bg: 'bg-rose-50',
+    title: 'Scheduled Reports',
+    description:
+      'Automated PDF reports delivered to your inbox on a daily, weekly, or monthly cadence — with optional AI executive summary included.',
+    points: ['PDF & email formats', 'AI narrative summary', 'Multi-recipient support', 'Send-now override'],
   },
 ]
 

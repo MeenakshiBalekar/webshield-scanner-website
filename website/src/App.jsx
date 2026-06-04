@@ -38,6 +38,10 @@ import AiReportPage from './pages/AiReportPage'
 import AlertTriagePage from './pages/AlertTriagePage'
 import SharedScanPage from './pages/SharedScanPage'
 import ShadowAiPage from './pages/ShadowAiPage'
+import IntegrationsPage from './pages/IntegrationsPage'
+import TrustPage from './pages/TrustPage'
+import ThreatFeedPage from './pages/ThreatFeedPage'
+import ScheduledReportsPage from './pages/ScheduledReportsPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -104,6 +108,15 @@ export default function App() {
           {/* Phase 1 — AI features (auth required) */}
           <Route path="/ai-report"         element={<PrivateRoute><AiReportPage /></PrivateRoute>} />
           <Route path="/alert-triage"      element={<PrivateRoute><AlertTriagePage /></PrivateRoute>} />
+
+          {/* Phase 3 — public */}
+          <Route path="/trust"             element={<TrustPage />} />
+          <Route path="/trust/:domain"     element={<TrustPage />} />
+
+          {/* Phase 3 — auth required */}
+          <Route path="/integrations"      element={<PrivateRoute><IntegrationsPage /></PrivateRoute>} />
+          <Route path="/threat-feed"       element={<PrivateRoute><ThreatFeedPage /></PrivateRoute>} />
+          <Route path="/reports/schedule"  element={<PrivateRoute><ScheduledReportsPage /></PrivateRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

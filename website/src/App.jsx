@@ -42,6 +42,10 @@ import IntegrationsPage from './pages/IntegrationsPage'
 import TrustPage from './pages/TrustPage'
 import ThreatFeedPage from './pages/ThreatFeedPage'
 import ScheduledReportsPage from './pages/ScheduledReportsPage'
+import CompliancePage from './pages/CompliancePage'
+import PortfolioPage from './pages/PortfolioPage'
+import MonitoringPage from './pages/MonitoringPage'
+import ApiScanPage from './pages/ApiScanPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -116,7 +120,15 @@ export default function App() {
           {/* Phase 3 — auth required */}
           <Route path="/integrations"      element={<PrivateRoute><IntegrationsPage /></PrivateRoute>} />
           <Route path="/threat-feed"       element={<PrivateRoute><ThreatFeedPage /></PrivateRoute>} />
+          <Route path="/threat-intel"      element={<Navigate to="/threat-feed" replace />} />
           <Route path="/reports/schedule"  element={<PrivateRoute><ScheduledReportsPage /></PrivateRoute>} />
+          <Route path="/reports/scheduled" element={<Navigate to="/reports/schedule" replace />} />
+
+          {/* Phase 2 — auth required */}
+          <Route path="/compliance"        element={<PrivateRoute><CompliancePage /></PrivateRoute>} />
+          <Route path="/portfolio"         element={<PrivateRoute><PortfolioPage /></PrivateRoute>} />
+          <Route path="/monitoring"        element={<PrivateRoute><MonitoringPage /></PrivateRoute>} />
+          <Route path="/scanner/api"       element={<ApiScanPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

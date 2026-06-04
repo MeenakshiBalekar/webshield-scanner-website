@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Shield, Building2, Users, Code, ShieldCheck, Briefcase, ArrowRight, CheckCircle2 } from 'lucide-react'
 import { getSolutions } from '../services/api'
+import Footer from '../components/Footer'
 
 const ICONS = {
   enterprise:             Building2,
@@ -108,6 +109,7 @@ export default function SolutionsPage() {
           </div>
         )}
       </main>
+    <Footer />
     </div>
   )
 }

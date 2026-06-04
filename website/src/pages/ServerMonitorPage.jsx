@@ -6,6 +6,7 @@ import {
   Cpu, HardDrive, Wifi, Activity, Key, Terminal,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import Footer from '../components/Footer'
 
 const API     = import.meta.env.VITE_API_URL ?? ''
 const BACKEND = API || 'https://webshield-backend-api.onrender.com'
@@ -413,6 +414,7 @@ export default function ServerMonitorPage() {
       </main>
 
       {showModal && <RegisterModal onClose={() => setShowModal(false)} onRegistered={handleRegistered} />}
+    <Footer />
     </div>
   )
 }

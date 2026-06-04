@@ -5,6 +5,7 @@ import {
   Zap, Play, CheckCircle, XCircle, Clock,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import Footer from '../components/Footer'
 
 const API     = import.meta.env.VITE_API_URL ?? ''
 const BACKEND = API || 'https://webshield-backend-api.onrender.com'
@@ -329,6 +330,7 @@ export default function AutoScanPage() {
           )}
         </div>
       </main>
+    <Footer />
     </div>
   )
 }

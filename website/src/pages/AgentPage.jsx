@@ -4,6 +4,7 @@ import {
   Shield, Network, Server, Lock, GitCompare,
   Download, Terminal, Cpu, CheckCircle2, ChevronDown, ChevronUp,
 } from 'lucide-react'
+import Footer from '../components/Footer'
 
 const API = import.meta.env.VITE_API_URL ?? ''
 const BACKEND = API || 'https://webshield-backend-api.onrender.com'
@@ -302,19 +303,7 @@ export default function AgentPage() {
 
       </main>
 
-      <footer className="border-t border-white/10 px-6 py-5 text-center">
-        <p className="text-xs text-gray-600">
-          Udyo360 Agent is open source and free forever.{' '}
-          <a
-            href="https://github.com/meenakshibalekar/webshield-scanner-website"
-            target="_blank"
-            rel="noreferrer"
-            className="text-gray-500 hover:text-gray-300 transition-colors"
-          >
-            View source on GitHub
-          </a>
-        </p>
-      </footer>
+      <Footer />
     </div>
   )
 }

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Shield, CheckCircle2, ChevronDown, ChevronUp, Zap, Building, AlertCircle, Loader2 } from 'lucide-react'
 import { initializePaddle } from '@paddle/paddle-js'
 import { getPricing } from '../services/api'
+import Footer from '../components/Footer'
 
 const API = import.meta.env.VITE_API_URL ?? ''
 
@@ -249,6 +250,7 @@ export default function PricingPage() {
           </Link>
         </div>
       </main>
+    <Footer />
     </div>
   )
 }

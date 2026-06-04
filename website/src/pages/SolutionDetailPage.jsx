@@ -5,6 +5,7 @@ import {
   CheckCircle2, ArrowLeft, Star, AlertCircle, Loader2,
 } from 'lucide-react'
 import { getSolution } from '../services/api'
+import Footer from '../components/Footer'
 
 const ICONS = {
   enterprise:             Building2,
@@ -163,6 +164,7 @@ export default function SolutionDetailPage() {
           </>
         )}
       </main>
+    <Footer />
     </div>
   )
 }

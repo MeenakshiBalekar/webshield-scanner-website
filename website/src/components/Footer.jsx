@@ -1,22 +1,23 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { Twitter, Linkedin, Github, Youtube, Mail, Phone, MapPin } from 'lucide-react'
+import { Github, Facebook, Instagram, Youtube, Mail, Phone, MapPin } from 'lucide-react'
 
 const footerLinks = {
   Products: [
-    { label: 'Web Vulnerability Scanner', to: '/scanner' },
-    { label: 'API Security Testing',      to: '/scanner' },
-    { label: 'OWASP Scanner',             to: '/scanner' },
-    { label: 'XSS Detector',              to: '/scanner' },
-    { label: 'SQL Injection Tester',      to: '/scanner' },
-    { label: 'Malware Detection',         to: '/scanner' },
+    { label: 'Web Scanner',     to: '/scanner' },
+    { label: 'API Scanner',     to: '/scanner' },
+    { label: 'Network Scanner', to: '/scanner/network' },
+    { label: 'Host Scanner',    to: '/scanner/host' },
+    { label: 'Cloud Scanner',   to: '/scanner/cloud' },
+    { label: 'Code Scanner',    to: '/scanner/code' },
+    { label: 'CI/CD Setup',     to: '/scanner/cicd' },
   ],
   Solutions: [
     { label: 'Enterprise',          to: '/solutions/enterprise' },
     { label: 'SMB & Startups',      to: '/solutions/smb' },
     { label: 'DevSecOps',           to: '/solutions/devsecops' },
     { label: 'Compliance',          to: '/solutions/compliance' },
-    { label: 'Penetration Testing', to: '/solutions/pen-testing' },
+    { label: 'Penetration Testing', to: '/solutions/penetration-testing' },
     { label: 'Managed Security',    to: '/solutions/managed' },
   ],
   Resources: [
@@ -39,10 +40,10 @@ const footerLinks = {
 }
 
 const social = [
-  { icon: Twitter,  label: 'Twitter',  href: '#' },
-  { icon: Linkedin, label: 'LinkedIn', href: '#' },
-  { icon: Github,   label: 'GitHub',   href: '#' },
-  { icon: Youtube,  label: 'YouTube',  href: '#' },
+  { icon: Github,    label: 'GitHub',    href: '#' },
+  { icon: Facebook,  label: 'Facebook',  href: '#' },
+  { icon: Instagram, label: 'Instagram', href: '#' },
+  { icon: Youtube,   label: 'YouTube',   href: '#' },
 ]
 
 export default function Footer() {
@@ -86,6 +87,8 @@ export default function Footer() {
                   key={label}
                   href={href}
                   aria-label={label}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="w-8 h-8 bg-white/5 hover:bg-crimson-500 rounded-lg flex items-center justify-center transition-colors"
                 >
                   <Icon className="w-4 h-4" />

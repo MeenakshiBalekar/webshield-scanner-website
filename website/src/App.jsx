@@ -48,6 +48,7 @@ import MonitoringPage from './pages/MonitoringPage'
 import ApiScanPage from './pages/ApiScanPage'
 import DiscoverPage from './pages/DiscoverPage'
 import AuthCallbackPage from './pages/AuthCallbackPage'
+import SettingsProfilePage from './pages/SettingsProfilePage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -87,6 +88,7 @@ export default function App() {
           <Route path="/auth/callback"     element={<AuthCallbackPage />} />
 
           {/* App */}
+          <Route path="/settings/profile"  element={<PrivateRoute><SettingsProfilePage /></PrivateRoute>} />
           <Route path="/dashboard"         element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
           <Route path="/products/:type"    element={<PrivateRoute><ProductPage /></PrivateRoute>} />
           <Route path="/scanner/history"   element={<PrivateRoute><HistoryPage /></PrivateRoute>} />

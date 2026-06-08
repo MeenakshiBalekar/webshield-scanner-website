@@ -6,8 +6,8 @@ import { useAuth } from '../context/AuthContext'
 const PRODUCTS_NAV = {
   label: 'Products',
   dropdown: [
-    { label: 'Web Scanner',     href: '/scanner' },
-    { label: 'API Scanner',     href: '/scanner' },
+    { label: 'Web Scanner',     href: '/products/web' },
+    { label: 'API Scanner',     href: '/scanner/api' },
     { label: 'Network Scanner', href: '/scanner/network' },
     { label: 'Host Scanner',    href: '/scanner/host' },
     { label: 'Cloud Scanner',   href: '/scanner/cloud' },
@@ -18,7 +18,7 @@ const PRODUCTS_NAV = {
 const SCANNERS_NAV = {
   label: 'Scanners',
   dropdown: [
-    { label: 'Web Scanner',        href: '/scanner' },
+    { label: 'Web Scanner',        href: '/products/web' },
     { label: 'Authenticated Scan', href: '/products/web' },
     { label: 'Network Scanner',    href: '/scanner/network' },
     { label: 'Host Scanner',       href: '/scanner/host' },

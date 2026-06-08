@@ -16,7 +16,7 @@ export default function AuthCallbackPage() {
       if (name) localStorage.setItem('ws_name', name)
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
       // Hard redirect so AuthContext re-reads localStorage on mount
-      window.location.href = '/dashboard'
+      window.location.href = '/'
     } else {
       const err = ssoError || 'token_missing'
       navigate(`/login?sso_error=${encodeURIComponent(err)}`, { replace: true })

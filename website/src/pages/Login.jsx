@@ -33,7 +33,7 @@ export default function Login() {
   const { login, register } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const redirect  = searchParams.get('redirect') || '/dashboard'
+  const redirect  = searchParams.get('redirect') || '/'
   const ssoError  = searchParams.get('sso_error')
 
   const [mode, setMode]               = useState('login')

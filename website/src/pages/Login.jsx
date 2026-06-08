@@ -6,9 +6,8 @@ import { useAuth } from '../context/AuthContext'
 const BACKEND = import.meta.env.VITE_API_URL || 'https://webshield-backend-api.onrender.com'
 
 const SSO_ERROR_MESSAGES = {
-  access_denied:  'You cancelled the login.',
-  no_email:       'Your account has a private email. Make it public and try again.',
-  token_missing:  'Sign-in failed — no token received. Please try again.',
+  access_denied: 'You cancelled the login.',
+  no_email:      'Your GitHub/LinkedIn/Google email is private — make it public and try again.',
 }
 
 function GoogleIcon() {
@@ -61,7 +60,7 @@ export default function Login() {
     setLoading(false)
   }
 
-  const ssoErrorMsg = ssoError ? (SSO_ERROR_MESSAGES[ssoError] ?? 'Sign-in failed. Please try again.') : null
+  const ssoErrorMsg = ssoError ? (SSO_ERROR_MESSAGES[ssoError] ?? 'SSO login failed, please try again.') : null
 
   return (
     <div className="min-h-screen page-bg flex items-center justify-center px-4">

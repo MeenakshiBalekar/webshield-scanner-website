@@ -12,6 +12,8 @@ export default function AuthCallbackPage() {
 
     if (token) {
       localStorage.setItem('ws_token', token)
+      const name = params.get('name')
+      if (name) localStorage.setItem('ws_name', name)
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
       // Hard redirect so AuthContext re-reads localStorage on mount
       window.location.href = '/dashboard'

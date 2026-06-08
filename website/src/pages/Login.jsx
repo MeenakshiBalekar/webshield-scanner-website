@@ -6,20 +6,8 @@ import { useAuth } from '../context/AuthContext'
 const BACKEND = import.meta.env.VITE_API_URL || 'https://webshield-backend-api.onrender.com'
 
 const SSO_ERROR_MESSAGES = {
-  access_denied:  'You cancelled the login.',
-  no_email:       'Your account has a private email. Make it public and try again.',
-  token_missing:  'Sign-in failed — no token received. Please try again.',
-}
-
-function GoogleIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 48 48" fill="none">
-      <path d="M47.5 24.5c0-1.6-.1-3.2-.4-4.7H24v8.9h13.2C36.7 32.5 34.1 35 30.5 36.6v5h7.5c4.4-4 7-9.9 7-17.1z" fill="#4285F4"/>
-      <path d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.7c-2.1 1.4-4.8 2.3-8.4 2.3-6.5 0-12-4.3-14-10.2H2.2v5.9C6.2 42.7 14.5 48 24 48z" fill="#34A853"/>
-      <path d="M10 28.6A14.4 14.4 0 0 1 9.5 24c0-1.6.3-3.1.5-4.6V13.5H2.2A24 24 0 0 0 0 24c0 3.9.9 7.5 2.2 10.5L10 28.6z" fill="#FBBC05"/>
-      <path d="M24 9.5c3.6 0 6.8 1.3 9.3 3.7l7-7C36.1 2.2 30.6 0 24 0 14.5 0 6.2 5.3 2.2 13.5l7.8 6.1C12 13.8 17.5 9.5 24 9.5z" fill="#EA4335"/>
-    </svg>
-  )
+  access_denied: 'You cancelled the login.',
+  no_email:      'Your GitHub/LinkedIn email is private — make it public and try again.',
 }
 
 function LinkedInIcon() {
@@ -61,7 +49,7 @@ export default function Login() {
     setLoading(false)
   }
 
-  const ssoErrorMsg = ssoError ? (SSO_ERROR_MESSAGES[ssoError] ?? 'Sign-in failed. Please try again.') : null
+  const ssoErrorMsg = ssoError ? (SSO_ERROR_MESSAGES[ssoError] ?? 'SSO login failed, please try again.') : null
 
   return (
     <div className="min-h-screen page-bg flex items-center justify-center px-4">
@@ -123,13 +111,6 @@ export default function Login() {
             >
               <Github className="w-4 h-4" />
               Continue with GitHub
-            </a>
-            <a
-              href={`${BACKEND}/api/auth/google/login`}
-              className="flex items-center justify-center gap-2.5 w-full bg-white/5 hover:bg-white/10 border border-white/15 hover:border-white/25 text-gray-200 font-semibold py-2.5 rounded-xl text-sm transition-colors"
-            >
-              <GoogleIcon />
-              Continue with Google
             </a>
             <a
               href={`${BACKEND}/api/auth/linkedin/login`}

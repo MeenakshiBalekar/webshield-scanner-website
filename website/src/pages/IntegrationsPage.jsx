@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import {
   Plug, Plus, Trash2, TestTube2, Pencil, Loader2, AlertTriangle,
-  CheckCircle2, XCircle, X, ToggleLeft, ToggleRight, Clock, ChevronDown, ChevronUp,
+  CheckCircle2, XCircle, X, Clock, ChevronDown, ChevronUp, ExternalLink,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
@@ -11,10 +11,13 @@ import {
 } from '../services/api'
 
 const TYPE_META = {
-  slack:   { label: 'Slack',              color: 'bg-purple-500/15 text-purple-400 border-purple-500/30',  urlHint: 'https://hooks.slack.com/services/…' },
-  webhook: { label: 'Generic Webhook',    color: 'bg-blue-500/15 text-blue-400 border-blue-500/30',       urlHint: 'https://yourserver.com/webhook' },
-  teams:   { label: 'Microsoft Teams',    color: 'bg-sky-500/15 text-sky-400 border-sky-500/30',          urlHint: 'https://outlook.office.com/webhook/…' },
+  slack:   { label: 'Slack',           color: 'bg-purple-500/15 text-purple-400 border-purple-500/30', urlHint: 'https://hooks.slack.com/services/…' },
+  webhook: { label: 'Generic Webhook', color: 'bg-blue-500/15 text-blue-400 border-blue-500/30',      urlHint: 'https://yourserver.com/webhook' },
+  teams:   { label: 'Microsoft Teams', color: 'bg-sky-500/15 text-sky-400 border-sky-500/30',         urlHint: 'https://outlook.office.com/webhook/…' },
+  jira:    { label: 'Jira',            color: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30', urlHint: 'https://yoursite.atlassian.net' },
 }
+
+const JIRA_ISSUE_TYPES = ['Bug', 'Task', 'Story', 'Security']
 
 function TypeBadge({ type }) {
   const m = TYPE_META[type?.toLowerCase()] || TYPE_META.webhook
@@ -37,19 +40,94 @@ function Toast({ msg, ok, onClose }) {
   )
 }
 
+const FIELD = "w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-4 py-2.5 rounded-xl text-sm outline-none transition-colors"
+const LABEL = "block text-xs text-gray-400 mb-1.5"
+
+function JiraFields({ form, set }) {
+  return (
+    <>
+      <div>
+        <label className={LABEL}>Jira Site URL</label>
+        <input value={form.webhookUrl} onChange={set('webhookUrl')} placeholder="https://yoursite.atlassian.net"
+          className={FIELD} />
+      </div>
+      <div>
+        <div className="flex items-center justify-between mb-1.5">
+          <label className={LABEL.replace('mb-1.5', '')}>API Token</label>
+          <a href="https://id.atlassian.com/manage/api-tokens" target="_blank" rel="noopener noreferrer"
+            className="text-xs text-crimson-400 hover:text-crimson-300 flex items-center gap-1 transition-colors">
+            Get token <ExternalLink className="w-3 h-3" />
+          </a>
+        </div>
+        <input value={form.apiToken} onChange={set('apiToken')} placeholder="ATATT3x…" autoComplete="off"
+          className={FIELD} />
+      </div>
+      <div>
+        <label className={LABEL}>Account Email</label>
+        <input value={form.email} onChange={set('email')} placeholder="you@yourcompany.com"
+          className={FIELD} />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={LABEL}>Project Key</label>
+          <input value={form.projectKey} onChange={set('projectKey')} placeholder="SEC"
+            className={FIELD + ' font-mono uppercase'} />
+        </div>
+        <div>
+          <label className={LABEL}>Issue Type</label>
+          <select value={form.issueType} onChange={set('issueType')}
+            className={FIELD} style={{ colorScheme: 'dark' }}>
+            {JIRA_ISSUE_TYPES.map((t) => (
+              <option key={t} value={t} className="bg-navy-900">{t}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+    </>
+  )
+}
+
+function buildJiraPayload(form) {
+  return {
+    type: 'jira',
+    name: form.name,
+    webhookUrl: form.webhookUrl,
+    configJson: JSON.stringify({
+      email: form.email,
+      apiToken: form.apiToken,
+      projectKey: form.projectKey,
+      issueType: form.issueType,
+    }),
+  }
+}
+
 function AddModal({ onClose, onSaved }) {
-  const [form, setForm] = useState({ type: 'slack', name: '', webhookUrl: '' })
+  const [form, setForm] = useState({
+    type: 'slack', name: '', webhookUrl: '',
+    email: '', apiToken: '', projectKey: '', issueType: 'Bug',
+  })
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState(null)
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
   const meta = TYPE_META[form.type]
+  const isJira = form.type === 'jira'
+
+  const validate = () => {
+    if (!form.name.trim()) return 'Name is required'
+    if (!form.webhookUrl.trim()) return isJira ? 'Jira Site URL is required' : 'Webhook URL is required'
+    if (isJira && !form.email.trim()) return 'Account email is required'
+    if (isJira && !form.apiToken.trim()) return 'API token is required'
+    if (isJira && !form.projectKey.trim()) return 'Project key is required'
+    return null
+  }
 
   const save = async () => {
-    if (!form.name.trim() || !form.webhookUrl.trim()) { setErr('Name and URL are required'); return }
+    const validErr = validate()
+    if (validErr) { setErr(validErr); return }
     setSaving(true); setErr(null)
     try {
-      const res = await createIntegration(form)
-      onSaved(res)
+      const payload = isJira ? buildJiraPayload(form) : { type: form.type, name: form.name, webhookUrl: form.webhookUrl }
+      onSaved(await createIntegration(payload))
     } catch (e) { setErr(e.message || 'Save failed') }
     setSaving(false)
   }
@@ -57,7 +135,7 @@ function AddModal({ onClose, onSaved }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-navy-950 border border-white/15 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+      <div className="relative bg-navy-950 border border-white/15 rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-white font-bold text-lg">Add Integration</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
@@ -65,27 +143,32 @@ function AddModal({ onClose, onSaved }) {
 
         <div className="space-y-4">
           <div>
-            <label className="block text-xs text-gray-400 mb-1.5">Integration Type</label>
+            <label className={LABEL}>Integration Type</label>
             <select value={form.type} onChange={set('type')}
-              className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white px-4 py-2.5 rounded-xl text-sm outline-none transition-colors"
-              style={{ colorScheme: 'dark' }}>
-              <option value="slack" className="bg-navy-900">Slack</option>
+              className={FIELD} style={{ colorScheme: 'dark' }}>
+              <option value="slack"   className="bg-navy-900">Slack</option>
               <option value="webhook" className="bg-navy-900">Generic Webhook</option>
-              <option value="teams" className="bg-navy-900">Microsoft Teams</option>
+              <option value="teams"   className="bg-navy-900">Microsoft Teams</option>
+              <option value="jira"    className="bg-navy-900">Jira</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-xs text-gray-400 mb-1.5">Name</label>
+            <label className={LABEL}>Name</label>
             <input value={form.name} onChange={set('name')} placeholder="e.g. Security Alerts → #security"
-              className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-4 py-2.5 rounded-xl text-sm outline-none transition-colors" />
+              className={FIELD} />
           </div>
 
-          <div>
-            <label className="block text-xs text-gray-400 mb-1.5">Webhook URL</label>
-            <input value={form.webhookUrl} onChange={set('webhookUrl')} placeholder={meta.urlHint}
-              className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-4 py-2.5 rounded-xl text-sm outline-none transition-colors" />
-          </div>
+          {isJira
+            ? <JiraFields form={form} set={set} />
+            : (
+              <div>
+                <label className={LABEL}>Webhook URL</label>
+                <input value={form.webhookUrl} onChange={set('webhookUrl')} placeholder={meta.urlHint}
+                  className={FIELD} />
+              </div>
+            )
+          }
 
           {err && <p className="text-red-400 text-xs">{err}</p>}
 
@@ -104,23 +187,36 @@ function AddModal({ onClose, onSaved }) {
 }
 
 function EditModal({ integration, onClose, onSaved }) {
-  const id = integration.id ?? integration.Id ?? ''
+  const id       = integration.id      ?? integration.Id      ?? ''
+  const rawType  = (integration.type   ?? integration.Type    ?? 'webhook').toLowerCase()
+  const existing = (() => {
+    try { return JSON.parse(integration.configJson ?? integration.ConfigJson ?? '{}') } catch { return {} }
+  })()
+
   const [form, setForm] = useState({
-    type: (integration.type ?? integration.Type ?? 'webhook').toLowerCase(),
-    name: integration.name ?? integration.Name ?? '',
+    type:       rawType,
+    name:       integration.name       ?? integration.Name       ?? '',
     webhookUrl: integration.webhookUrl ?? integration.WebhookUrl ?? '',
+    email:      existing.email      ?? '',
+    apiToken:   existing.apiToken   ?? '',
+    projectKey: existing.projectKey ?? '',
+    issueType:  existing.issueType  ?? 'Bug',
   })
   const [saving, setSaving] = useState(false)
-  const [err, setErr] = useState(null)
+  const [err, setErr]       = useState(null)
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
+  const isJira = form.type === 'jira'
   const meta = TYPE_META[form.type] || TYPE_META.webhook
 
   const save = async () => {
-    if (!form.name.trim() || !form.webhookUrl.trim()) { setErr('Name and URL are required'); return }
+    if (!form.name.trim()) { setErr('Name is required'); return }
+    if (!form.webhookUrl.trim()) { setErr(isJira ? 'Jira Site URL is required' : 'Webhook URL is required'); return }
     setSaving(true); setErr(null)
     try {
-      const res = await createIntegration({ ...form, id })
-      onSaved(res)
+      const payload = isJira
+        ? { ...buildJiraPayload(form), id }
+        : { type: form.type, name: form.name, webhookUrl: form.webhookUrl, id }
+      onSaved(await createIntegration(payload))
     } catch (e) { setErr(e.message || 'Save failed') }
     setSaving(false)
   }
@@ -128,22 +224,27 @@ function EditModal({ integration, onClose, onSaved }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-navy-950 border border-white/15 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+      <div className="relative bg-navy-950 border border-white/15 rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-white font-bold text-lg">Edit Integration</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
         </div>
         <div className="space-y-4">
           <div>
-            <label className="block text-xs text-gray-400 mb-1.5">Name</label>
+            <label className={LABEL}>Name</label>
             <input value={form.name} onChange={set('name')}
-              className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white px-4 py-2.5 rounded-xl text-sm outline-none transition-colors" />
+              className={FIELD} />
           </div>
-          <div>
-            <label className="block text-xs text-gray-400 mb-1.5">Webhook URL</label>
-            <input value={form.webhookUrl} onChange={set('webhookUrl')} placeholder={meta.urlHint}
-              className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-4 py-2.5 rounded-xl text-sm outline-none transition-colors" />
-          </div>
+          {isJira
+            ? <JiraFields form={form} set={set} />
+            : (
+              <div>
+                <label className={LABEL}>Webhook URL</label>
+                <input value={form.webhookUrl} onChange={set('webhookUrl')} placeholder={meta.urlHint}
+                  className={FIELD} />
+              </div>
+            )
+          }
           {err && <p className="text-red-400 text-xs">{err}</p>}
           <div className="flex gap-3 pt-2">
             <button onClick={onClose} className="flex-1 text-sm text-gray-400 border border-white/15 rounded-xl py-2.5 hover:text-white transition-colors">Cancel</button>
@@ -239,7 +340,7 @@ export default function IntegrationsPage() {
     }
   }
 
-  const handleSaved = (res) => {
+  const handleSaved = () => {
     setShowAdd(false)
     setEditTarget(null)
     load()
@@ -258,7 +359,7 @@ export default function IntegrationsPage() {
               <h1 className="text-4xl font-extrabold text-white mb-2 flex items-center gap-3">
                 <Plug className="w-8 h-8 text-crimson-400" /> Integrations
               </h1>
-              <p className="text-gray-400">Send scan alerts to Slack, Teams, or any webhook endpoint.</p>
+              <p className="text-gray-400">Send scan alerts to Slack, Teams, Jira, or any webhook endpoint.</p>
             </div>
             <button
               onClick={() => setShowAdd(true)}
@@ -282,7 +383,7 @@ export default function IntegrationsPage() {
             <div className="text-center py-20 bg-white/3 border border-white/10 rounded-2xl">
               <Plug className="w-10 h-10 text-gray-600 mx-auto mb-3" />
               <p className="text-white font-semibold">No integrations yet</p>
-              <p className="text-gray-500 text-sm mt-1 mb-5">Connect Slack, Teams, or a webhook to receive scan alerts.</p>
+              <p className="text-gray-500 text-sm mt-1 mb-5">Connect Slack, Teams, Jira, or a webhook to receive scan alerts.</p>
               <button onClick={() => setShowAdd(true)} className="inline-flex items-center gap-2 bg-crimson-500 hover:bg-crimson-600 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
                 <Plus className="w-4 h-4" />Add Integration
               </button>

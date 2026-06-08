@@ -123,6 +123,10 @@ export const downloadReportPdf = (payload) =>
 export const emailReport = (payload) =>
   request('/api/report/email', { method: 'POST', body: JSON.stringify(payload) })
 
+// Authenticated scan
+export const startAuthenticatedScan = (payload) =>
+  request('/api/scan/authenticated', { method: 'POST', body: JSON.stringify(payload) })
+
 // Network / port scan
 export const startNetworkScan = (payload) =>
   request('/api/networkscan', { method: 'POST', body: JSON.stringify(payload) })
@@ -231,6 +235,10 @@ export const startApiScan = (url) =>
   request('/api/scan/api', { method: 'POST', body: JSON.stringify({ url }) })
 export const startApiSpecScan = (payload) =>
   request('/api/apiscan/spec', { method: 'POST', body: JSON.stringify(payload) })
+
+// Jira issue creation from remediation task
+export const createJiraIssue = (taskId) =>
+  request(`/api/remediationtasks/${encodeURIComponent(taskId)}/jira`, { method: 'POST' })
 
 // Attack surface discovery
 export const discoverSubdomains = (domain) =>

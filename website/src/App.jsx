@@ -46,6 +46,7 @@ import CompliancePage from './pages/CompliancePage'
 import PortfolioPage from './pages/PortfolioPage'
 import MonitoringPage from './pages/MonitoringPage'
 import ApiScanPage from './pages/ApiScanPage'
+import DiscoverPage from './pages/DiscoverPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -129,6 +130,7 @@ export default function App() {
           <Route path="/portfolio"         element={<PrivateRoute><PortfolioPage /></PrivateRoute>} />
           <Route path="/monitoring"        element={<PrivateRoute><MonitoringPage /></PrivateRoute>} />
           <Route path="/scanner/api"       element={<ApiScanPage />} />
+          <Route path="/discover"          element={<PrivateRoute><DiscoverPage /></PrivateRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

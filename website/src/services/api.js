@@ -229,3 +229,9 @@ export const getMonitoringRegressions = () => request('/api/monitoring/regressio
 // API scanner
 export const startApiScan = (url) =>
   request('/api/scan/api', { method: 'POST', body: JSON.stringify({ url }) })
+export const startApiSpecScan = (payload) =>
+  request('/api/apiscan/spec', { method: 'POST', body: JSON.stringify(payload) })
+
+// Attack surface discovery
+export const discoverSubdomains = (domain) =>
+  request(`/api/discover?domain=${encodeURIComponent(domain)}`)

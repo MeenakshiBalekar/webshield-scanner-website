@@ -13,6 +13,7 @@ import { useAuth } from '../context/AuthContext'
 const API = import.meta.env.VITE_API_URL ?? ''
 const BACKEND = API || 'https://webshield-backend-api.onrender.com'
 import { getRemediation, downloadReportPdf, emailReport, createSchedule } from '../services/api'
+import EvidencePanel from '../components/EvidencePanel'
 
 function authHeaders() {
   const token = localStorage.getItem('ws_token')
@@ -177,6 +178,7 @@ function FindingCard({ item }) {
   const checkName       = item.checkName       || item.name           || item.header         || 'Unknown check'
   const severity        = item.severity        || item.Severity       || ''
   const remediationId   = item.remediationId   || item.RemediationId  || ''
+  const evidence        = item.evidence        || item.Evidence       || null
   const technicalDetails = item.technicalDetails || item.TechnicalDetails || item.details     || null
   const whyItMatters    = item.whyItMatters     || item.WhyItMatters  || item.impact          || item.riskDescription || null
   const whatCanGoWrong  = item.whatCanGoWrong   || item.WhatCanGoWrong || item.consequence    || item.ifNotFixed      || null
@@ -295,6 +297,8 @@ function FindingCard({ item }) {
               <span className={`text-xs font-bold ${c.text} shrink-0`}>{riskScore}/10</span>
             </div>
           )}
+
+          {!passed && evidence && <EvidencePanel evidence={evidence} />}
 
         </div>
       )}

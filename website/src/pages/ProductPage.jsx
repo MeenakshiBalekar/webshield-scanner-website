@@ -313,21 +313,11 @@ function ReportPanel({ scanUrl, scanResult }) {
   const [emailSent, setEmailSent] = useState(false)
   const [error, setError] = useState(null)
 
-  const buildPayload = () => ({
-    targetUrl: scanUrl,
-    securityGrade: scanResult.securityGrade,
-    securityScore: scanResult.securityScore,
-    failedChecks: scanResult.failedChecks,
-    totalChecks: scanResult.totalChecks,
-    scanDate: scanResult.scanDate || new Date().toISOString(),
-    results: scanResult.results || scanResult.checks || scanResult.findings || [],
-  })
-
   const handleDownload = async () => {
     setDownloading(true)
     setError(null)
     try {
-      const blob = await downloadReportPdf(buildPayload())
+      const blob = await downloadReportPdf({ url: scanUrl })
       const objUrl = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = objUrl
@@ -348,7 +338,7 @@ function ReportPanel({ scanUrl, scanResult }) {
     setError(null)
     setEmailSent(false)
     try {
-      await emailReport({ ...buildPayload(), email: reportEmail.trim() })
+      await emailReport({ url: scanUrl, email: reportEmail.trim() })
       setEmailSent(true)
     } catch (err) {
       setError(err.message)

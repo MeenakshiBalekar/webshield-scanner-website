@@ -7,6 +7,7 @@ import {
 import { useAuth } from '../context/AuthContext'
 import Footer from '../components/Footer'
 import EvidencePanel from '../components/EvidencePanel'
+import { createJiraIssue, getIntegrations } from '../services/api'
 
 const API     = import.meta.env.VITE_API_URL ?? ''
 const BACKEND = API || 'https://webshield-backend-api.onrender.com'
@@ -55,9 +56,12 @@ function SummaryStrip({ summary }) {
 }
 
 /* ── Task card ── */
-function TaskCard({ task, onAction }) {
-  const [actioning, setActioning] = useState(null)
-  const [localStatus, setLocalStatus] = useState(null)
+function TaskCard({ task, onAction, hasJira }) {
+  const [actioning, setActioning]       = useState(null)
+  const [localStatus, setLocalStatus]   = useState(null)
+  const [creatingJira, setCreatingJira] = useState(false)
+  const [jiraIssueKey, setJiraIssueKey] = useState(task.jiraIssueKey ?? task.JiraIssueKey ?? null)
+  const [jiraIssueUrl, setJiraIssueUrl] = useState(task.jiraIssueUrl ?? task.JiraIssueUrl ?? null)
 
   const id          = field(task, 'id', 'Id', 'taskId', 'TaskId')
   const checkName   = field(task, 'checkName', 'CheckName', 'name', 'Name')
@@ -85,6 +89,19 @@ function TaskCard({ task, onAction }) {
     }
   }
 
+  const handleCreateJira = async () => {
+    setCreatingJira(true)
+    try {
+      const res = await createJiraIssue(id)
+      setJiraIssueKey(res.issueKey ?? res.IssueKey ?? res.key ?? res.Key ?? '')
+      setJiraIssueUrl(res.issueUrl ?? res.IssueUrl ?? res.url ?? res.Url ?? '')
+    } catch (err) {
+      alert(err.message ?? 'Failed to create Jira issue')
+    } finally {
+      setCreatingJira(false)
+    }
+  }
+
   return (
     <div className={`border rounded-2xl p-4 transition-all ${isResolved ? 'border-green-500/20 opacity-60' : 'border-white/10'}`}>
       <div className="flex items-start justify-between gap-3 mb-2">
@@ -102,6 +119,11 @@ function TaskCard({ task, onAction }) {
             }`}>
               {status}
             </span>
+            {jiraIssueKey && (
+              <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-500/15 border border-indigo-500/30 text-indigo-400">
+                Jira
+              </span>
+            )}
           </div>
           <p className="text-sm font-semibold text-white leading-snug">{checkName}</p>
           {targetUrl && <p className="text-xs text-gray-500 mt-0.5 truncate">{targetUrl}</p>}
@@ -137,6 +159,26 @@ function TaskCard({ task, onAction }) {
             <CheckCircle className="w-3.5 h-3.5" /> Resolved
           </span>
         )}
+
+        {/* Jira button / badge */}
+        {hasJira && !jiraIssueKey && (
+          <button onClick={handleCreateJira} disabled={creatingJira}
+            className="flex items-center gap-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/25 text-indigo-400 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50">
+            {creatingJira ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+            {creatingJira ? 'Creating…' : 'Create Jira Issue'}
+          </button>
+        )}
+        {jiraIssueKey && (
+          <a
+            href={jiraIssueUrl || '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 bg-indigo-500/10 border border-indigo-500/25 text-indigo-400 text-xs font-bold px-2.5 py-1.5 rounded-lg hover:bg-indigo-500/20 transition-colors"
+          >
+            {jiraIssueKey} <ExternalLink className="w-3 h-3" />
+          </a>
+        )}
+
         {playbookUrl && (
           <a href={playbookUrl} target="_blank" rel="noopener noreferrer"
             className="flex items-center gap-1.5 text-crimson-400 hover:text-crimson-300 text-xs font-semibold ml-auto transition-colors">
@@ -158,6 +200,7 @@ export default function RemediationTasksPage() {
   const [loading, setLoading]   = useState(true)
   const [error, setError]       = useState(null)
   const [sevFilter, setSevFilter] = useState('')
+  const [hasJira, setHasJira]   = useState(false)
 
   const token = localStorage.getItem('ws_token')
 
@@ -174,6 +217,12 @@ export default function RemediationTasksPage() {
       if (!tasksRes.ok) throw new Error(`Server error ${tasksRes.status}`)
       const data = await tasksRes.json()
       setTasks(Array.isArray(data) ? data : data?.tasks ?? data?.Tasks ?? data?.items ?? [])
+      // Check for Jira integration
+      try {
+        const ints = await getIntegrations()
+        const list = Array.isArray(ints) ? ints : (ints?.integrations ?? [])
+        setHasJira(list.some((i) => (i.type ?? i.Type ?? '').toLowerCase() === 'jira'))
+      } catch { /* non-critical */ }
     } catch (err) {
       setError(err.message)
     }
@@ -270,6 +319,7 @@ export default function RemediationTasksPage() {
                 key={field(task, 'id', 'Id', 'taskId') || i}
                 task={task}
                 onAction={handleAction}
+                hasJira={hasJira}
               />
             ))}
           </div>

@@ -18,13 +18,14 @@ const PRODUCTS_NAV = {
 const SCANNERS_NAV = {
   label: 'Scanners',
   dropdown: [
-    { label: 'Web Scanner',     href: '/scanner' },
-    { label: 'Network Scanner', href: '/scanner/network' },
-    { label: 'Host Scanner',    href: '/scanner/host' },
-    { label: 'Cloud Scanner',   href: '/scanner/cloud' },
-    { label: 'Code Scanner',    href: '/scanner/code' },
-    { label: 'CI/CD Setup',     href: '/scanner/cicd' },
-    { label: 'All Scanners',    href: '/scanner' },
+    { label: 'Web Scanner',          href: '/scanner' },
+    { label: 'Authenticated Scan',   href: '/products/web' },
+    { label: 'Network Scanner',      href: '/scanner/network' },
+    { label: 'Host Scanner',         href: '/scanner/host' },
+    { label: 'Cloud Scanner',        href: '/scanner/cloud' },
+    { label: 'Code Scanner',         href: '/scanner/code' },
+    { label: 'CI/CD Setup',          href: '/scanner/cicd' },
+    { label: 'All Scanners',         href: '/scanner' },
   ],
 }
 

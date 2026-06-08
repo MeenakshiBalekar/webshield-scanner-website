@@ -12,7 +12,7 @@ import { useAuth } from '../context/AuthContext'
 
 const API = import.meta.env.VITE_API_URL ?? ''
 const BACKEND = API || 'https://webshield-backend-api.onrender.com'
-import { getRemediation, downloadReportPdf, emailReport, createSchedule } from '../services/api'
+import { getRemediation, downloadReportPdf, emailReport, createSchedule, startAuthenticatedScan } from '../services/api'
 import EvidencePanel from '../components/EvidencePanel'
 
 function authHeaders() {
@@ -423,6 +423,9 @@ export default function ProductPage() {
   const [trend, setTrend] = useState([])
   const [scheduling, setScheduling] = useState(false)
   const [scheduled, setScheduled] = useState(false)
+  const [authEnabled, setAuthEnabled] = useState(false)
+  const [authForm, setAuthForm] = useState({ loginUrl: '', usernameField: 'email', passwordField: 'password', username: '', password: '' })
+  const setAuth = (k) => (e) => setAuthForm((f) => ({ ...f, [k]: e.target.value }))
 
   if (!product) {
     return (
@@ -446,9 +449,14 @@ export default function ProductPage() {
     setTrend([])
     setScheduled(false)
     try {
-      const { data } = await axios.post(`${API}/api${product.endpoint}`, { url: url.trim() })
+      let data
+      if (authEnabled && type === 'web') {
+        data = await startAuthenticatedScan({ targetUrl: url.trim(), ...authForm })
+      } else {
+        const res = await axios.post(`${API}/api${product.endpoint}`, { url: url.trim() })
+        data = res.data
+      }
       setResult(data)
-      // Fetch trend in background — don't block on failure
       fetch(`${BACKEND}/api/scan/trend?url=${encodeURIComponent(url.trim())}`, { headers: authHeaders() })
         .then((r) => r.ok ? r.json() : null)
         .then((d) => { if (d) setTrend(Array.isArray(d) ? d : d?.scores ?? d?.trend ?? d?.data ?? []) })
@@ -525,24 +533,79 @@ export default function ProductPage() {
         </div>
 
         {/* Scan form */}
-        <form onSubmit={handleScan} className="flex gap-3 mb-8">
-          <input
-            type="url"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://your-app.com"
-            required
-            className="flex-1 bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-500 px-4 py-3 rounded-xl text-sm outline-none transition-colors"
-          />
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex items-center gap-2 bg-crimson-500 hover:bg-crimson-600 disabled:bg-crimson-500/50 text-white font-semibold px-5 py-3 rounded-xl text-sm transition-colors shrink-0"
-          >
-            {loading
-              ? <><Loader2 className="w-4 h-4 animate-spin" /> Scanning…</>
-              : <><ScanLine className="w-4 h-4" /> Run Scan</>}
-          </button>
+        <form onSubmit={handleScan} className="space-y-4 mb-8">
+          <div className="flex gap-3">
+            <input
+              type="url"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://your-app.com"
+              required
+              className="flex-1 bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-500 px-4 py-3 rounded-xl text-sm outline-none transition-colors"
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex items-center gap-2 bg-crimson-500 hover:bg-crimson-600 disabled:bg-crimson-500/50 text-white font-semibold px-5 py-3 rounded-xl text-sm transition-colors shrink-0"
+            >
+              {loading
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> Scanning…</>
+                : <><ScanLine className="w-4 h-4" /> {authEnabled ? 'Run Authenticated Scan' : 'Run Scan'}</>}
+            </button>
+          </div>
+
+          {/* Authenticated scan toggle — web scanner only */}
+          {type === 'web' && (
+            <div>
+              <button
+                type="button"
+                onClick={() => setAuthEnabled((v) => !v)}
+                className="flex items-center gap-2 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
+              >
+                <span className={`w-8 h-4 rounded-full border transition-colors shrink-0 flex items-center px-0.5 ${authEnabled ? 'bg-crimson-500 border-crimson-600' : 'bg-white/10 border-white/20'}`}>
+                  <span className={`w-3 h-3 rounded-full bg-white shadow transition-transform ${authEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
+                </span>
+                <Lock className="w-3.5 h-3.5" />
+                Authenticated Scan
+              </button>
+
+              {authEnabled && (
+                <div className="mt-3 bg-white/3 border border-white/15 rounded-2xl p-5 space-y-3">
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <div className="sm:col-span-2">
+                      <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Login URL <span className="text-gray-600 normal-case font-normal">(leave blank to auto-detect)</span></label>
+                      <input value={authForm.loginUrl} onChange={setAuth('loginUrl')} placeholder={`${url || 'https://example.com'}/login`}
+                        className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Username field <span className="text-gray-600 normal-case font-normal">(HTML name attr)</span></label>
+                      <input value={authForm.usernameField} onChange={setAuth('usernameField')} placeholder="email"
+                        className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors font-mono" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Password field <span className="text-gray-600 normal-case font-normal">(HTML name attr)</span></label>
+                      <input value={authForm.passwordField} onChange={setAuth('passwordField')} placeholder="password"
+                        className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors font-mono" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Your username</label>
+                      <input value={authForm.username} onChange={setAuth('username')} placeholder="user@example.com" autoComplete="off"
+                        className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Your password</label>
+                      <input type="password" value={authForm.password} onChange={setAuth('password')} placeholder="••••••••" autoComplete="new-password"
+                        className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors" />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-gray-600 flex items-start gap-1.5 pt-1">
+                    <span className="text-amber-500 shrink-0">⚠</span>
+                    Credentials are sent directly to your target site only. Udyo360 never stores or logs them.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </form>
 
         {/* Scan error */}
@@ -581,6 +644,19 @@ export default function ProductPage() {
                     <code className="text-xs font-mono text-gray-400 bg-white/5 px-1.5 py-0.5 rounded">{serverHdr}</code>
                   </span>
                 )}
+              </div>
+            )}
+
+            {/* Authenticated scan login status banner */}
+            {authEnabled && result.loginSucceeded !== undefined && (
+              <div className={`flex items-center gap-2.5 rounded-2xl px-4 py-3 mb-4 text-sm font-semibold border ${
+                result.loginSucceeded
+                  ? 'bg-green-500/10 border-green-500/25 text-green-400'
+                  : 'bg-red-500/10 border-red-500/25 text-red-400'
+              }`}>
+                {result.loginSucceeded
+                  ? <><CheckCircle className="w-4 h-4 shrink-0" /> Login successful — {result.cookiesCaptured ?? (result.cookies?.length ?? '')} session {result.cookiesCaptured !== 1 ? 'cookies' : 'cookie'} captured</>
+                  : <><XCircle className="w-4 h-4 shrink-0" /> Login failed — could not authenticate. Verify credentials and login URL.</>}
               </div>
             )}
 
@@ -659,6 +735,47 @@ export default function ProductPage() {
                 <FindingCard key={i} item={item} />
               ))}
             </div>
+
+            {/* Authenticated pages scanned */}
+            {authEnabled && (result.authenticatedPages ?? result.AuthenticatedPages)?.length > 0 && (
+              <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden mb-2">
+                <div className="px-4 py-3 border-b border-white/10 flex items-center gap-2">
+                  <Lock className="w-3.5 h-3.5 text-green-400" />
+                  <p className="text-sm font-semibold text-white">Pages Scanned Behind Login</p>
+                  <span className="ml-auto text-xs text-gray-500">{(result.authenticatedPages ?? result.AuthenticatedPages).length} pages</span>
+                </div>
+                <div className="px-4 py-3 space-y-1.5">
+                  {(result.authenticatedPages ?? result.AuthenticatedPages).map((page, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold bg-green-500/15 border border-green-500/30 text-green-400 px-1.5 py-0.5 rounded shrink-0">Authenticated</span>
+                      <span className="text-xs font-mono text-gray-300 truncate">{page}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Authenticated-only findings */}
+            {authEnabled && (result.authenticatedFindings ?? result.AuthenticatedFindings)?.length > 0 && (
+              <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden mb-2">
+                <div className="px-4 py-3 border-b border-white/10 flex items-center gap-2">
+                  <Lock className="w-3.5 h-3.5 text-crimson-400" />
+                  <p className="text-sm font-semibold text-white">Authenticated Findings</p>
+                  <span className="ml-auto text-xs text-gray-500">issues found behind login</span>
+                </div>
+                <div className="px-2 py-2">
+                  {(result.authenticatedFindings ?? result.AuthenticatedFindings).map((item, i) => (
+                    <FindingCard key={i} item={{
+                      checkName: item.checkName ?? item.CheckName ?? item.name ?? item.Name ?? 'Finding',
+                      severity:  item.severity  ?? item.Severity  ?? 'Medium',
+                      passed:    false,
+                      technicalDetails: item.description ?? item.Description ?? item.detail ?? null,
+                      evidence:  item.evidence  ?? item.Evidence  ?? null,
+                    }} />
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Report panel */}
             <ReportPanel scanUrl={url} scanResult={result} />

@@ -118,10 +118,10 @@ export const submitContact = (data) =>
 
 // Reports
 export const downloadReportPdf = (payload) =>
-  blobRequest('/api/report/generate', { method: 'POST', body: JSON.stringify(payload) })
+  blobRequest('/api/report/generate-slim', { method: 'POST', body: JSON.stringify(payload) })
 
 export const emailReport = (payload) =>
-  request('/api/report/email', { method: 'POST', body: JSON.stringify(payload) })
+  request('/api/report/email-slim', { method: 'POST', body: JSON.stringify(payload) })
 
 // Authenticated scan
 export const startAuthenticatedScan = (payload) =>

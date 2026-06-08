@@ -1,4 +1,4 @@
-const BASE = import.meta.env.VITE_API_URL || ''
+const BASE = import.meta.env.VITE_API_URL || 'https://webshield-backend-api.onrender.com'
 
 function authHeaders() {
   const token = localStorage.getItem('ws_token')
@@ -243,3 +243,25 @@ export const createJiraIssue = (taskId) =>
 // Attack surface discovery
 export const discoverSubdomains = (domain) =>
   request(`/api/discover?domain=${encodeURIComponent(domain)}`)
+
+// User profile
+export const getMe = () => request('/api/auth/me')
+export const updateProfile = (data) =>
+  request('/api/user/profile', { method: 'PUT', body: JSON.stringify(data) })
+export const changePassword = (data) =>
+  request('/api/user/password', { method: 'PUT', body: JSON.stringify(data) })
+export const deleteAccount = () =>
+  request('/api/user/account', { method: 'DELETE' })
+export const uploadProfilePicture = (formData) => {
+  const token = localStorage.getItem('ws_token')
+  const headers = token ? { Authorization: `Bearer ${token}` } : {}
+  return fetch(`${BASE}/api/user/profile/picture`, { method: 'POST', headers, body: formData })
+    .then(async (res) => {
+      if (!res.ok) {
+        let msg = `HTTP ${res.status}`
+        try { const b = await res.json(); msg = b.error || b.message || msg } catch {}
+        throw new Error(msg)
+      }
+      return res.json()
+    })
+}

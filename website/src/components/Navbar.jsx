@@ -56,6 +56,7 @@ const COMMON_NAV = [
       { label: 'Threat Feed',        href: '/threat-feed' },
       { label: 'Shadow AI Scanner',  href: '/scanner/shadow-ai' },
       { label: 'Scheduled Reports',  href: '/reports/schedule' },
+      { label: 'Attack Surface',     href: '/discover' },
     ],
   },
   {

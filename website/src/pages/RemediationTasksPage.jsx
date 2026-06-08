@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import Footer from '../components/Footer'
+import EvidencePanel from '../components/EvidencePanel'
 
 const API     = import.meta.env.VITE_API_URL ?? ''
 const BACKEND = API || 'https://webshield-backend-api.onrender.com'
@@ -66,6 +67,7 @@ function TaskCard({ task, onAction }) {
   const targetUrl   = field(task, 'targetUrl', 'TargetUrl', 'url', 'Url')
   const playbookUrl = field(task, 'playbookUrl', 'PlaybookUrl', 'playbook_url')
   const createdAt   = field(task, 'createdAt', 'CreatedAt', 'created', 'Created')
+  const evidence    = task.evidence ?? task.Evidence ?? null
 
   const statusLow = status.toLowerCase()
   const isResolved = statusLow === 'resolved' || statusLow === 'done'
@@ -112,6 +114,8 @@ function TaskCard({ task, onAction }) {
       </div>
 
       {desc && <p className="text-xs text-gray-400 leading-relaxed mb-3">{desc}</p>}
+
+      {evidence && <div className="mb-3"><EvidencePanel evidence={evidence} /></div>}
 
       <div className="flex flex-wrap items-center gap-2">
         {!isAcked && !isResolved && (

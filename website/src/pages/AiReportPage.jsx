@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import EvidencePanel from '../components/EvidencePanel'
 import { getLatestScans, generateAiReport, createShareLink } from '../services/api'
 
 const SEV = {
@@ -196,9 +197,10 @@ export default function AiReportPage() {
                   </h2>
                   <div className="space-y-4">
                     {findings.map((f, i) => {
-                      const title  = f.title ?? f.Title ?? f.name ?? f.Name ?? ''
-                      const sev    = f.severity ?? f.Severity ?? 'Medium'
-                      const impact = f.businessImpact ?? f.BusinessImpact ?? f.impact ?? f.Impact ?? ''
+                      const title    = f.title ?? f.Title ?? f.name ?? f.Name ?? ''
+                      const sev      = f.severity ?? f.Severity ?? 'Medium'
+                      const impact   = f.businessImpact ?? f.BusinessImpact ?? f.impact ?? f.Impact ?? ''
+                      const evidence = f.evidence ?? f.Evidence ?? null
                       return (
                         <div key={i} className="border-l-2 border-crimson-500/40 pl-4">
                           <div className="flex items-center gap-2 mb-1">
@@ -206,6 +208,7 @@ export default function AiReportPage() {
                             <p className="text-white font-semibold text-sm">{title}</p>
                           </div>
                           {impact && <p className="text-gray-400 text-xs leading-relaxed">{impact}</p>}
+                          <EvidencePanel evidence={evidence} />
                         </div>
                       )
                     })}

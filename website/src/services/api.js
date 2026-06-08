@@ -217,3 +217,21 @@ export const deleteScheduledReport = (id) =>
   request(`/api/scheduledreports/${id}`, { method: 'DELETE' })
 export const sendReportNow = (id) =>
   request(`/api/scheduledreports/${id}/send-now`, { method: 'POST' })
+
+// Compliance
+export const getCompliance = () => request('/api/compliance')
+
+// Monitoring
+export const getMonitoringTimeline = (url) =>
+  request(`/api/monitoring/timeline?url=${encodeURIComponent(url)}`)
+export const getMonitoringRegressions = () => request('/api/monitoring/regressions')
+
+// API scanner
+export const startApiScan = (url) =>
+  request('/api/scan/api', { method: 'POST', body: JSON.stringify({ url }) })
+export const startApiSpecScan = (payload) =>
+  request('/api/apiscan/spec', { method: 'POST', body: JSON.stringify(payload) })
+
+// Attack surface discovery
+export const discoverSubdomains = (domain) =>
+  request(`/api/discover?domain=${encodeURIComponent(domain)}`)

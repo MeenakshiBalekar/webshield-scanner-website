@@ -183,7 +183,23 @@ export default function CompanyPage() {
     data?.Leadership  ?? data?.leadership  ??
     []
   )
-  const team    = Array.isArray(rawTeam) ? rawTeam : []
+
+  // Filter out Sagar Takkar; fix "ex-Microsoft" → "Microsoft" in any text field
+  const fixText = (s) => (typeof s === 'string' ? s.replace(/\bex-microsoft\b/gi, 'Microsoft') : s)
+  const team = (Array.isArray(rawTeam) ? rawTeam : [])
+    .filter((m) => {
+      const n = (m.Name ?? m.name ?? '').toLowerCase()
+      return !n.includes('sagar') && !n.includes('takkar')
+    })
+    .map((m) => ({
+      ...m,
+      name:        fixText(m.name        ?? m.Name),
+      Name:        fixText(m.Name        ?? m.name),
+      role:        fixText(m.role        ?? m.Role        ?? m.Title    ?? m.title    ?? m.Position ?? m.position),
+      Role:        fixText(m.Role        ?? m.role        ?? m.Title    ?? m.title    ?? m.Position ?? m.position),
+      bio:         fixText(m.bio         ?? m.Bio         ?? m.Description ?? m.description),
+      Bio:         fixText(m.Bio         ?? m.bio         ?? m.Description ?? m.description),
+    }))
   const press   = data?.Press ?? data?.press ?? []
   const contact = data?.Contact ?? data?.contact ?? {}
 

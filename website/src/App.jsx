@@ -103,6 +103,7 @@ export default function App() {
           <Route path="/scanner/code"      element={<CodeScanPage />} />
           <Route path="/scanner/cicd"      element={<CiCdPage />} />
           <Route path="/scanner/shadow-ai" element={<ShadowAiPage />} />
+          <Route path="/scanner/agent"    element={<PrivateRoute><ServerMonitorPage /></PrivateRoute>} />
 
           {/* Shareable scan — public */}
           <Route path="/shared/:token"     element={<SharedScanPage />} />

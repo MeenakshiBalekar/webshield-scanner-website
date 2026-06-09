@@ -241,6 +241,25 @@ export const startApiSpecScan = (payload) =>
 export const createJiraIssue = (taskId) =>
   request(`/api/remediationtasks/${encodeURIComponent(taskId)}/jira`, { method: 'POST' })
 
+// Server monitor
+export const getServerMonitors = () => request('/api/servermonitor')
+export const registerServer = (data) =>
+  request('/api/servermonitor', { method: 'POST', body: JSON.stringify(data) })
+export const getServerMetrics = (id, hours = 24) =>
+  request(`/api/servermonitor/${id}/metrics?hours=${hours}`)
+export const updateServerThresholds = (id, data) =>
+  request(`/api/servermonitor/${id}/thresholds`, { method: 'PATCH', body: JSON.stringify(data) })
+export const deleteServer = (id) =>
+  request(`/api/servermonitor/${id}`, { method: 'DELETE' })
+
+// Agent scan reports
+export const getAgentScans = () => request('/api/agentscan')
+export const getAgentScan = (id) => request(`/api/agentscan/${id}`)
+export const uploadAgentScan = (data) =>
+  request('/api/agentscan/upload', { method: 'POST', body: JSON.stringify(data) })
+export const deleteAgentScan = (id) =>
+  request(`/api/agentscan/${id}`, { method: 'DELETE' })
+
 // Attack surface discovery
 export const discoverSubdomains = (domain) =>
   request(`/api/discover?domain=${encodeURIComponent(domain)}`)

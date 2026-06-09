@@ -92,6 +92,7 @@ export default function App() {
           <Route path="/dashboard"         element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
           <Route path="/products/:type"    element={<PrivateRoute><ProductPage /></PrivateRoute>} />
           <Route path="/scanner/history"   element={<PrivateRoute><HistoryPage /></PrivateRoute>} />
+          <Route path="/history"           element={<PrivateRoute><HistoryPage /></PrivateRoute>} />
           <Route path="/schedule"          element={<PrivateRoute><SchedulePage /></PrivateRoute>} />
 
           {/* Scanners — new */}

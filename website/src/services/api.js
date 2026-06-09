@@ -45,6 +45,7 @@ export const fleetScan = (urls) =>
 
 // History & stats
 export const getScans = () => request('/api/scan/history')
+export const getScanDetail = (id) => request(`/api/scan/history/${encodeURIComponent(id)}`)
 export const getTotalScans = () => request('/api/scan/stats/total-scans')
 export const getLatestScans = () => request('/api/scan/stats/latest')
 

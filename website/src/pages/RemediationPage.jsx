@@ -722,7 +722,7 @@ export default function RemediationPage() {
   const SEVS = ['All', 'Critical', 'High', 'Medium', 'Low', 'Info']
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="h-screen flex flex-col overflow-hidden pt-16">
       <Navbar />
 
       {/* Page header bar */}

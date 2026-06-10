@@ -14,6 +14,7 @@ const API = import.meta.env.VITE_API_URL ?? ''
 const BACKEND = API || 'https://webshield-backend-api.onrender.com'
 import { getRemediation, downloadReportPdf, emailReport, createSchedule, startAuthenticatedScan } from '../services/api'
 import EvidencePanel from '../components/EvidencePanel'
+import Navbar from '../components/Navbar'
 
 function authHeaders() {
   const token = localStorage.getItem('ws_token')
@@ -488,31 +489,9 @@ export default function ProductPage() {
 
   return (
     <div className="min-h-screen page-bg flex flex-col">
-      {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-        <Link to="/" className="flex items-center gap-2">
-          <img src="/udyo360-icon-only.svg" alt="Udyo360" className="w-9 h-9" />
-          <span className="text-white font-bold text-xl tracking-tight">
-            Udy◎<span className="text-crimson-500">360</span>
-          </span>
-        </Link>
-        <div className="flex items-center gap-4">
-          <Link
-            to="/scanner-dashboard"
-            className="flex items-center gap-1.5 text-gray-400 hover:text-white text-sm transition-colors"
-          >
-            <LayoutDashboard className="w-4 h-4" /> Dashboard
-          </Link>
-          <button
-            onClick={() => { logout(); navigate('/login') }}
-            className="flex items-center gap-1.5 text-gray-400 hover:text-white text-sm transition-colors"
-          >
-            <LogOut className="w-4 h-4" /> Sign Out
-          </button>
-        </div>
-      </header>
+      <Navbar />
 
-      <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-12">
+      <main className="flex-1 max-w-3xl mx-auto w-full px-4 pt-24 pb-12">
         {/* Page title */}
         <div className="mb-8">
           <span className={`inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full border mb-3 ${product.badge}`}>

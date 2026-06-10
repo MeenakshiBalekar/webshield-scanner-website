@@ -263,6 +263,8 @@ export const deleteAgentScan = (id) =>
 // Attack surface discovery
 export const discoverSubdomains = (domain) =>
   request(`/api/discover?domain=${encodeURIComponent(domain)}`)
+export const saveDiscoveredAssets = (data) =>
+  request('/api/discover/save-assets', { method: 'POST', body: JSON.stringify(data) })
 
 // User profile
 export const getMe = () => request('/api/auth/me')
@@ -272,6 +274,15 @@ export const changePassword = (data) =>
   request('/api/user/password', { method: 'PUT', body: JSON.stringify(data) })
 export const deleteAccount = () =>
   request('/api/user/account', { method: 'DELETE' })
+// Remediation task actions
+export const markFalsePositive = (id) =>
+  request(`/api/remediationtasks/${encodeURIComponent(id)}/false-positive`, { method: 'PATCH' })
+export const reopenTask = (id) =>
+  request(`/api/remediationtasks/${encodeURIComponent(id)}/reopen`, { method: 'PATCH' })
+
+// Asset exposure
+export const getAssetExposure = (id) => request(`/api/asset/${id}/exposure`)
+
 export const uploadProfilePicture = (formData) => {
   const token = localStorage.getItem('ws_token')
   const headers = token ? { Authorization: `Bearer ${token}` } : {}

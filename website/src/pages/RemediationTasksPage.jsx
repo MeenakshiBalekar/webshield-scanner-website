@@ -75,14 +75,22 @@ function TaskCard({ task, onAction, hasJira }) {
   const evidence    = task.evidence ?? task.Evidence ?? null
 
   const statusLow = status.toLowerCase()
-  const isResolved = statusLow === 'resolved' || statusLow === 'done'
-  const isAcked    = statusLow === 'acknowledged' || statusLow === 'ack'
+  const isResolved      = statusLow === 'resolved' || statusLow === 'done'
+  const isAcked         = statusLow === 'acknowledged' || statusLow === 'ack'
+  const isFalsePositive = statusLow === 'false-positive' || statusLow === 'falsepositive' || statusLow === 'false positive'
+  const isReopened      = statusLow === 'reopened'
 
   const act = async (type) => {
     setActioning(type)
     try {
       await onAction(id, type)
-      setLocalStatus(type === 'acknowledge' ? 'Acknowledged' : 'Resolved')
+      setLocalStatus(
+        type === 'acknowledge'    ? 'Acknowledged' :
+        type === 'resolve'        ? 'Resolved' :
+        type === 'false-positive' ? 'False Positive' :
+        type === 'reopen'         ? 'Open' :
+        type
+      )
     } catch (err) {
       alert(err.message ?? `Failed to ${type}`)
     } finally {
@@ -114,9 +122,11 @@ function TaskCard({ task, onAction, hasJira }) {
               </span>
             )}
             <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-              isResolved ? 'text-green-400 bg-green-400/10' :
-              isAcked    ? 'text-blue-400 bg-blue-400/10' :
-                           'text-yellow-400 bg-yellow-400/10'
+              isResolved      ? 'text-green-400 bg-green-400/10' :
+              isAcked         ? 'text-blue-400 bg-blue-400/10' :
+              isFalsePositive ? 'text-purple-400 bg-purple-400/10' :
+              isReopened      ? 'text-orange-400 bg-orange-400/10' :
+                                'text-yellow-400 bg-yellow-400/10'
             }`}>
               {status}
             </span>
@@ -159,6 +169,22 @@ function TaskCard({ task, onAction, hasJira }) {
           <span className="flex items-center gap-1 text-xs text-green-400">
             <CheckCircle className="w-3.5 h-3.5" /> Resolved
           </span>
+        )}
+
+        {!isFalsePositive && !isResolved && (
+          <button onClick={() => act('false-positive')} disabled={!!actioning}
+            className="flex items-center gap-1.5 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/25 text-purple-400 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50">
+            {actioning === 'false-positive' ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
+            False Positive
+          </button>
+        )}
+
+        {(isResolved || isFalsePositive) && (
+          <button onClick={() => act('reopen')} disabled={!!actioning}
+            className="flex items-center gap-1.5 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/25 text-orange-400 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50">
+            {actioning === 'reopen' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Clock className="w-3 h-3" />}
+            Reopen
+          </button>
         )}
 
         {/* Jira button / badge */}

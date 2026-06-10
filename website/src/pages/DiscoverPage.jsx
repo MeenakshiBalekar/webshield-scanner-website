@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Radar, Loader2, AlertTriangle, CheckCircle2, XCircle, Plus } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-import { discoverSubdomains, createAsset } from '../services/api'
+import { discoverSubdomains, createAsset, saveDiscoveredAssets } from '../services/api'
 
 const VIA_STYLE = {
   'Cert Transparency': 'bg-blue-500/15 text-blue-400 border-blue-500/30',
@@ -19,7 +19,7 @@ function StatusBadge({ status }) {
   )
 }
 
-function DiscoverRow({ row, onAdd }) {
+function DiscoverRow({ row, onAdd, isSelected, onToggle }) {
   const [adding, setAdding] = useState(false)
   const [added, setAdded]   = useState(false)
   const [err, setErr]       = useState(null)
@@ -28,6 +28,7 @@ function DiscoverRow({ row, onAdd }) {
   const ip        = row.ip        ?? row.Ip        ?? row.ipAddress ?? row.IpAddress ?? ''
   const status    = row.status    ?? row.Status    ?? 'Offline'
   const via       = row.discoveredVia ?? row.DiscoveredVia ?? row.source ?? ''
+  const isLive    = status.toLowerCase() === 'live'
 
   const add = async () => {
     setAdding(true); setErr(null)
@@ -40,7 +41,12 @@ function DiscoverRow({ row, onAdd }) {
 
   return (
     <tr className="border-b border-white/5 last:border-0 hover:bg-white/3 transition-colors">
-      <td className="px-6 py-3 text-sm text-gray-200 font-mono">{subdomain}</td>
+      <td className="px-4 py-3">
+        {isLive && (
+          <input type="checkbox" checked={isSelected} onChange={onToggle} className="accent-crimson-500 cursor-pointer w-3.5 h-3.5" />
+        )}
+      </td>
+      <td className="px-4 py-3 text-sm text-gray-200 font-mono">{subdomain}</td>
       <td className="px-4 py-3 text-xs text-gray-500 font-mono">{ip || '—'}</td>
       <td className="px-4 py-3"><StatusBadge status={status} /></td>
       <td className="px-4 py-3">
@@ -70,17 +76,20 @@ function DiscoverRow({ row, onAdd }) {
 }
 
 export default function DiscoverPage() {
-  const [domain, setDomain]   = useState('')
-  const [input, setInput]     = useState('')
-  const [results, setResults] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError]     = useState(null)
-  const [ran, setRan]         = useState(false)
+  const [domain, setDomain]     = useState('')
+  const [input, setInput]       = useState('')
+  const [results, setResults]   = useState([])
+  const [loading, setLoading]   = useState(false)
+  const [error, setError]       = useState(null)
+  const [ran, setRan]           = useState(false)
+  const [selected, setSelected] = useState(new Set())
+  const [saving, setSaving]     = useState(false)
+  const [bulkSaved, setBulkSaved] = useState(false)
 
   const discover = async () => {
     const d = input.trim().replace(/^https?:\/\//, '').replace(/\/.*$/, '').replace(/^www\./, '')
     if (!d) return
-    setLoading(true); setError(null); setResults([]); setRan(false)
+    setLoading(true); setError(null); setResults([]); setRan(false); setSelected(new Set()); setBulkSaved(false)
     try {
       const data = await discoverSubdomains(d)
       const list = Array.isArray(data) ? data : (data?.subdomains ?? data?.results ?? data?.items ?? [])
@@ -95,7 +104,27 @@ export default function DiscoverPage() {
     await createAsset({ name: subdomain, url: `https://${subdomain}` })
   }
 
-  const live    = results.filter((r) => (r.status ?? r.Status ?? '').toLowerCase() === 'live').length
+  const liveRows = results.filter((r) => (r.status ?? r.Status ?? '').toLowerCase() === 'live')
+  const allLiveSelected = liveRows.length > 0 && liveRows.every(r => selected.has(r.subdomain ?? r.Subdomain ?? r.host ?? ''))
+
+  const toggleSelectAll = (e) => {
+    const keys = liveRows.map(r => r.subdomain ?? r.Subdomain ?? r.host ?? r.Host ?? '').filter(Boolean)
+    setSelected(e.target.checked ? new Set(keys) : new Set())
+  }
+
+  const handleBulkSave = async () => {
+    setSaving(true)
+    try {
+      await saveDiscoveredAssets({
+        subdomains: Array.from(selected).map(s => ({ subdomain: s, url: `https://${s}` })),
+      })
+      setBulkSaved(true)
+      setSelected(new Set())
+    } catch (e) { setError(e.message || 'Failed to save assets') }
+    setSaving(false)
+  }
+
+  const live    = liveRows.length
   const offline = results.length - live
 
   return (
@@ -159,6 +188,23 @@ export default function DiscoverPage() {
                     <span className="text-gray-500">{offline} offline</span>
                   </div>
                 )}
+                <div className="ml-auto flex items-center gap-3">
+                  {bulkSaved && (
+                    <span className="flex items-center gap-1 text-xs text-green-400 font-semibold">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Saved to Asset Inventory
+                    </span>
+                  )}
+                  {selected.size > 0 && (
+                    <button
+                      onClick={handleBulkSave}
+                      disabled={saving}
+                      className="flex items-center gap-2 bg-crimson-500 hover:bg-crimson-600 disabled:bg-crimson-500/40 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors"
+                    >
+                      {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                      {saving ? 'Saving…' : `Save ${selected.size} to Asset Inventory`}
+                    </button>
+                  )}
+                </div>
               </div>
 
               {results.length === 0 ? (
@@ -171,7 +217,16 @@ export default function DiscoverPage() {
                   <table className="w-full text-xs min-w-[640px]">
                     <thead>
                       <tr className="text-gray-500 border-b border-white/10">
-                        <th className="text-left px-6 py-3">Subdomain</th>
+                        <th className="px-4 py-3">
+                          <input
+                            type="checkbox"
+                            checked={allLiveSelected}
+                            onChange={toggleSelectAll}
+                            className="accent-crimson-500 cursor-pointer w-3.5 h-3.5"
+                            title="Select all live"
+                          />
+                        </th>
+                        <th className="text-left px-4 py-3">Subdomain</th>
                         <th className="text-left px-4 py-3">IP Address</th>
                         <th className="text-left px-4 py-3">Status</th>
                         <th className="text-left px-4 py-3">Discovered Via</th>
@@ -179,13 +234,24 @@ export default function DiscoverPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {results.map((row, i) => (
-                        <DiscoverRow
-                          key={row.subdomain ?? row.Subdomain ?? i}
-                          row={row}
-                          onAdd={handleAdd}
-                        />
-                      ))}
+                      {results.map((row, i) => {
+                        const key = row.subdomain ?? row.Subdomain ?? row.host ?? row.Host ?? String(i)
+                        return (
+                          <DiscoverRow
+                            key={key}
+                            row={row}
+                            onAdd={handleAdd}
+                            isSelected={selected.has(key)}
+                            onToggle={() => {
+                              setSelected(prev => {
+                                const next = new Set(prev)
+                                next.has(key) ? next.delete(key) : next.add(key)
+                                return next
+                              })
+                            }}
+                          />
+                        )
+                      })}
                     </tbody>
                   </table>
                 </div>

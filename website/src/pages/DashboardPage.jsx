@@ -5,6 +5,7 @@ import {
   Server, Calendar, TrendingUp, ArrowRight, AlertTriangle,
 } from 'lucide-react'
 import { getDashboard, getScans, getRemediations } from '../services/api'
+import Navbar from '../components/Navbar'
 
 const SVCVSS_BADGE = {
   critical: 'bg-red-700 text-white',
@@ -173,24 +174,9 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen page-bg flex flex-col">
-      <header className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-        <Link to="/" className="flex items-center gap-2">
-          <img src="/udyo360-icon-only.svg" alt="Udyo360" className="w-9 h-9" />
-          <span className="text-white font-bold text-xl tracking-tight">
-            Udy◎<span className="text-crimson-500">360</span>
-          </span>
-        </Link>
-        <div className="flex items-center gap-3">
-          <Link to="/schedule" className="flex items-center gap-1.5 text-gray-400 hover:text-white text-sm transition-colors">
-            <Calendar className="w-4 h-4" /> Schedules
-          </Link>
-          <Link to="/products/web" className="flex items-center gap-2 bg-crimson-500 hover:bg-crimson-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
-            <Plus className="w-4 h-4" /> New Scan
-          </Link>
-        </div>
-      </header>
+      <Navbar />
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
+      <main className="flex-1 max-w-6xl mx-auto w-full px-4 pt-24 pb-10">
         <h1 className="text-2xl font-bold text-white mb-8">Dashboard</h1>
 
         {error && (

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
-import { Shield, Globe, ArrowRight, History, AlertCircle, LayoutDashboard, Calendar } from 'lucide-react'
+import { Shield, Globe, ArrowRight, AlertCircle } from 'lucide-react'
 import { startScan } from '../services/api'
 import { getScanType } from '../config/scanTypes'
+import Navbar from '../components/Navbar'
 
 const SCAN_STEPS = [
   'Connecting to target and checking DNS…',
@@ -82,14 +83,7 @@ export default function ScanPage() {
   if (scanning) {
     return (
       <div className="min-h-screen page-bg flex flex-col">
-        <header className="flex items-center px-6 py-4 border-b border-white/10">
-          <Link to="/" className="flex items-center gap-2">
-            <img src="/udyo360-icon-only.svg" alt="Udyo360" className="w-9 h-9" />
-            <span className="text-white font-bold text-xl tracking-tight">
-              Udy◎<span className="text-crimson-500">360</span>
-            </span>
-          </Link>
-        </header>
+        <Navbar />
         <main className="flex-1 flex items-center justify-center">
           <ScanningOverlay url={url} title={`Running ${config.title}…`} />
         </main>
@@ -99,25 +93,7 @@ export default function ScanPage() {
 
   return (
     <div className="min-h-screen page-bg flex flex-col">
-      <header className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-        <Link to="/" className="flex items-center gap-2">
-          <img src="/udyo360-icon-only.svg" alt="Udyo360" className="w-9 h-9" />
-          <span className="text-white font-bold text-xl tracking-tight">
-            Udy◎<span className="text-crimson-500">360</span>
-          </span>
-        </Link>
-        <div className="flex items-center gap-4">
-          <Link to="/dashboard" className="flex items-center gap-1.5 text-gray-400 hover:text-white text-sm transition-colors">
-            <LayoutDashboard className="w-4 h-4" /> Dashboard
-          </Link>
-          <Link to="/scanner/history" className="flex items-center gap-1.5 text-gray-400 hover:text-white text-sm transition-colors">
-            <History className="w-4 h-4" /> History
-          </Link>
-          <Link to="/schedule" className="flex items-center gap-1.5 text-gray-400 hover:text-white text-sm transition-colors">
-            <Calendar className="w-4 h-4" /> Schedules
-          </Link>
-        </div>
-      </header>
+      <Navbar />
 
       <main className="flex-1 flex items-center justify-center px-4 py-16">
         <div className="w-full max-w-2xl">

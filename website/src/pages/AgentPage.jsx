@@ -5,6 +5,7 @@ import {
   Download, Terminal, Cpu, CheckCircle2, ChevronDown, ChevronUp,
 } from 'lucide-react'
 import Footer from '../components/Footer'
+import Navbar from '../components/Navbar'
 
 const API = import.meta.env.VITE_API_URL ?? ''
 const BACKEND = API || 'https://webshield-backend-api.onrender.com'
@@ -153,21 +154,9 @@ export default function AgentPage() {
 
   return (
     <div className="min-h-screen page-bg flex flex-col">
-      {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-        <Link to="/" className="flex items-center gap-2">
-          <img src="/udyo360-icon-only.svg" alt="Udyo360" className="w-9 h-9" />
-          <span className="text-white font-bold text-xl tracking-tight">
-            Udy◎<span className="text-crimson-500">360</span>
-          </span>
-        </Link>
-        <div className="flex items-center gap-4">
-          <Link to="/pricing" className="text-gray-400 hover:text-white text-sm transition-colors">Pricing</Link>
-          <Link to="/login" className="bg-crimson-500 hover:bg-crimson-600 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors">Sign In</Link>
-        </div>
-      </header>
+      <Navbar />
 
-      <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-16">
+      <main className="flex-1 max-w-4xl mx-auto w-full px-4 pt-24 pb-16">
 
         {/* Hero */}
         <div className="text-center mb-16">

@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Shield, LogOut, Loader2, AlertCircle, CheckCircle, XCircle, ScanLine } from 'lucide-react'
 import axios from 'axios'
 import { useAuth } from '../context/AuthContext'
+import Navbar from '../components/Navbar'
 
 const API = import.meta.env.VITE_API_URL ?? ''
 
@@ -73,22 +74,9 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen page-bg flex flex-col">
-      <header className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-        <Link to="/" className="flex items-center gap-2">
-          <img src="/udyo360-icon-only.svg" alt="Udyo360" className="w-9 h-9" />
-          <span className="text-white font-bold text-xl tracking-tight">
-            Udy◎<span className="text-crimson-500">360</span>
-          </span>
-        </Link>
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-1.5 text-gray-400 hover:text-white text-sm transition-colors"
-        >
-          <LogOut className="w-4 h-4" /> Sign Out
-        </button>
-      </header>
+      <Navbar />
 
-      <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-10">
+      <main className="flex-1 max-w-4xl mx-auto w-full px-4 pt-24 pb-10">
         <h1 className="text-2xl font-bold text-white mb-6">Security Dashboard</h1>
 
         {/* Product tabs */}

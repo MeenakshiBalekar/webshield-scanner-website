@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Clock, Search, ArrowRight, Tag } from 'lucide-react'
 import Footer from '../components/Footer'
+import Navbar from '../components/Navbar'
 import { POSTS } from '../data/blogData'
 
 const CATEGORIES = ['All', ...new Set(POSTS.map((p) => p.category))]
@@ -29,17 +30,9 @@ export default function BlogPage() {
 
   return (
     <div className="min-h-screen page-bg flex flex-col">
-      <header className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-        <Link to="/" className="flex items-center gap-2">
-          <img src="/udyo360-icon-only.svg" alt="Udyo360" className="w-9 h-9" />
-          <span className="text-white font-bold text-xl tracking-tight">
-            Udy◎<span className="text-crimson-500">360</span>
-          </span>
-        </Link>
-        <Link to="/" className="text-gray-400 hover:text-white text-sm transition-colors">← Back to home</Link>
-      </header>
+      <Navbar />
 
-      <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-12">
+      <main className="flex-1 max-w-5xl mx-auto w-full px-4 pt-24 pb-12">
         <div className="mb-10">
           <h1 className="text-4xl font-extrabold text-white mb-2">Security Blog</h1>
           <p className="text-gray-400">Practical security guidance, vulnerability research, and product updates.</p>

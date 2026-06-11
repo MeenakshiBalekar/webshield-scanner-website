@@ -633,7 +633,7 @@ export default function ServerMonitorPage() {
     <div className="min-h-screen page-bg flex flex-col">
       <Navbar />
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
+      <main className="flex-1 max-w-6xl mx-auto w-full px-4 pt-24 pb-10">
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-8 h-8 bg-crimson-500/15 border border-crimson-500/30 rounded-lg flex items-center justify-center">

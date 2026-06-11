@@ -2,13 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react'
 import {
   Plus, Trash2, Edit2, ScanLine, RefreshCw, X, Loader2,
   Server, Globe, ShieldAlert, AlertTriangle, CheckCircle2,
-  Database, Lock, Tag,
+  Database, Lock, Tag, Eye,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import {
   getAllAssets, createAsset, updateAsset, deleteAsset,
-  scanAsset, scanAllAssets, getRiskScores,
+  scanAsset, scanAllAssets, getRiskScores, getAssetExposure,
 } from '../services/api'
 
 /* ── helpers ── */
@@ -136,6 +136,97 @@ function DeleteConfirm({ name, onConfirm, onClose }) {
   )
 }
 
+/* ── Exposure modal ── */
+function ExposureModal({ asset, onClose }) {
+  const [data, setData]       = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError]     = useState(null)
+  const id   = field(asset, 'id', 'Id')
+  const name = field(asset, 'name', 'Name') ?? 'Asset'
+
+  useEffect(() => {
+    getAssetExposure(id)
+      .then(setData)
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false))
+  }, [id])
+
+  const certExpiry   = data?.certExpiry   ?? data?.CertExpiry   ?? data?.certificateExpiry ?? null
+  const certDaysLeft = certExpiry ? Math.ceil((new Date(certExpiry) - Date.now()) / 86400000) : null
+  const subdomains   = data?.subdomains   ?? data?.Subdomains   ?? []
+  const techStack    = data?.techStack    ?? data?.TechStack    ?? data?.technologies ?? []
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm px-4 py-6">
+      <div className="w-full max-w-md bg-[#0d1f3c] border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[80vh]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 shrink-0">
+          <div>
+            <p className="text-[10px] font-bold text-crimson-400 uppercase tracking-widest">Exposure</p>
+            <h2 className="text-sm font-bold text-white mt-0.5">{name}</h2>
+          </div>
+          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+          {loading && <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-crimson-400" /></div>}
+          {error && <p className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 px-3 py-2 rounded-lg">{error}</p>}
+
+          {data && (
+            <>
+              {certDaysLeft !== null && (
+                <div className={`rounded-xl border px-4 py-3 flex items-center gap-3 ${
+                  certDaysLeft <= 7  ? 'bg-red-500/10 border-red-500/25' :
+                  certDaysLeft <= 30 ? 'bg-yellow-500/10 border-yellow-500/25' :
+                                       'bg-green-500/10 border-green-500/25'
+                }`}>
+                  <Lock className={`w-4 h-4 shrink-0 ${certDaysLeft <= 7 ? 'text-red-400' : certDaysLeft <= 30 ? 'text-yellow-400' : 'text-green-400'}`} />
+                  <div>
+                    <p className="text-xs text-gray-400">TLS Certificate</p>
+                    <p className={`text-sm font-bold ${certDaysLeft <= 7 ? 'text-red-400' : certDaysLeft <= 30 ? 'text-yellow-400' : 'text-green-400'}`}>
+                      {certDaysLeft <= 0 ? 'Expired' : `${certDaysLeft}d remaining`}
+                      <span className="text-xs font-normal text-gray-500 ml-2">expires {new Date(certExpiry).toLocaleDateString()}</span>
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {techStack.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Tech Stack</p>
+                  <div className="flex flex-wrap gap-2">
+                    {techStack.map((tech, i) => (
+                      <span key={i} className="text-xs font-medium bg-blue-500/10 border border-blue-500/20 text-blue-400 px-2.5 py-1 rounded-full">
+                        {typeof tech === 'string' ? tech : (tech.name ?? tech.Name ?? JSON.stringify(tech))}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {subdomains.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">{subdomains.length} Subdomains</p>
+                  <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
+                    {subdomains.map((s, i) => (
+                      <p key={i} className="text-xs font-mono text-gray-300 bg-white/3 px-3 py-1.5 rounded-lg">
+                        {typeof s === 'string' ? s : (s.subdomain ?? s.Subdomain ?? s.host ?? JSON.stringify(s))}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {!certDaysLeft && !techStack.length && !subdomains.length && (
+                <p className="text-gray-500 text-sm text-center py-8">No exposure data available for this asset.</p>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ── Main page ── */
 export default function AssetsPage() {
   const [assets, setAssets]       = useState([])
@@ -145,7 +236,8 @@ export default function AssetsPage() {
   const [scanning, setScanning]   = useState({})   // assetId → bool
   const [scanAllBusy, setScanAll] = useState(false)
   const [modal, setModal]         = useState(null)  // null | 'add' | asset-obj
-  const [toDelete, setToDelete]   = useState(null)  // asset obj
+  const [toDelete, setToDelete]     = useState(null)  // asset obj
+  const [exposureAsset, setExposureAsset] = useState(null)
 
   const load = useCallback(async () => {
     setLoading(true); setError(null)
@@ -226,6 +318,9 @@ export default function AssetsPage() {
           onConfirm={handleDelete}
           onClose={() => setToDelete(null)}
         />
+      )}
+      {exposureAsset && (
+        <ExposureModal asset={exposureAsset} onClose={() => setExposureAsset(null)} />
       )}
 
       <main className="flex-1 pt-16">
@@ -390,6 +485,10 @@ export default function AssetsPage() {
                             <button onClick={() => setModal(asset)} title="Edit"
                               className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
                               <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button onClick={() => setExposureAsset(asset)} title="View Exposure"
+                              className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/5 hover:bg-blue-500/20 text-gray-400 hover:text-blue-400 transition-colors">
+                              <Eye className="w-3.5 h-3.5" />
                             </button>
                             <button onClick={() => setToDelete(asset)} title="Delete"
                               className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/5 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-colors">

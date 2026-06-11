@@ -4,6 +4,7 @@ import { Shield, CheckCircle2, ChevronDown, ChevronUp, Zap, Building, AlertCircl
 import { initializePaddle } from '@paddle/paddle-js'
 import { getPricing } from '../services/api'
 import Footer from '../components/Footer'
+import Navbar from '../components/Navbar'
 
 const API = import.meta.env.VITE_API_URL ?? ''
 
@@ -24,8 +25,10 @@ function PlanCard({ plan, annual, onProClick, checkoutLoading }) {
   const isFree    = !isCustom && !isPro
 
   return (
-    <div className={`relative rounded-2xl border-2 bg-white p-8 flex flex-col ${
-      highlight ? 'border-crimson-500 shadow-2xl scale-[1.02]' : 'border-gray-200 shadow-sm'
+    <div className={`relative rounded-2xl border p-8 flex flex-col ${
+      highlight
+        ? 'border-crimson-500 bg-crimson-500/5 shadow-2xl shadow-crimson-500/10 scale-[1.02]'
+        : 'border-white/10 bg-white/3'
     }`}>
       {highlight && (
         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-crimson-500 text-white text-xs font-bold px-4 py-1 rounded-full whitespace-nowrap">
@@ -36,27 +39,27 @@ function PlanCard({ plan, annual, onProClick, checkoutLoading }) {
       <div className="flex items-center gap-3 mb-4">
         {highlight
           ? <div className="w-9 h-9 bg-crimson-500 rounded-xl flex items-center justify-center"><Shield className="w-4 h-4 text-white" /></div>
-          : <div className="w-9 h-9 bg-navy-900/10 rounded-xl flex items-center justify-center"><Zap className="w-4 h-4 text-navy-900" /></div>
+          : <div className="w-9 h-9 bg-white/8 rounded-xl flex items-center justify-center"><Zap className="w-4 h-4 text-gray-300" /></div>
         }
         <div>
-          <h3 className="text-lg font-bold text-navy-900">{name}</h3>
+          <h3 className="text-lg font-bold text-white">{name}</h3>
           <p className="text-xs text-gray-400">{desc}</p>
         </div>
       </div>
 
       <div className="mb-6">
         {isCustom ? (
-          <div className="text-3xl font-extrabold text-navy-900">Custom</div>
+          <div className="text-3xl font-extrabold text-white">Custom</div>
         ) : (
           <div className="flex items-end gap-1">
-            <span className="text-4xl font-extrabold text-navy-900">
+            <span className="text-4xl font-extrabold text-white">
               {isFree ? 'Free' : `$${price}`}
             </span>
             {!isFree && <span className="text-gray-400 mb-1.5 text-sm">/mo</span>}
           </div>
         )}
         {annual && isPro && annualP < monthly && (
-          <p className="text-xs text-green-600 font-medium mt-1">
+          <p className="text-xs text-green-400 font-medium mt-1">
             Billed annually · Save {Math.round((1 - annualP / monthly) * 100)}%
           </p>
         )}
@@ -66,7 +69,7 @@ function PlanCard({ plan, annual, onProClick, checkoutLoading }) {
       {isFree ? (
         <Link
           to="/login?redirect=/products/web"
-          className="w-full text-center font-semibold py-3 rounded-xl transition-all mb-6 block text-sm border-2 border-navy-900 text-navy-900 hover:bg-navy-900 hover:text-white"
+          className="w-full text-center font-semibold py-3 rounded-xl transition-all mb-6 block text-sm border border-white/25 text-white hover:bg-white/10"
         >
           Start for Free
         </Link>
@@ -74,7 +77,7 @@ function PlanCard({ plan, annual, onProClick, checkoutLoading }) {
         <Link
           to="/company"
           state={{ scrollTo: 'contact' }}
-          className="w-full text-center font-semibold py-3 rounded-xl transition-all mb-6 block text-sm border-2 border-navy-900 text-navy-900 hover:bg-navy-900 hover:text-white"
+          className="w-full text-center font-semibold py-3 rounded-xl transition-all mb-6 block text-sm border border-white/25 text-white hover:bg-white/10"
         >
           Contact Sales
         </Link>
@@ -85,7 +88,7 @@ function PlanCard({ plan, annual, onProClick, checkoutLoading }) {
           className={`w-full flex items-center justify-center gap-2 font-semibold py-3 rounded-xl transition-all mb-6 text-sm ${
             highlight
               ? 'bg-crimson-500 hover:bg-crimson-600 text-white shadow-lg shadow-crimson-500/20 disabled:bg-crimson-500/50'
-              : 'border-2 border-navy-900 text-navy-900 hover:bg-navy-900 hover:text-white disabled:opacity-50'
+              : 'border border-white/25 text-white hover:bg-white/10 disabled:opacity-50'
           }`}
         >
           Start Free Trial
@@ -94,8 +97,8 @@ function PlanCard({ plan, annual, onProClick, checkoutLoading }) {
 
       <ul className="space-y-2.5 flex-1">
         {features.map((f, i) => (
-          <li key={i} className="flex items-start gap-2.5 text-sm text-gray-600">
-            <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
+          <li key={i} className="flex items-start gap-2.5 text-sm text-gray-300">
+            <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
             {f}
           </li>
         ))}
@@ -109,12 +112,12 @@ function FaqRow({ item }) {
   const q = item.Question ?? item.question ?? ''
   const a = item.Answer   ?? item.answer   ?? ''
   return (
-    <div className="border-b border-gray-200 last:border-0">
+    <div className="border-b border-white/10 last:border-0">
       <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between py-4 text-left gap-4">
-        <span className="text-sm font-semibold text-navy-900">{q}</span>
+        <span className="text-sm font-semibold text-white">{q}</span>
         {open ? <ChevronUp className="w-4 h-4 text-gray-400 shrink-0" /> : <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />}
       </button>
-      {open && <p className="text-sm text-gray-500 pb-4 leading-relaxed">{a}</p>}
+      {open && <p className="text-sm text-gray-400 pb-4 leading-relaxed">{a}</p>}
     </div>
   )
 }
@@ -159,37 +162,28 @@ export default function PricingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
-      <header className="bg-navy-900 flex items-center justify-between px-6 py-4 border-b border-white/10">
-        <Link to="/" className="flex items-center gap-2">
-          <img src="/udyo360-icon-only.svg" alt="Udyo360" className="w-9 h-9" />
-          <span className="text-white font-bold text-xl tracking-tight">
-            Udy◎<span className="text-crimson-500">360</span>
-          </span>
-        </Link>
-        <Link to="/" className="text-gray-400 hover:text-white text-sm transition-colors">← Back to home</Link>
-      </header>
+    <div className="min-h-screen page-bg flex flex-col">
+      <Navbar />
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-16">
+      <main className="flex-1 max-w-6xl mx-auto w-full px-4 pt-24 pb-16">
         {/* Hero */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-extrabold text-navy-900 mb-3">Simple, Transparent Pricing</h1>
-          <p className="text-lg text-gray-500 max-w-xl mx-auto mb-8">
+          <h1 className="text-4xl font-extrabold text-white mb-3">Simple, Transparent Pricing</h1>
+          <p className="text-lg text-gray-400 max-w-xl mx-auto mb-8">
             Start for free and scale as your security needs grow. All plans include a 30-day free trial.
           </p>
 
           {/* Monthly / Annual toggle */}
-          <div className="inline-flex items-center gap-3 bg-white border border-gray-200 rounded-full p-1 shadow-sm">
+          <div className="inline-flex items-center gap-1 bg-white/5 border border-white/10 rounded-full p-1">
             <button
               onClick={() => setAnnual(false)}
-              className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${!annual ? 'bg-navy-900 text-white shadow' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${!annual ? 'bg-crimson-500 text-white shadow' : 'text-gray-400 hover:text-white'}`}
             >
               Monthly
             </button>
             <button
               onClick={() => setAnnual(true)}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${annual ? 'bg-navy-900 text-white shadow' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${annual ? 'bg-crimson-500 text-white shadow' : 'text-gray-400 hover:text-white'}`}
             >
               Annual
               <span className="text-[10px] bg-green-500 text-white px-1.5 py-0.5 rounded-full">-20%</span>
@@ -198,7 +192,7 @@ export default function PricingPage() {
         </div>
 
         {error && (
-          <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm mb-8 max-w-lg mx-auto">
+          <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm mb-8 max-w-lg mx-auto">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
@@ -219,26 +213,26 @@ export default function PricingPage() {
           </div>
         ) : !error ? (
           <div className="flex justify-center py-16">
-            <span className="w-8 h-8 border-2 border-gray-300 border-t-navy-900 rounded-full animate-spin" />
+            <span className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
           </div>
         ) : null}
 
-        <p className="text-center text-sm text-gray-400 mb-16">
+        <p className="text-center text-sm text-gray-500 mb-16">
           All plans include a 30-day free trial. No credit card required to start.
         </p>
 
         {/* FAQ */}
         {faqs.length > 0 && (
           <div className="max-w-2xl mx-auto">
-            <h2 className="text-2xl font-bold text-navy-900 text-center mb-8">Frequently Asked Questions</h2>
-            <div className="bg-white rounded-2xl border border-gray-200 px-6 shadow-sm">
+            <h2 className="text-2xl font-bold text-white text-center mb-8">Frequently Asked Questions</h2>
+            <div className="bg-white/3 border border-white/10 rounded-2xl px-6">
               {faqs.map((f, i) => <FaqRow key={i} item={f} />)}
             </div>
           </div>
         )}
 
         {/* CTA strip */}
-        <div className="mt-16 bg-navy-900 rounded-2xl p-8 text-center">
+        <div className="mt-16 bg-white/5 border border-white/10 rounded-2xl p-8 text-center">
           <h3 className="text-2xl font-bold text-white mb-2">Need a custom plan?</h3>
           <p className="text-gray-400 mb-5">Our enterprise team will build a solution around your specific requirements.</p>
           <Link

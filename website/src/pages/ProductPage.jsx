@@ -14,6 +14,7 @@ const API = import.meta.env.VITE_API_URL ?? ''
 const BACKEND = API || 'https://webshield-backend-api.onrender.com'
 import { getRemediation, downloadReportPdf, emailReport, createSchedule, startAuthenticatedScan } from '../services/api'
 import EvidencePanel from '../components/EvidencePanel'
+import Navbar from '../components/Navbar'
 
 function authHeaders() {
   const token = localStorage.getItem('ws_token')
@@ -186,9 +187,10 @@ function FindingCard({ item }) {
   const attackScenario  = item.attackScenario   || item.AttackScenario || null
   const fixSteps        = item.fixSteps         || item.FixSteps      || item.recommendation  || item.remediation     || null
   const riskScore       = item.riskScore        || item.RiskScore     || null
+  const evidenceDetail  = item.evidenceDetail   || item.EvidenceDetail || null
 
   const c = sevTheme(severity)
-  const hasDetail = technicalDetails || whyItMatters || whatCanGoWrong || businessImpact || attackScenario || fixSteps
+  const hasDetail = technicalDetails || whyItMatters || whatCanGoWrong || businessImpact || attackScenario || fixSteps || evidenceDetail
 
   return (
     <div className={`rounded-xl border ${c.border} ${c.bg} mb-2 overflow-hidden transition-all`}>
@@ -299,7 +301,52 @@ function FindingCard({ item }) {
           )}
 
           {!passed && evidence && <EvidencePanel evidence={evidence} />}
+          {!passed && evidenceDetail && <EvidenceDetailBlock evidenceDetail={evidenceDetail} />}
 
+        </div>
+      )}
+    </div>
+  )
+}
+
+function EvidenceDetailBlock({ evidenceDetail }) {
+  const req  = evidenceDetail?.request  ?? evidenceDetail?.Request  ?? null
+  const resp = evidenceDetail?.response ?? evidenceDetail?.Response ?? null
+  const note = evidenceDetail?.note     ?? evidenceDetail?.Note     ?? evidenceDetail?.description ?? null
+  return (
+    <div className="mt-2 border border-white/10 rounded-lg overflow-hidden text-xs">
+      <div className="px-3 py-1.5 bg-white/5 border-b border-white/10">
+        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">HTTP Evidence</span>
+      </div>
+      {note && <p className="px-3 py-2 text-gray-400 leading-relaxed">{note}</p>}
+      {req && (
+        <div className="px-3 py-2.5 border-b border-white/10">
+          <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider mb-1.5">Request</p>
+          <div className="font-mono space-y-0.5">
+            <p className="text-white font-bold">{req.method ?? req.Method ?? 'GET'} {req.url ?? req.Url ?? req.path ?? req.Path ?? ''} HTTP/1.1</p>
+            {Object.entries(req.headers ?? req.Headers ?? {}).slice(0, 8).map(([k, v]) => (
+              <p key={k} className="text-gray-500"><span className="text-gray-400">{k}:</span> {String(v)}</p>
+            ))}
+            {(req.body ?? req.Body) && (
+              <pre className="mt-2 text-gray-300 bg-black/30 rounded px-2 py-1.5 overflow-x-auto whitespace-pre-wrap break-all">{req.body ?? req.Body}</pre>
+            )}
+          </div>
+        </div>
+      )}
+      {resp && (
+        <div className="px-3 py-2.5">
+          <p className="text-[10px] font-bold text-green-400 uppercase tracking-wider mb-1.5">Response</p>
+          <div className="font-mono space-y-0.5">
+            <p className={`font-bold ${Number(resp.status ?? resp.Status ?? 200) < 400 ? 'text-green-400' : 'text-red-400'}`}>
+              HTTP/1.1 {resp.status ?? resp.Status ?? ''} {resp.statusText ?? resp.StatusText ?? ''}
+            </p>
+            {Object.entries(resp.headers ?? resp.Headers ?? {}).slice(0, 8).map(([k, v]) => (
+              <p key={k} className="text-gray-500"><span className="text-gray-400">{k}:</span> {String(v)}</p>
+            ))}
+            {(resp.body ?? resp.Body) && (
+              <pre className="mt-2 text-gray-300 bg-black/30 rounded px-2 py-1.5 overflow-x-auto whitespace-pre-wrap break-all">{resp.body ?? resp.Body}</pre>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -413,8 +460,9 @@ export default function ProductPage() {
   const [trend, setTrend] = useState([])
   const [scheduling, setScheduling] = useState(false)
   const [scheduled, setScheduled] = useState(false)
-  const [authEnabled, setAuthEnabled] = useState(false)
-  const [authForm, setAuthForm] = useState({ loginUrl: '', usernameField: 'email', passwordField: 'password', username: '', password: '' })
+  const [scanMode, setScanMode] = useState('standard')
+  const [authType, setAuthType] = useState('none')
+  const [authForm, setAuthForm] = useState({ loginUrl: '', usernameField: 'email', passwordField: 'password', username: '', password: '', bearerToken: '', cookieName: '', cookieValue: '' })
   const setAuth = (k) => (e) => setAuthForm((f) => ({ ...f, [k]: e.target.value }))
 
   if (!product) {
@@ -440,10 +488,20 @@ export default function ProductPage() {
     setScheduled(false)
     try {
       let data
-      if (authEnabled && type === 'web') {
-        data = await startAuthenticatedScan({ targetUrl: url.trim(), ...authForm })
+      const base = { url: url.trim(), mode: scanMode }
+      if (type === 'web' && authType === 'formlogin') {
+        data = await startAuthenticatedScan({ targetUrl: url.trim(), mode: scanMode, ...authForm })
+      } else if (type === 'web' && authType === 'bearer') {
+        const res = await axios.post(`${API}/api${product.endpoint}`, { ...base, authType: 'bearer', bearerToken: authForm.bearerToken })
+        data = res.data
+      } else if (type === 'web' && authType === 'basic') {
+        const res = await axios.post(`${API}/api${product.endpoint}`, { ...base, authType: 'basic', username: authForm.username, password: authForm.password })
+        data = res.data
+      } else if (type === 'web' && authType === 'cookie') {
+        const res = await axios.post(`${API}/api${product.endpoint}`, { ...base, authType: 'cookie', cookieName: authForm.cookieName, cookieValue: authForm.cookieValue })
+        data = res.data
       } else {
-        const res = await axios.post(`${API}/api${product.endpoint}`, { url: url.trim() })
+        const res = await axios.post(`${API}/api${product.endpoint}`, base)
         data = res.data
       }
       setResult(data)
@@ -488,31 +546,9 @@ export default function ProductPage() {
 
   return (
     <div className="min-h-screen page-bg flex flex-col">
-      {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-        <Link to="/" className="flex items-center gap-2">
-          <img src="/udyo360-icon-only.svg" alt="Udyo360" className="w-9 h-9" />
-          <span className="text-white font-bold text-xl tracking-tight">
-            Udy◎<span className="text-crimson-500">360</span>
-          </span>
-        </Link>
-        <div className="flex items-center gap-4">
-          <Link
-            to="/scanner-dashboard"
-            className="flex items-center gap-1.5 text-gray-400 hover:text-white text-sm transition-colors"
-          >
-            <LayoutDashboard className="w-4 h-4" /> Dashboard
-          </Link>
-          <button
-            onClick={() => { logout(); navigate('/login') }}
-            className="flex items-center gap-1.5 text-gray-400 hover:text-white text-sm transition-colors"
-          >
-            <LogOut className="w-4 h-4" /> Sign Out
-          </button>
-        </div>
-      </header>
+      <Navbar />
 
-      <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-12">
+      <main className="flex-1 max-w-3xl mx-auto w-full px-4 pt-24 pb-12">
         {/* Page title */}
         <div className="mb-8">
           <span className={`inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full border mb-3 ${product.badge}`}>
@@ -524,6 +560,27 @@ export default function ProductPage() {
 
         {/* Scan form */}
         <form onSubmit={handleScan} className="space-y-4 mb-8">
+          {/* Scan Mode */}
+          <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-xl p-1">
+            {[
+              { value: 'discovery', label: 'Discovery', desc: 'Fast · low-noise' },
+              { value: 'standard',  label: 'Standard',  desc: 'Balanced depth' },
+              { value: 'deep',      label: 'Deep',       desc: 'Thorough · slow' },
+            ].map(({ value, label, desc }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setScanMode(value)}
+                className={`flex-1 flex flex-col items-center px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+                  scanMode === value ? 'bg-crimson-500 text-white' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                {label}
+                <span className={`text-[10px] font-normal mt-0.5 ${scanMode === value ? 'text-crimson-200' : 'text-gray-600'}`}>{desc}</span>
+              </button>
+            ))}
+          </div>
+
           <div className="flex gap-3">
             <input
               type="url"
@@ -540,58 +597,102 @@ export default function ProductPage() {
             >
               {loading
                 ? <><Loader2 className="w-4 h-4 animate-spin" /> Scanning…</>
-                : <><ScanLine className="w-4 h-4" /> {authEnabled ? 'Run Authenticated Scan' : 'Run Scan'}</>}
+                : <><ScanLine className="w-4 h-4" /> {authType !== 'none' ? 'Run Authenticated Scan' : 'Run Scan'}</>}
             </button>
           </div>
 
-          {/* Authenticated scan toggle — web scanner only */}
+          {/* Auth Config — web scanner only */}
           {type === 'web' && (
             <div>
-              <button
-                type="button"
-                onClick={() => setAuthEnabled((v) => !v)}
-                className="flex items-center gap-2 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
-              >
-                <span className={`w-8 h-4 rounded-full border transition-colors shrink-0 flex items-center px-0.5 ${authEnabled ? 'bg-crimson-500 border-crimson-600' : 'bg-white/10 border-white/20'}`}>
-                  <span className={`w-3 h-3 rounded-full bg-white shadow transition-transform ${authEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
-                </span>
-                <Lock className="w-3.5 h-3.5" />
-                Authenticated Scan
-              </button>
+              <div className="flex items-center gap-3">
+                <Lock className="w-3.5 h-3.5 text-gray-500" />
+                <label className="text-xs font-semibold text-gray-400">Auth Config:</label>
+                <select
+                  value={authType}
+                  onChange={(e) => setAuthType(e.target.value)}
+                  className="bg-white/5 border border-white/15 focus:border-crimson-500 text-white text-xs px-3 py-1.5 rounded-lg outline-none transition-colors"
+                  style={{ colorScheme: 'dark' }}
+                >
+                  <option value="none"      className="bg-[#0d1f3c]">None</option>
+                  <option value="basic"     className="bg-[#0d1f3c]">Basic Auth</option>
+                  <option value="bearer"    className="bg-[#0d1f3c]">Bearer Token</option>
+                  <option value="cookie"    className="bg-[#0d1f3c]">Cookie</option>
+                  <option value="formlogin" className="bg-[#0d1f3c]">Form Login</option>
+                </select>
+              </div>
 
-              {authEnabled && (
+              {authType !== 'none' && (
                 <div className="mt-3 bg-white/3 border border-white/15 rounded-2xl p-5 space-y-3">
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    <div className="sm:col-span-2">
-                      <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Login URL <span className="text-gray-600 normal-case font-normal">(leave blank to auto-detect)</span></label>
-                      <input value={authForm.loginUrl} onChange={setAuth('loginUrl')} placeholder={`${url || 'https://example.com'}/login`}
-                        className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors" />
-                    </div>
+                  {authType === 'bearer' && (
                     <div>
-                      <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Username field <span className="text-gray-600 normal-case font-normal">(HTML name attr)</span></label>
-                      <input value={authForm.usernameField} onChange={setAuth('usernameField')} placeholder="email"
+                      <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Bearer Token</label>
+                      <input value={authForm.bearerToken} onChange={setAuth('bearerToken')} placeholder="eyJhbGciOiJIUzI1NiJ9…"
                         className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors font-mono" />
                     </div>
-                    <div>
-                      <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Password field <span className="text-gray-600 normal-case font-normal">(HTML name attr)</span></label>
-                      <input value={authForm.passwordField} onChange={setAuth('passwordField')} placeholder="password"
-                        className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors font-mono" />
+                  )}
+                  {authType === 'basic' && (
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Username</label>
+                        <input value={authForm.username} onChange={setAuth('username')} placeholder="admin" autoComplete="off"
+                          className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Password</label>
+                        <input type="password" value={authForm.password} onChange={setAuth('password')} placeholder="••••••••" autoComplete="new-password"
+                          className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors" />
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Your username</label>
-                      <input value={authForm.username} onChange={setAuth('username')} placeholder="user@example.com" autoComplete="off"
-                        className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors" />
+                  )}
+                  {authType === 'cookie' && (
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Cookie Name</label>
+                        <input value={authForm.cookieName} onChange={setAuth('cookieName')} placeholder="session"
+                          className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors font-mono" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Cookie Value</label>
+                        <input value={authForm.cookieValue} onChange={setAuth('cookieValue')} placeholder="abc123…"
+                          className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors font-mono" />
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Your password</label>
-                      <input type="password" value={authForm.password} onChange={setAuth('password')} placeholder="••••••••" autoComplete="new-password"
-                        className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors" />
+                  )}
+                  {authType === 'formlogin' && (
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <div className="sm:col-span-2">
+                        <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Login URL <span className="text-gray-600 normal-case font-normal">(leave blank to auto-detect)</span></label>
+                        <input value={authForm.loginUrl} onChange={setAuth('loginUrl')} placeholder={`${url || 'https://example.com'}/login`}
+                          className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Username field <span className="text-gray-600 normal-case font-normal">(HTML name attr)</span></label>
+                        <input value={authForm.usernameField} onChange={setAuth('usernameField')} placeholder="email"
+                          className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors font-mono" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Password field <span className="text-gray-600 normal-case font-normal">(HTML name attr)</span></label>
+                        <input value={authForm.passwordField} onChange={setAuth('passwordField')} placeholder="password"
+                          className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors font-mono" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Your username</label>
+                        <input value={authForm.username} onChange={setAuth('username')} placeholder="user@example.com" autoComplete="off"
+                          className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Your password</label>
+                        <input type="password" value={authForm.password} onChange={setAuth('password')} placeholder="••••••••" autoComplete="new-password"
+                          className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors" />
+                      </div>
                     </div>
-                  </div>
-                  <p className="text-[10px] text-gray-600 flex items-start gap-1.5 pt-1">
-                    <span className="text-amber-500 shrink-0">⚠</span>
-                    Credentials are sent directly to your target site only. Udyo360 never stores or logs them.
-                  </p>
+                  )}
+                  {(authType === 'basic' || authType === 'formlogin') && (
+                    <p className="text-[10px] text-gray-600 flex items-start gap-1.5 pt-1">
+                      <span className="text-amber-500 shrink-0">⚠</span>
+                      Credentials are sent directly to your target site only. Udyo360 never stores or logs them.
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -638,7 +739,7 @@ export default function ProductPage() {
             )}
 
             {/* Authenticated scan login status banner */}
-            {authEnabled && result.loginSucceeded !== undefined && (
+            {authType === 'formlogin' && result.loginSucceeded !== undefined && (
               <div className={`flex items-center gap-2.5 rounded-2xl px-4 py-3 mb-4 text-sm font-semibold border ${
                 result.loginSucceeded
                   ? 'bg-green-500/10 border-green-500/25 text-green-400'
@@ -727,7 +828,7 @@ export default function ProductPage() {
             </div>
 
             {/* Authenticated pages scanned */}
-            {authEnabled && (result.authenticatedPages ?? result.AuthenticatedPages)?.length > 0 && (
+            {authType === 'formlogin' && (result.authenticatedPages ?? result.AuthenticatedPages)?.length > 0 && (
               <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden mb-2">
                 <div className="px-4 py-3 border-b border-white/10 flex items-center gap-2">
                   <Lock className="w-3.5 h-3.5 text-green-400" />
@@ -746,7 +847,7 @@ export default function ProductPage() {
             )}
 
             {/* Authenticated-only findings */}
-            {authEnabled && (result.authenticatedFindings ?? result.AuthenticatedFindings)?.length > 0 && (
+            {authType === 'formlogin' && (result.authenticatedFindings ?? result.AuthenticatedFindings)?.length > 0 && (
               <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden mb-2">
                 <div className="px-4 py-3 border-b border-white/10 flex items-center gap-2">
                   <Lock className="w-3.5 h-3.5 text-crimson-400" />

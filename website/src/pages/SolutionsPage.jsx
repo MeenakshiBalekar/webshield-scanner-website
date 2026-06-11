@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Shield, Building2, Users, Code, ShieldCheck, Briefcase, ArrowRight, CheckCircle2 } from 'lucide-react'
 import { getSolutions } from '../services/api'
 import Footer from '../components/Footer'
+import Navbar from '../components/Navbar'
 
 const ICONS = {
   enterprise:             Building2,
@@ -34,17 +35,9 @@ export default function SolutionsPage() {
 
   return (
     <div className="min-h-screen page-bg flex flex-col">
-      <header className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-        <Link to="/" className="flex items-center gap-2">
-          <img src="/udyo360-icon-only.svg" alt="Udyo360" className="w-9 h-9" />
-          <span className="text-white font-bold text-xl tracking-tight">
-            Udy◎<span className="text-crimson-500">360</span>
-          </span>
-        </Link>
-        <Link to="/" className="text-gray-400 hover:text-white text-sm transition-colors">← Back to home</Link>
-      </header>
+      <Navbar />
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-12">
+      <main className="flex-1 max-w-6xl mx-auto w-full px-4 pt-24 pb-12">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-extrabold text-white mb-3">Solutions</h1>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Shield, Search, AlertCircle, ChevronDown, ChevronUp, ExternalLink, Tag } from 'lucide-react'
 import { searchCVE, getCVECategories } from '../services/api'
+import Navbar from '../components/Navbar'
 
 const SEVERITIES = ['', 'Critical', 'High', 'Medium', 'Low']
 
@@ -135,17 +136,9 @@ export default function CvePage() {
 
   return (
     <div className="min-h-screen page-bg flex flex-col">
-      <header className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-        <Link to="/" className="flex items-center gap-2">
-          <img src="/udyo360-icon-only.svg" alt="Udyo360" className="w-9 h-9" />
-          <span className="text-white font-bold text-xl tracking-tight">
-            Udy◎<span className="text-crimson-500">360</span>
-          </span>
-        </Link>
-        <Link to="/" className="text-gray-400 hover:text-white text-sm transition-colors">← Back to home</Link>
-      </header>
+      <Navbar />
 
-      <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-12">
+      <main className="flex-1 max-w-5xl mx-auto w-full px-4 pt-24 pb-12">
         <div className="mb-8">
           <h1 className="text-3xl font-extrabold text-white mb-2">CVE Database</h1>
           <p className="text-gray-400">Search known vulnerabilities by keyword, ID, or severity.</p>

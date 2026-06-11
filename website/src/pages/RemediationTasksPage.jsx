@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext'
 import Footer from '../components/Footer'
 import EvidencePanel from '../components/EvidencePanel'
 import { createJiraIssue, getIntegrations } from '../services/api'
+import Navbar from '../components/Navbar'
 
 const API     = import.meta.env.VITE_API_URL ?? ''
 const BACKEND = API || 'https://webshield-backend-api.onrender.com'
@@ -74,14 +75,22 @@ function TaskCard({ task, onAction, hasJira }) {
   const evidence    = task.evidence ?? task.Evidence ?? null
 
   const statusLow = status.toLowerCase()
-  const isResolved = statusLow === 'resolved' || statusLow === 'done'
-  const isAcked    = statusLow === 'acknowledged' || statusLow === 'ack'
+  const isResolved      = statusLow === 'resolved' || statusLow === 'done'
+  const isAcked         = statusLow === 'acknowledged' || statusLow === 'ack'
+  const isFalsePositive = statusLow === 'false-positive' || statusLow === 'falsepositive' || statusLow === 'false positive'
+  const isReopened      = statusLow === 'reopened'
 
   const act = async (type) => {
     setActioning(type)
     try {
       await onAction(id, type)
-      setLocalStatus(type === 'acknowledge' ? 'Acknowledged' : 'Resolved')
+      setLocalStatus(
+        type === 'acknowledge'    ? 'Acknowledged' :
+        type === 'resolve'        ? 'Resolved' :
+        type === 'false-positive' ? 'False Positive' :
+        type === 'reopen'         ? 'Open' :
+        type
+      )
     } catch (err) {
       alert(err.message ?? `Failed to ${type}`)
     } finally {
@@ -113,9 +122,11 @@ function TaskCard({ task, onAction, hasJira }) {
               </span>
             )}
             <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-              isResolved ? 'text-green-400 bg-green-400/10' :
-              isAcked    ? 'text-blue-400 bg-blue-400/10' :
-                           'text-yellow-400 bg-yellow-400/10'
+              isResolved      ? 'text-green-400 bg-green-400/10' :
+              isAcked         ? 'text-blue-400 bg-blue-400/10' :
+              isFalsePositive ? 'text-purple-400 bg-purple-400/10' :
+              isReopened      ? 'text-orange-400 bg-orange-400/10' :
+                                'text-yellow-400 bg-yellow-400/10'
             }`}>
               {status}
             </span>
@@ -158,6 +169,22 @@ function TaskCard({ task, onAction, hasJira }) {
           <span className="flex items-center gap-1 text-xs text-green-400">
             <CheckCircle className="w-3.5 h-3.5" /> Resolved
           </span>
+        )}
+
+        {!isFalsePositive && !isResolved && (
+          <button onClick={() => act('false-positive')} disabled={!!actioning}
+            className="flex items-center gap-1.5 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/25 text-purple-400 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50">
+            {actioning === 'false-positive' ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
+            False Positive
+          </button>
+        )}
+
+        {(isResolved || isFalsePositive) && (
+          <button onClick={() => act('reopen')} disabled={!!actioning}
+            className="flex items-center gap-1.5 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/25 text-orange-400 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50">
+            {actioning === 'reopen' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Clock className="w-3 h-3" />}
+            Reopen
+          </button>
         )}
 
         {/* Jira button / badge */}
@@ -252,23 +279,9 @@ export default function RemediationTasksPage() {
 
   return (
     <div className="min-h-screen page-bg flex flex-col">
-      <header className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-        <Link to="/" className="flex items-center gap-2">
-          <img src="/udyo360-icon-only.svg" alt="Udyo360" className="w-9 h-9" />
-          <span className="text-white font-bold text-xl tracking-tight">
-            Udy◎<span className="text-crimson-500">360</span>
-          </span>
-        </Link>
-        <div className="flex items-center gap-4">
-          <Link to="/remediation" className="text-gray-400 hover:text-white text-sm transition-colors">Playbooks</Link>
-          <button onClick={() => { logout(); navigate('/login') }}
-            className="flex items-center gap-1.5 text-gray-400 hover:text-white text-sm transition-colors">
-            <LogOut className="w-4 h-4" /> Sign Out
-          </button>
-        </div>
-      </header>
+      <Navbar />
 
-      <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-10">
+      <main className="flex-1 max-w-3xl mx-auto w-full px-4 pt-24 pb-10">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-white">Remediation Tasks</h1>

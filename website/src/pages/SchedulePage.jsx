@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Shield, Plus, AlertCircle, Trash2, ToggleLeft, ToggleRight, Loader2, Calendar, LayoutDashboard } from 'lucide-react'
 import { getSchedules, createSchedule, deleteSchedule, toggleSchedule } from '../services/api'
+import Navbar from '../components/Navbar'
 
 export default function SchedulePage() {
   const [schedules, setSchedules] = useState(null)
@@ -48,24 +49,9 @@ export default function SchedulePage() {
 
   return (
     <div className="min-h-screen page-bg flex flex-col">
-      <header className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-        <Link to="/" className="flex items-center gap-2">
-          <img src="/udyo360-icon-only.svg" alt="Udyo360" className="w-9 h-9" />
-          <span className="text-white font-bold text-xl tracking-tight">
-            Udy◎<span className="text-crimson-500">360</span>
-          </span>
-        </Link>
-        <div className="flex items-center gap-4">
-          <Link to="/dashboard" className="flex items-center gap-1.5 text-gray-400 hover:text-white text-sm transition-colors">
-            <LayoutDashboard className="w-4 h-4" /> Dashboard
-          </Link>
-          <Link to="/scanner" className="flex items-center gap-2 bg-crimson-500 hover:bg-crimson-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
-            <Plus className="w-4 h-4" /> New Scan
-          </Link>
-        </div>
-      </header>
+      <Navbar />
 
-      <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-10">
+      <main className="flex-1 max-w-4xl mx-auto w-full px-4 pt-24 pb-10">
         <h1 className="text-2xl font-bold text-white mb-8 flex items-center gap-2">
           <Calendar className="w-6 h-6 text-crimson-400" /> Scheduled Scans
         </h1>

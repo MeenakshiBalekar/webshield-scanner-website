@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react'
-import { Shield, ArrowRight, Play, CheckCircle, Zap } from 'lucide-react'
+import { ArrowRight, Play, CheckCircle, Zap } from 'lucide-react'
 
 const badges = ['SOC 2 Certified', 'OWASP Aligned', 'GDPR Ready', 'CVE Coverage']
 
@@ -154,13 +154,14 @@ export default function Hero({ onWatchDemo, onStartFreeScan }) {
                   <div className="w-3 h-3 rounded-full bg-red-500" />
                   <div className="w-3 h-3 rounded-full bg-yellow-500" />
                   <div className="w-3 h-3 rounded-full bg-green-500" />
-                  <span className="ml-3 text-xs text-gray-400 font-mono">udyo360 — scan in progress</span>
+                  <img src="/udyo360-icon-only.svg" alt="" className="w-3.5 h-3.5 ml-3" />
+                  <span className="text-xs text-gray-400 font-mono">udyo360 — scan in progress</span>
                 </div>
 
                 {/* URL Bar */}
                 <div className="px-4 py-3 border-b border-white/10">
                   <div className="flex items-center gap-2 bg-navy-900 rounded-lg px-3 py-2">
-                    <Shield className="w-4 h-4 text-crimson-500" />
+                    <img src="/udyo360-icon-only.svg" alt="" className="w-4 h-4" />
                     <span className="text-xs text-gray-300 font-mono">https://target-app.example.com</span>
                     <span className="ml-auto text-xs text-green-400 font-semibold animate-pulse">● SCANNING</span>
                   </div>

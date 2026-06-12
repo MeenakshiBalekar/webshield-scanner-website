@@ -1,0 +1,17 @@
+{
+  "name": "udyo360-promo-video",
+  "version": "1.0.0",
+  "description": "Udyo360 promotional video",
+  "scripts": {
+    "start": "npx remotion studio",
+    "render": "npx remotion render src/index.jsx UdyoPromo /tmp/udyo360-promo.mp4 --codec=h264",
+    "render-short": "npx remotion render src/index.jsx UdyoShort /tmp/udyo360-short.mp4 --codec=h264"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.475",
+    "@remotion/renderer": "4.0.475",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "remotion": "4.0.475"
+  }
+}

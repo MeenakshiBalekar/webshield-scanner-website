@@ -12,3 +12,4 @@ website/.env.production
 .DS_Store
 .vscode/
 *.swp
+ffmpeg*.deb

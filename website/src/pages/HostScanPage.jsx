@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react'
 import {
   Server, ScanLine, Loader2, AlertCircle, CheckCircle2, XCircle,
   ChevronDown, ChevronUp, Key, Lock, Terminal, RefreshCw, Info,
-  ShieldCheck, Wifi, Package, HardDrive, Cpu,
+  ShieldCheck, Wifi, Package, HardDrive, Cpu, UserCheck, FileText,
+  Shield, Settings, ClipboardList, Bug,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
@@ -24,11 +25,18 @@ const SEVERITY_STYLES = {
   Info:     'text-gray-400',
 }
 const CATEGORY_ICONS = {
-  Authentication: Lock,
-  Network:        Wifi,
-  Patching:       Package,
-  Filesystem:     HardDrive,
-  Services:       Cpu,
+  Authentication:       Lock,
+  'Account Security':   UserCheck,
+  Network:              Wifi,
+  Patching:             Package,
+  'Software Vulnerability': Bug,
+  Filesystem:           HardDrive,
+  'File Permissions':   HardDrive,
+  Services:             Cpu,
+  'System Services':    Cpu,
+  'Kernel Hardening':   Settings,
+  'Audit & Logging':    ClipboardList,
+  Compliance:           Shield,
 }
 
 const field = (obj, ...keys) => { for (const k of keys) if (obj?.[k] != null) return obj[k]; return '' }
@@ -67,7 +75,8 @@ function FindingRow({ finding }) {
   const compRef   = field(finding, 'complianceReference', 'ComplianceReference', 'compliance_reference')
   const rec       = field(finding, 'recommendation', 'Recommendation')
   const desc      = field(finding, 'description', 'Description')
-
+  const cveId     = field(finding, 'cveId', 'CveId', 'cve_id', 'CVE')
+  const cvssScore = field(finding, 'cvssScore', 'CvssScore', 'cvss_score')
   const isPassed  = status === 'Pass'
 
   return (
@@ -82,6 +91,11 @@ function FindingRow({ finding }) {
         }
         <span className="flex-1 text-sm font-medium text-white min-w-0 truncate">{check}</span>
         <div className="flex items-center gap-2 shrink-0">
+          {cveId && (
+            <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded border bg-red-500/10 text-red-400 border-red-500/30 hidden sm:block">
+              {cveId}
+            </span>
+          )}
           {severity && (
             <span className={`text-[10px] font-semibold uppercase ${sevStyle(severity)}`}>{severity}</span>
           )}
@@ -95,6 +109,27 @@ function FindingRow({ finding }) {
       {open && (
         <div className="px-4 pb-4 pt-1 border-t border-white/10 space-y-3">
           {desc && <p className="text-sm text-gray-400">{desc}</p>}
+
+          {/* CVE / CVSS chips */}
+          {(cveId || cvssScore) && (
+            <div className="flex flex-wrap gap-2">
+              {cveId && (
+                <a
+                  href={`https://nvd.nist.gov/vuln/detail/${cveId}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-0.5 rounded border bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20 transition-colors"
+                >
+                  {cveId}
+                </a>
+              )}
+              {cvssScore && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded border bg-purple-500/10 text-purple-400 border-purple-500/30">
+                  CVSS {Number(cvssScore).toFixed(1)}
+                </span>
+              )}
+            </div>
+          )}
+
           {evidence && (
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-1">Evidence</p>
@@ -228,7 +263,7 @@ export default function HostScanPage() {
             >
               <div className="flex items-center gap-2">
                 <Info className="w-4 h-4 text-blue-400" />
-                <span className="text-sm font-semibold text-white">Preview all 18 checks</span>
+                <span className="text-sm font-semibold text-white">Preview checks {checks.length > 0 ? `(${checks.length})` : ''}</span>
               </div>
               {showChecks ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
             </button>
@@ -392,10 +427,36 @@ export default function HostScanPage() {
                 })}
               </div>
 
-              {/* Findings list */}
-              <div className="space-y-2">
-                {filtered.map((f, i) => <FindingRow key={i} finding={f} />)}
-              </div>
+              {/* Findings — grouped by category when unfiltered */}
+              {catFilter ? (
+                <div className="space-y-2">
+                  {filtered.map((f, i) => <FindingRow key={i} finding={f} />)}
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {categories.map((cat) => {
+                    const catFindings = findings.filter(f => (field(f, 'category', 'Category') || 'Other') === cat)
+                    const CatIcon = CATEGORY_ICONS[cat] || Server
+                    const catFailed = catFindings.filter(f => field(f, 'status', 'Status') !== 'Pass').length
+                    return (
+                      <div key={cat}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <CatIcon className="w-4 h-4 text-gray-400 shrink-0" />
+                          <h3 className="text-sm font-bold text-gray-200">{cat}</h3>
+                          {catFailed > 0 && (
+                            <span className="text-[10px] font-bold text-red-400 bg-red-500/10 border border-red-500/25 px-1.5 py-0.5 rounded">
+                              {catFailed} fail
+                            </span>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          {catFindings.map((f, i) => <FindingRow key={i} finding={f} />)}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -1,6 +1,6 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Globe, Server, Cloud, Bot, FileCode2, GitBranch, Network, Layers, Cpu, Target, ShieldAlert, ArrowRight, Lock, Shield, Zap, CheckCircle2 } from 'lucide-react'
+import { Globe, Server, Cloud, Bot, FileCode2, GitBranch, Network, Layers, Cpu, Target, ShieldAlert, ShieldCheck, ArrowRight, Lock, Shield, Zap, CheckCircle2 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
@@ -148,6 +148,19 @@ const SCANNERS = [
     href: '/edr',
     requiresAuth: true,
     cta: 'Open EDR',
+  },
+  {
+    icon: ShieldCheck,
+    iconColor: 'text-sky-400',
+    iconBg: 'bg-sky-500/10 border-sky-500/20',
+    title: 'Compliance',
+    description: 'Map your security posture against SOC 2, ISO 27001, PCI DSS v4, HIPAA, CIS Controls v8, and GDPR. Get a scored control assessment with evidence and remediation guidance.',
+    badge: 'New',
+    badgeColor: 'text-sky-400 bg-sky-500/10 border-sky-500/30',
+    features: ['SOC 2, ISO 27001, PCI DSS v4', 'HIPAA, CIS Controls v8, GDPR', 'Score ring per framework', 'CSV export'],
+    href: '/compliance',
+    requiresAuth: true,
+    cta: 'View Compliance',
   },
 ]
 

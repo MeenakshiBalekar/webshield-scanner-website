@@ -379,3 +379,10 @@ export const getAgentDetail       = (id)       => request(`/api/agent/${id}`)
 export const decommissionAgent    = (id)       => request(`/api/agent/${id}`, { method: 'DELETE' })
 export const generateAgentToken   = ()         => request('/api/agent/token', { method: 'POST' })
 export const getAgentInstallScript = (platform) => request(`/api/agent/install/${platform}`)
+
+// Compliance
+export const getComplianceFrameworks = ()    => request('/api/compliance/frameworks')
+export const getFrameworkControls    = (id)  => request(`/api/compliance/frameworks/${id}`)
+export const assessCompliance        = (id)  => request(`/api/compliance/assess/${id}`, { method: 'POST' })
+export const exportComplianceReport  = (id)  => blobRequest(`/api/compliance/report/${id}?format=csv`)
+export const getComplianceSummary    = ()    => request('/api/compliance/summary')

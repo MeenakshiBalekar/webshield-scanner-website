@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import {
   Wrench, Loader2, AlertCircle, ChevronDown, ChevronUp,
   ExternalLink, CheckCircle2, XCircle, AlertTriangle, RefreshCw,
-  ClipboardList, Package, Newspaper,
+  ClipboardList, Package, Newspaper, Plus,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
@@ -189,34 +189,41 @@ function CveLookupTab() {
 }
 
 /* ─── Tab 2: Software Audit ─── */
-const EXAMPLE_SOFTWARE = JSON.stringify([
+const OS_OPTIONS = [
+  { value: 'linux-debian',  label: 'Linux — Debian / Ubuntu' },
+  { value: 'linux-rhel',    label: 'Linux — RHEL / CentOS / Rocky' },
+  { value: 'linux-alpine',  label: 'Linux — Alpine' },
+  { value: 'windows',       label: 'Windows Server' },
+  { value: 'macos',         label: 'macOS' },
+  { value: 'generic',       label: 'Generic / Unknown' },
+]
+
+const EXAMPLE_ROWS = [
   { name: 'OpenSSL',   version: '1.1.1t' },
-  { name: 'Apache',    version: '2.4.51' },
-  { name: 'Log4j',     version: '2.14.1' },
-  { name: 'curl',      version: '7.81.0' },
-  { name: 'libwebp',   version: '1.2.4'  },
-], null, 2)
+  { name: 'Apache',    version: '2.4.51'  },
+  { name: 'Log4j',     version: '2.14.1'  },
+  { name: 'curl',      version: '7.81.0'  },
+  { name: 'libwebp',   version: '1.2.4'   },
+]
 
 function SoftwareAuditTab() {
-  const [json, setJson]       = useState('')
-  const [result, setResult]   = useState(null)
-  const [loading, setLoad]    = useState(false)
-  const [error, setError]     = useState(null)
-  const [jsonError, setJsonErr] = useState(null)
+  const [os, setOs]         = useState('linux-debian')
+  const [rows, setRows]     = useState([{ name: '', version: '' }])
+  const [result, setResult] = useState(null)
+  const [loading, setLoad]  = useState(false)
+  const [error, setError]   = useState(null)
 
-  const validate = (v) => {
-    try { JSON.parse(v); setJsonErr(null) }
-    catch { setJsonErr('Invalid JSON') }
-    setJson(v)
-  }
+  const setRow = (i, k, v) => setRows(r => r.map((row, idx) => idx === i ? { ...row, [k]: v } : row))
+  const addRow    = () => setRows(r => [...r, { name: '', version: '' }])
+  const removeRow = (i) => setRows(r => r.filter((_, idx) => idx !== i))
+  const loadExample = () => setRows(EXAMPLE_ROWS.map(r => ({ ...r })))
+
+  const validRows = rows.filter(r => r.name.trim())
 
   const audit = async () => {
-    let parsed
-    try { parsed = JSON.parse(json) }
-    catch { setError('Fix JSON syntax first'); return }
-    if (!Array.isArray(parsed) || parsed.length === 0) { setError('Paste a JSON array of software objects'); return }
+    if (!validRows.length) { setError('Add at least one package'); return }
     setLoad(true); setError(null); setResult(null)
-    try { setResult(await auditSoftware(parsed)) }
+    try { setResult(await auditSoftware({ os, software: validRows })) }
     catch (e) { setError(e.message || 'Software audit failed') }
     setLoad(false)
   }
@@ -229,28 +236,62 @@ function SoftwareAuditTab() {
 
   return (
     <div className="space-y-5">
-      <div className="bg-white/3 border border-white/10 rounded-2xl p-6">
-        <div className="flex items-center justify-between mb-2">
-          <label className="text-xs text-gray-400">Installed software list (JSON array)</label>
-          <button onClick={() => { setJson(EXAMPLE_SOFTWARE); setJsonErr(null) }}
-            className="text-[10px] text-orange-400 hover:text-orange-300 transition-colors">
-            Load example
+      <div className="bg-white/3 border border-white/10 rounded-2xl p-6 space-y-5">
+
+        {/* OS selector */}
+        <div>
+          <label className="block text-xs text-gray-400 mb-1.5">Operating System</label>
+          <select value={os} onChange={e => setOs(e.target.value)}
+            className="bg-white/5 border border-white/15 focus:border-orange-500 text-white px-3 py-2.5 rounded-xl text-sm outline-none transition-colors">
+            {OS_OPTIONS.map(o => <option key={o.value} value={o.value} className="bg-gray-900">{o.label}</option>)}
+          </select>
+        </div>
+
+        {/* Package rows */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-xs text-gray-400">Installed Packages</label>
+            <button onClick={loadExample}
+              className="text-[10px] text-orange-400 hover:text-orange-300 transition-colors">
+              Load example
+            </button>
+          </div>
+          <div className="space-y-2">
+            {rows.map((row, i) => (
+              <div key={i} className="flex gap-2 items-center">
+                <input
+                  value={row.name}
+                  onChange={e => setRow(i, 'name', e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && addRow()}
+                  placeholder="Package name (e.g. OpenSSL)"
+                  className="flex-1 bg-white/5 border border-white/15 focus:border-orange-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors"
+                />
+                <input
+                  value={row.version}
+                  onChange={e => setRow(i, 'version', e.target.value)}
+                  placeholder="Version"
+                  className="w-36 bg-white/5 border border-white/15 focus:border-orange-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm font-mono outline-none transition-colors"
+                />
+                <button
+                  onClick={() => removeRow(i)}
+                  disabled={rows.length === 1}
+                  className="text-gray-600 hover:text-red-400 disabled:opacity-25 transition-colors shrink-0"
+                >
+                  <XCircle className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+          <button onClick={addRow}
+            className="mt-2.5 flex items-center gap-1.5 text-xs text-gray-500 hover:text-orange-400 transition-colors">
+            <Plus className="w-3.5 h-3.5" /> Add package
           </button>
         </div>
-        <textarea
-          value={json}
-          onChange={e => validate(e.target.value)}
-          placeholder={'[\n  { "name": "OpenSSL", "version": "1.1.1t" },\n  { "name": "Apache",  "version": "2.4.51" }\n]'}
-          rows={10}
-          className={`w-full bg-white/5 border focus:border-orange-500 text-gray-200 placeholder-gray-700 px-4 py-3 rounded-xl text-xs font-mono outline-none transition-colors resize-y ${
-            jsonError ? 'border-red-500/50' : 'border-white/15'
-          }`}
-        />
-        {jsonError && <p className="text-xs text-red-400 mt-1">{jsonError}</p>}
-        <button onClick={audit} disabled={loading || !json.trim() || !!jsonError}
-          className="mt-3 flex items-center gap-2 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-500/30 disabled:text-white/30 text-white font-semibold px-6 py-2.5 rounded-xl text-sm transition-colors">
+
+        <button onClick={audit} disabled={loading || !validRows.length}
+          className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-500/30 disabled:text-white/30 text-white font-semibold px-6 py-2.5 rounded-xl text-sm transition-colors">
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Package className="w-4 h-4" />}
-          {loading ? 'Auditing…' : 'Audit Software'}
+          {loading ? 'Auditing…' : `Audit ${validRows.length || ''} Package${validRows.length !== 1 ? 's' : ''}`}
         </button>
       </div>
 
@@ -321,43 +362,40 @@ function SoftwareAuditTab() {
 }
 
 /* ─── Tab 3: Security Bulletins ─── */
+const DAY_OPTIONS = [3, 7, 14, 30]
+
 function BulletinsTab() {
   const [bulletins, setBulletins] = useState([])
   const [loading, setLoad]        = useState(false)
   const [error, setError]         = useState(null)
-  const [sev, setSev]             = useState('all')
+  const [days, setDays]           = useState(7)
 
-  const load = async () => {
+  const load = async (d) => {
     setLoad(true); setError(null)
     try {
-      const data = await getPatchBulletins()
+      const data = await getPatchBulletins(d ?? days)
       const list = Array.isArray(data) ? data : (data?.bulletins ?? data?.Bulletins ?? data?.items ?? data?.Items ?? [])
       setBulletins(list)
     } catch (e) { setError(e.message || 'Failed to load bulletins') }
     setLoad(false)
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load(days) }, [days])
 
-  const filtered = sev === 'all'
-    ? bulletins
-    : bulletins.filter(b => {
-        const s = (field(b, 'severity', 'Severity') ?? '').toLowerCase()
-        return s === sev
-      })
+  const switchDays = (d) => { setDays(d); setBulletins([]) }
 
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div className="flex gap-1 bg-white/5 border border-white/10 rounded-xl p-1">
-          {['all', 'critical', 'high'].map(v => (
-            <button key={v} onClick={() => setSev(v)}
-              className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors capitalize ${sev === v ? 'bg-orange-500 text-white' : 'text-gray-400 hover:text-white'}`}>
-              {v === 'all' ? 'All' : v.charAt(0).toUpperCase() + v.slice(1)}
+          {DAY_OPTIONS.map(d => (
+            <button key={d} onClick={() => switchDays(d)}
+              className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${days === d ? 'bg-orange-500 text-white' : 'text-gray-400 hover:text-white'}`}>
+              {d}d
             </button>
           ))}
         </div>
-        <button onClick={load} disabled={loading}
+        <button onClick={() => load(days)} disabled={loading}
           className="flex items-center gap-1.5 text-gray-500 hover:text-white transition-colors text-xs">
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> Refresh
         </button>
@@ -375,12 +413,15 @@ function BulletinsTab() {
         </div>
       )}
 
-      {!loading && filtered.length === 0 && !error && (
-        <div className="text-center text-sm text-gray-500 py-12">No bulletins found.</div>
+      {!loading && bulletins.length === 0 && !error && (
+        <div className="text-center text-sm text-gray-500 py-12">No bulletins found for the last {days} days.</div>
       )}
 
-      {!loading && filtered.length > 0 && (
+      {!loading && bulletins.length > 0 && (
         <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden">
+          <div className="px-5 py-2.5 border-b border-white/10 flex items-center justify-between">
+            <span className="text-xs text-gray-500">{bulletins.length} Critical / High CVE{bulletins.length !== 1 ? 's' : ''} in the last {days} days</span>
+          </div>
           {/* Header */}
           <div className="grid grid-cols-12 px-5 py-3 border-b border-white/10 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
             <span className="col-span-3">CVE ID</span>
@@ -392,7 +433,7 @@ function BulletinsTab() {
             <span className="col-span-1 text-right">Patch</span>
           </div>
           <div className="divide-y divide-white/5">
-            {filtered.map((b, i) => {
+            {bulletins.map((b, i) => {
               const id        = field(b, 'cveId', 'CveId', 'id', 'Id', 'cve', 'Cve') ?? '—'
               const cvss      = field(b, 'cvssScore', 'CvssScore', 'score', 'Score')
               const severity  = field(b, 'severity', 'Severity') ?? 'Unknown'

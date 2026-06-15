@@ -354,6 +354,6 @@ export const exportAuditCsv  = () => blobRequest('/api/audit/export?format=csv')
 export const startSspmScan = (data) => request('/api/sspmscan', { method: 'POST', body: JSON.stringify(data) })
 
 // Patch Management
-export const lookupCves      = (cveIds)    => request('/api/patch/cve-lookup', { method: 'POST', body: JSON.stringify({ cveIds }) })
-export const auditSoftware   = (software)  => request('/api/patch/software-audit', { method: 'POST', body: JSON.stringify({ software }) })
-export const getPatchBulletins = ()        => request('/api/patch/bulletins')
+export const lookupCves        = (cveIds)   => request('/api/patch/cve-lookup', { method: 'POST', body: JSON.stringify({ cveIds }) })
+export const auditSoftware     = (payload)  => request('/api/patch/software-audit', { method: 'POST', body: JSON.stringify(payload) })
+export const getPatchBulletins = (days = 7) => request(`/api/patch/bulletins?days=${days}`)

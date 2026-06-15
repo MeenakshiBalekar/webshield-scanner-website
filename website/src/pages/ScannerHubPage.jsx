@@ -1,6 +1,6 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Globe, Server, Cloud, Bot, FileCode2, GitBranch, Network, Layers, Cpu, ArrowRight, Lock, Shield, Zap, CheckCircle2 } from 'lucide-react'
+import { Globe, Server, Cloud, Bot, FileCode2, GitBranch, Network, Layers, Cpu, Target, ArrowRight, Lock, Shield, Zap, CheckCircle2 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
@@ -122,6 +122,19 @@ const SCANNERS = [
     href: '/agents',
     requiresAuth: true,
     cta: 'Manage Agents',
+  },
+  {
+    icon: Target,
+    iconColor: 'text-rose-400',
+    iconBg: 'bg-rose-500/10 border-rose-500/20',
+    title: 'Threat Intelligence',
+    description: 'Map CVEs and scan findings to MITRE ATT&CK techniques, check IPs/domains/hashes against threat feeds, and query Shodan for live host exposure data.',
+    badge: 'New',
+    badgeColor: 'text-rose-400 bg-rose-500/10 border-rose-500/30',
+    features: ['MITRE ATT&CK technique mapping', 'AbuseIPDB + VirusTotal IOC checks', 'Shodan host & CVE lookup', 'Domain/hash reputation scoring'],
+    href: '/threat',
+    requiresAuth: false,
+    cta: 'Open Threat Intel',
   },
 ]
 

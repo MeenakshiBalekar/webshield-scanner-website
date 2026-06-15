@@ -358,6 +358,11 @@ export const lookupCves        = (cveIds)   => request('/api/patch/cve-lookup', 
 export const auditSoftware     = (payload)  => request('/api/patch/software-audit', { method: 'POST', body: JSON.stringify(payload) })
 export const getPatchBulletins = (days = 7) => request(`/api/patch/bulletins?days=${days}`)
 
+// Threat Intelligence
+export const mapAttackTechniques = (payload)    => request('/api/threat/attack/map', { method: 'POST', body: JSON.stringify(payload) })
+export const checkIocs           = (indicators) => request('/api/threat/ioc/check',  { method: 'POST', body: JSON.stringify({ indicators }) })
+export const getShodanHost       = (ip)         => request(`/api/threat/shodan/${ip}`)
+
 // Agent Management
 export const getAgents            = ()         => request('/api/agent')
 export const getAgentDetail       = (id)       => request(`/api/agent/${id}`)

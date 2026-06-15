@@ -363,6 +363,16 @@ export const mapAttackTechniques = (payload)    => request('/api/threat/attack/m
 export const checkIocs           = (indicators) => request('/api/threat/ioc/check',  { method: 'POST', body: JSON.stringify({ indicators }) })
 export const getShodanHost       = (ip)         => request(`/api/threat/shodan/${ip}`)
 
+// EDR
+export const getEdrAlerts  = (params = {}) => { const q = new URLSearchParams(); Object.entries(params).forEach(([k,v]) => v && q.set(k,v)); return request(`/api/edr/alerts?${q}`) }
+export const updateEdrAlert = (id, data)  => request(`/api/edr/alerts/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
+export const getEdrRules    = ()          => request('/api/edr/rules')
+export const createEdrRule  = (data)      => request('/api/edr/rules', { method: 'POST', body: JSON.stringify(data) })
+export const toggleEdrRule  = (id)        => request(`/api/edr/rules/${id}/toggle`, { method: 'PATCH' })
+export const deleteEdrRule  = (id)        => request(`/api/edr/rules/${id}`, { method: 'DELETE' })
+export const analyzeAgent   = (agentId)   => request(`/api/edr/analyze/${agentId}`, { method: 'POST' })
+export const getEdrSummary  = ()          => request('/api/edr/summary')
+
 // Agent Management
 export const getAgents            = ()         => request('/api/agent')
 export const getAgentDetail       = (id)       => request(`/api/agent/${id}`)

@@ -138,9 +138,11 @@ export const startHostScan = (payload) =>
 export const getHostChecks = () => request('/api/hostscan/checks')
 
 // Cloud scan
-export const startCloudScanAws = (payload) =>
-  request('/api/cloudscan/aws', { method: 'POST', body: JSON.stringify(payload) })
-export const getCloudChecksAws = () => request('/api/cloudscan/checks/aws')
+export const startCloudScanAws   = (payload) => request('/api/cloudscan/aws',   { method: 'POST', body: JSON.stringify(payload) })
+export const getCloudChecksAws   = ()         => request('/api/cloudscan/checks/aws')
+export const startCloudScanAzure = (payload) => request('/api/cloudscan/azure', { method: 'POST', body: JSON.stringify(payload) })
+export const startCloudScanGcp   = (payload) => request('/api/cloudscan/gcp',   { method: 'POST', body: JSON.stringify(payload) })
+export const startCloudScanOci   = (payload) => request('/api/cloudscan/oci',   { method: 'POST', body: JSON.stringify(payload) })
 
 // Code scan
 export const scanCodeFiles = (formData) => {

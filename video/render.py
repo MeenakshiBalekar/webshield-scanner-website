@@ -47,6 +47,20 @@ def counter(end, frame, delay=0, dur=60):
     return int(round(end*pct))
 
 # ── SVG building blocks ────────────────────────────────────────────────────
+
+def udyo_icon(cx, cy, size, stroke_color=RED, dot_color=WHITE):
+    """Render the real Udyo360 icon: U-stroke + dot. viewBox 0 0 60 60."""
+    scale = size / 60
+    ox = cx - size / 2
+    oy = cy - size / 2
+    sw = 10.5 * scale
+    return f'''
+  <g transform="translate({ox},{oy}) scale({scale})">
+    <path d="M13 8 L13 36 A17 17 0 0 0 47 36 L47 8"
+          stroke="{stroke_color}" stroke-width="10.5" stroke-linecap="round" fill="none"/>
+    <circle cx="30" cy="48" r="5.5" fill="{dot_color}"/>
+  </g>'''
+
 def grid_bg():
     return f'''
   <rect width="100%" height="100%" fill="{BG}"/>
@@ -67,17 +81,14 @@ def shield_icon(x, y, size, color=WHITE):
     return f'<path transform="translate({x},{y}) scale({scale})" d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z" fill="{color}" fill-opacity="0.92"/>'
 
 def logo(cx, cy, size, op=1.0, ty=0):
-    s = size
-    box_w, box_h = s*0.9, s*0.9
-    icon_x = cx - s*2.4
-    box_x  = icon_x - box_w/2
-    box_y  = cy - box_h/2
-    txt_x  = icon_x + s*0.7
+    """Logo = real Udyo360 U-icon + wordmark side by side."""
+    icon_size = size * 0.95
+    gap       = size * 0.55
+    txt_x     = cx - size * 1.8 + gap
     return f'''
   <g opacity="{op}" transform="translate(0,{ty})">
-    <rect x="{box_x}" y="{box_y}" width="{box_w}" height="{box_h}" rx="{s*0.22}" fill="url(#logo_grad)" filter="url(#logo_glow)"/>
-    {shield_icon(box_x+box_w*0.23, box_y+box_h*0.1, box_w*0.55)}
-    <text x="{txt_x}" y="{cy}" dominant-baseline="central" font-size="{s*0.75}" font-weight="900" font-family="Inter,Segoe UI,system-ui,sans-serif" fill="{WHITE}" letter-spacing="-1">Udy◎<tspan fill="{RED}">360</tspan></text>
+    {udyo_icon(cx - size * 1.8, cy, icon_size)}
+    <text x="{txt_x}" y="{cy}" dominant-baseline="central" font-size="{size*0.75}" font-weight="900" font-family="Inter,Segoe UI,system-ui,sans-serif" fill="{WHITE}" letter-spacing="-1">Udy◎<tspan fill="{RED}">360</tspan></text>
   </g>'''
 
 LOGO_DEFS = f'''
@@ -149,13 +160,13 @@ def scan_widget(x, y, w, progress, vis_logs, frame_local, scale_op=1.0, scale_s=
     <circle cx="22" cy="{h_win/2}" r="6" fill="{RED}"/>
     <circle cx="42" cy="{h_win/2}" r="6" fill="#F59E0B"/>
     <circle cx="62" cy="{h_win/2}" r="6" fill="#10B981"/>
-    {shield_icon(82, h_win/2-8, 16, RED)}
+    {udyo_icon(89, h_win/2, 18)}
     <text x="106" y="{h_win/2}" dominant-baseline="central" font-size="12"
           font-family="monospace" fill="{GRAY}">udyo360 — scan in progress</text>
 
     <!-- URL bar -->
     <rect x="16" y="{h_win+10}" width="{w-32}" height="42" rx="10" fill="#1A2035"/>
-    {shield_icon(30, h_win+19, 14, RED)}
+    {udyo_icon(37, h_win+31, 16)}
     <text x="52" y="{h_win+31}" dominant-baseline="central" font-size="12"
           font-family="monospace" fill="{GRAY}">https://target-app.example.com</text>
     <circle cx="{w-56}" cy="{h_win+31}" r="4" fill="#10B981"/>

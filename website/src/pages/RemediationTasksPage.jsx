@@ -7,7 +7,7 @@ import {
 import { useAuth } from '../context/AuthContext'
 import Footer from '../components/Footer'
 import EvidencePanel from '../components/EvidencePanel'
-import { createJiraIssue, createServiceNowTicket, getIntegrations } from '../services/api'
+import { createJiraIssue, createServiceNowTicket, alertPagerDuty, createAdoWorkItem, getIntegrations } from '../services/api'
 import Navbar from '../components/Navbar'
 
 const API     = import.meta.env.VITE_API_URL ?? ''
@@ -76,6 +76,11 @@ function TaskCard({ task, onAction, hasJira, hasServiceNow }) {
   const [creatingSnow, setCreatingSnow]     = useState(false)
   const [snowTicketNum, setSnowTicketNum]   = useState(task.snowTicketNumber ?? task.SnowTicketNumber ?? null)
   const [snowTicketUrl, setSnowTicketUrl]   = useState(task.snowTicketUrl ?? task.SnowTicketUrl ?? null)
+  const [alertingPd, setAlertingPd]         = useState(false)
+  const [pdDedupKey, setPdDedupKey]         = useState(task.pdDedupKey ?? task.PdDedupKey ?? null)
+  const [creatingAdo, setCreatingAdo]       = useState(false)
+  const [adoItemId, setAdoItemId]           = useState(task.adoWorkItemId ?? task.AdoWorkItemId ?? null)
+  const [adoItemUrl, setAdoItemUrl]         = useState(task.adoWorkItemUrl ?? task.AdoWorkItemUrl ?? null)
 
   const id          = field(task, 'id', 'Id', 'taskId', 'TaskId')
   const checkName   = field(task, 'checkName', 'CheckName', 'name', 'Name')
@@ -139,6 +144,31 @@ function TaskCard({ task, onAction, hasJira, hasServiceNow }) {
     }
   }
 
+  const handleAlertPd = async () => {
+    setAlertingPd(true)
+    try {
+      const res = await alertPagerDuty(id)
+      setPdDedupKey(res.dedupKey ?? res.DedupKey ?? res.dedup_key ?? res.incidentKey ?? res.IncidentKey ?? '')
+    } catch (err) {
+      alert(err.message ?? 'Failed to alert PagerDuty')
+    } finally {
+      setAlertingPd(false)
+    }
+  }
+
+  const handleCreateAdo = async () => {
+    setCreatingAdo(true)
+    try {
+      const res = await createAdoWorkItem(id)
+      setAdoItemId(res.workItemId ?? res.WorkItemId ?? res.id ?? res.Id ?? '')
+      setAdoItemUrl(res.workItemUrl ?? res.WorkItemUrl ?? res.url ?? res.Url ?? '')
+    } catch (err) {
+      alert(err.message ?? 'Failed to create ADO work item')
+    } finally {
+      setCreatingAdo(false)
+    }
+  }
+
   return (
     <div className={`border rounded-2xl p-4 transition-all ${isResolved ? 'border-green-500/20 opacity-60' : 'border-white/10'}`}>
       <div className="flex items-start justify-between gap-3 mb-2">
@@ -166,6 +196,16 @@ function TaskCard({ task, onAction, hasJira, hasServiceNow }) {
             {snowTicketNum && (
               <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
                 ServiceNow
+              </span>
+            )}
+            {pdDedupKey && (
+              <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-green-500/15 border border-green-500/30 text-green-400">
+                PD Alerted
+              </span>
+            )}
+            {adoItemId && (
+              <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-sky-500/15 border border-sky-500/30 text-sky-400">
+                ADO
               </span>
             )}
             {due && (
@@ -260,6 +300,37 @@ function TaskCard({ task, onAction, hasJira, hasServiceNow }) {
             className="flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-bold px-2.5 py-1.5 rounded-lg hover:bg-emerald-500/20 transition-colors"
           >
             {snowTicketNum} <ExternalLink className="w-3 h-3" />
+          </a>
+        )}
+
+        {/* PagerDuty */}
+        {!pdDedupKey ? (
+          <button onClick={handleAlertPd} disabled={alertingPd}
+            className="flex items-center gap-1.5 bg-green-500/10 hover:bg-green-500/20 border border-green-500/25 text-green-400 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50">
+            {alertingPd ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+            {alertingPd ? 'Alerting…' : 'Alert PagerDuty'}
+          </button>
+        ) : (
+          <span className="text-[10px] font-mono bg-green-500/10 border border-green-500/25 text-green-400 px-2.5 py-1.5 rounded-lg">
+            PD: {pdDedupKey}
+          </span>
+        )}
+
+        {/* Azure DevOps */}
+        {!adoItemId ? (
+          <button onClick={handleCreateAdo} disabled={creatingAdo}
+            className="flex items-center gap-1.5 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/25 text-sky-400 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50">
+            {creatingAdo ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+            {creatingAdo ? 'Creating…' : 'Create ADO Work Item'}
+          </button>
+        ) : (
+          <a
+            href={adoItemUrl || '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 bg-sky-500/10 border border-sky-500/25 text-sky-400 text-xs font-bold px-2.5 py-1.5 rounded-lg hover:bg-sky-500/20 transition-colors"
+          >
+            #{adoItemId} <ExternalLink className="w-3 h-3" />
           </a>
         )}
 

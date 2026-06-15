@@ -88,6 +88,8 @@ export const getRemediationsByCategory = (cat) =>
 // Dashboard
 export const getDashboard = () => request('/api/dashboard')
 export const getDashboardStats = () => request('/api/dashboard/stats')
+export const getExecutiveDashboard = () => request('/api/dashboard/executive')
+export const getDashboardTrends = () => request('/api/dashboard/trends')
 
 // CVE
 export const searchCVE = ({ q = '', severity = '' } = {}) => {
@@ -257,6 +259,14 @@ export const createJiraIssue = (taskId) =>
 // ServiceNow ticket creation from remediation task
 export const createServiceNowTicket = (taskId) =>
   request(`/api/remediationtasks/${encodeURIComponent(taskId)}/servicenow`, { method: 'POST' })
+
+// PagerDuty alert from remediation task
+export const alertPagerDuty = (taskId) =>
+  request(`/api/remediationtasks/${encodeURIComponent(taskId)}/pagerduty`, { method: 'POST' })
+
+// Azure DevOps work item from remediation task
+export const createAdoWorkItem = (taskId) =>
+  request(`/api/remediationtasks/${encodeURIComponent(taskId)}/azure-devops`, { method: 'POST' })
 
 // Server monitor
 export const getServerMonitors = () => request('/api/servermonitor')

@@ -55,6 +55,12 @@ import DnsScanPage from './pages/DnsScanPage'
 import SubdomainScanPage from './pages/SubdomainScanPage'
 import ExecutiveDashboardPage from './pages/ExecutiveDashboardPage'
 import TrendsPage from './pages/TrendsPage'
+import OrganizationPage from './pages/OrganizationPage'
+import ApiKeysPage from './pages/ApiKeysPage'
+import AuditLogPage from './pages/AuditLogPage'
+import SspmPage from './pages/SspmPage'
+import PatchManagementPage from './pages/PatchManagementPage'
+import AgentManagementPage from './pages/AgentManagementPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -109,6 +115,9 @@ export default function App() {
           <Route path="/scanner/code"      element={<CodeScanPage />} />
           <Route path="/scanner/cicd"      element={<CiCdPage />} />
           <Route path="/scanner/shadow-ai" element={<ShadowAiPage />} />
+          <Route path="/scanner/sspm"      element={<SspmPage />} />
+          <Route path="/patch"             element={<PatchManagementPage />} />
+          <Route path="/agents"            element={<PrivateRoute><AgentManagementPage /></PrivateRoute>} />
           <Route path="/scanner/agent"    element={<PrivateRoute><ServerMonitorPage /></PrivateRoute>} />
 
           {/* Shareable scan — public */}
@@ -149,6 +158,9 @@ export default function App() {
           <Route path="/subdomain-scan"    element={<SubdomainScanPage />} />
           <Route path="/executive-dashboard" element={<PrivateRoute><ExecutiveDashboardPage /></PrivateRoute>} />
           <Route path="/trends"            element={<PrivateRoute><TrendsPage /></PrivateRoute>} />
+          <Route path="/org"               element={<PrivateRoute><OrganizationPage /></PrivateRoute>} />
+          <Route path="/org/:id/apikeys"   element={<PrivateRoute><ApiKeysPage /></PrivateRoute>} />
+          <Route path="/audit"             element={<PrivateRoute><AuditLogPage /></PrivateRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

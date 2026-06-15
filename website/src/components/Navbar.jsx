@@ -57,6 +57,7 @@ const COMMON_NAV = [
       { label: 'Alert Triage',      href: '/alert-triage' },
       { label: 'Threat Feed',       href: '/threat-feed' },
       { label: 'Shadow AI Scanner', href: '/scanner/shadow-ai' },
+      { label: 'Patch Management',  href: '/patch' },
       { label: 'Scheduled Reports', href: '/reports/schedule' },
       { label: 'Attack Surface',    href: '/discover' },
     ],

@@ -323,3 +323,44 @@ export const uploadProfilePicture = (formData) => {
       return res.json()
     })
 }
+
+// Organizations
+export const getOrgs                = ()              => request('/api/org')
+export const createOrg              = (data)          => request('/api/org', { method: 'POST', body: JSON.stringify(data) })
+export const getOrg                 = (id)            => request(`/api/org/${id}`)
+export const updateOrg              = (id, data)      => request(`/api/org/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+export const deleteOrg              = (id)            => request(`/api/org/${id}`, { method: 'DELETE' })
+export const getOrgMembers          = (id)            => request(`/api/org/${id}/members`)
+export const inviteOrgMember        = (id, data)      => request(`/api/org/${id}/members`, { method: 'POST', body: JSON.stringify(data) })
+export const removeOrgMember        = (id, userId)    => request(`/api/org/${id}/members/${userId}`, { method: 'DELETE' })
+export const updateMemberRole       = (id, userId, r) => request(`/api/org/${id}/members/${userId}/role`, { method: 'PUT', body: JSON.stringify({ role: r }) })
+
+// API Keys
+export const getApiKeys    = (orgId)        => request(`/api/org/${orgId}/apikeys`)
+export const createApiKey  = (orgId, data)  => request(`/api/org/${orgId}/apikeys`, { method: 'POST', body: JSON.stringify(data) })
+export const revokeApiKey  = (orgId, keyId) => request(`/api/org/${orgId}/apikeys/${keyId}`, { method: 'DELETE' })
+export const rotateApiKey  = (orgId, keyId) => request(`/api/org/${orgId}/apikeys/${keyId}/rotate`, { method: 'PATCH' })
+
+// Audit Log
+export const getAuditLog = (params = {}) => {
+  const q = new URLSearchParams()
+  Object.entries(params).forEach(([k, v]) => v && q.set(k, v))
+  return request(`/api/audit?${q}`)
+}
+export const getAuditSummary = () => request('/api/audit/summary')
+export const exportAuditCsv  = () => blobRequest('/api/audit/export?format=csv')
+
+// SSPM
+export const startSspmScan = (data) => request('/api/sspmscan', { method: 'POST', body: JSON.stringify(data) })
+
+// Patch Management
+export const lookupCves        = (cveIds)   => request('/api/patch/cve-lookup', { method: 'POST', body: JSON.stringify({ cveIds }) })
+export const auditSoftware     = (payload)  => request('/api/patch/software-audit', { method: 'POST', body: JSON.stringify(payload) })
+export const getPatchBulletins = (days = 7) => request(`/api/patch/bulletins?days=${days}`)
+
+// Agent Management
+export const getAgents            = ()         => request('/api/agent')
+export const getAgentDetail       = (id)       => request(`/api/agent/${id}`)
+export const decommissionAgent    = (id)       => request(`/api/agent/${id}`, { method: 'DELETE' })
+export const generateAgentToken   = ()         => request('/api/agent/token', { method: 'POST' })
+export const getAgentInstallScript = (platform) => request(`/api/agent/install/${platform}`)

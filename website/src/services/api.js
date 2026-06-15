@@ -357,3 +357,10 @@ export const startSspmScan = (data) => request('/api/sspmscan', { method: 'POST'
 export const lookupCves        = (cveIds)   => request('/api/patch/cve-lookup', { method: 'POST', body: JSON.stringify({ cveIds }) })
 export const auditSoftware     = (payload)  => request('/api/patch/software-audit', { method: 'POST', body: JSON.stringify(payload) })
 export const getPatchBulletins = (days = 7) => request(`/api/patch/bulletins?days=${days}`)
+
+// Agent Management
+export const getAgents            = ()         => request('/api/agent')
+export const getAgentDetail       = (id)       => request(`/api/agent/${id}`)
+export const decommissionAgent    = (id)       => request(`/api/agent/${id}`, { method: 'DELETE' })
+export const generateAgentToken   = ()         => request('/api/agent/token', { method: 'POST' })
+export const getAgentInstallScript = (platform) => request(`/api/agent/install/${platform}`)

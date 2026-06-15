@@ -1,6 +1,6 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Globe, Server, Cloud, Bot, FileCode2, GitBranch, Network, Layers, ArrowRight, Lock, Shield, Zap, CheckCircle2 } from 'lucide-react'
+import { Globe, Server, Cloud, Bot, FileCode2, GitBranch, Network, Layers, Cpu, ArrowRight, Lock, Shield, Zap, CheckCircle2 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
@@ -109,6 +109,19 @@ const SCANNERS = [
     href: '/scanner/sspm',
     requiresAuth: false,
     cta: 'Run SSPM Audit',
+  },
+  {
+    icon: Cpu,
+    iconColor: 'text-emerald-400',
+    iconBg: 'bg-emerald-500/10 border-emerald-500/20',
+    title: 'Endpoint Agent Manager',
+    description: 'Deploy lightweight agents to Windows, Linux, and macOS endpoints. View live system reports, open ports, running services, and patch gaps from a central dashboard.',
+    badge: 'New',
+    badgeColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+    features: ['Windows / Linux / macOS support', 'Live system & port reports', 'Installed software + patch gaps', 'One-liner install command'],
+    href: '/agents',
+    requiresAuth: true,
+    cta: 'Manage Agents',
   },
 ]
 

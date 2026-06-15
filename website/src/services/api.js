@@ -144,6 +144,12 @@ export const startCloudScanAzure = (payload) => request('/api/cloudscan/azure', 
 export const startCloudScanGcp   = (payload) => request('/api/cloudscan/gcp',   { method: 'POST', body: JSON.stringify(payload) })
 export const startCloudScanOci   = (payload) => request('/api/cloudscan/oci',   { method: 'POST', body: JSON.stringify(payload) })
 
+// Container / Dockerfile scan
+export const startContainerScan = (payload) => request('/api/containerscan', { method: 'POST', body: JSON.stringify(payload) })
+
+// Web crawler scan
+export const startCrawlScan = (payload) => request('/api/crawlscan', { method: 'POST', body: JSON.stringify(payload) })
+
 // Code scan
 export const scanCodeFiles = (formData) => {
   const token = localStorage.getItem('ws_token')

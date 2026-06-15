@@ -226,7 +226,8 @@ export const sendReportNow = (id) =>
   request(`/api/scheduledreports/${id}/send-now`, { method: 'POST' })
 
 // Compliance
-export const getCompliance = () => request('/api/compliance')
+export const getCompliance         = ()           => request('/api/compliance/posture')
+export const getComplianceControls = (framework)  => request(`/api/compliance/controls/${framework}`)
 
 // Monitoring
 export const getMonitoringTimeline = (url) =>

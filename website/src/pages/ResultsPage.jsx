@@ -139,6 +139,51 @@ function ResultRow({ result }) {
               <span className="text-white font-bold">{result.riskScore}</span>
             </div>
           )}
+
+          {/* CVE / CWE / CVSS chips */}
+          {(result.cveId ?? result.CveId ?? result.cweId ?? result.CweId ?? result.cvssScore ?? result.CvssScore) && (
+            <div className="flex flex-wrap gap-2 pt-1">
+              {(result.cveId ?? result.CveId) && (
+                <a
+                  href={`https://nvd.nist.gov/vuln/detail/${result.cveId ?? result.CveId}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-0.5 rounded border bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20 transition-colors"
+                >
+                  {result.cveId ?? result.CveId}
+                </a>
+              )}
+              {(result.cweId ?? result.CweId) && (
+                <a
+                  href={`https://cwe.mitre.org/data/definitions/${(result.cweId ?? result.CweId).replace(/^CWE-/i,'')}.html`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-0.5 rounded border bg-orange-500/10 text-orange-400 border-orange-500/30 hover:bg-orange-500/20 transition-colors"
+                >
+                  {result.cweId ?? result.CweId}
+                </a>
+              )}
+              {(result.cvssScore ?? result.CvssScore) != null && (() => {
+                const score = result.cvssScore ?? result.CvssScore
+                const sev   = (result.cvssSeverity ?? result.CvssSeverity ?? '').toLowerCase()
+                const cls   = sev === 'critical' ? 'bg-red-500/10 text-red-400 border-red-500/30'
+                            : sev === 'high'     ? 'bg-orange-500/10 text-orange-400 border-orange-500/30'
+                            : sev === 'medium'   ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30'
+                            :                     'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                return (
+                  <span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${cls}`}
+                    title={result.cvssVector ?? result.CvssVector ?? ''}>
+                    CVSS {Number(score).toFixed(1)}
+                    {(result.cvssSeverity ?? result.CvssSeverity) && ` · ${result.cvssSeverity ?? result.CvssSeverity}`}
+                  </span>
+                )
+              })()}
+              {(result.cvssVector ?? result.CvssVector) && (
+                <span className="text-[9px] font-mono text-gray-600 self-center truncate max-w-[240px]" title={result.cvssVector ?? result.CvssVector}>
+                  {result.cvssVector ?? result.CvssVector}
+                </span>
+              )}
+            </div>
+          )}
+
           {!isPassed && <RemediationPanel checkName={result.checkName} />}
         </div>
       )}

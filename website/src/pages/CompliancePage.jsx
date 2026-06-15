@@ -5,14 +5,24 @@ import {
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-import { getCompliance } from '../services/api'
+import { getCompliance, getComplianceControls } from '../services/api'
 
 const FRAMEWORK_META = {
-  'PCI-DSS': { emoji: '💳', desc: 'Payment Card Industry Data Security Standard' },
-  'SOC2':    { emoji: '🏢', desc: 'Service Organization Control 2' },
-  'ISO27001':{ emoji: '🌐', desc: 'ISO/IEC 27001 Information Security Management' },
-  'HIPAA':   { emoji: '🏥', desc: 'Health Insurance Portability and Accountability Act' },
-  'GDPR':    { emoji: '🇪🇺', desc: 'General Data Protection Regulation' },
+  'PCI-DSS':     { emoji: '💳', desc: 'Payment Card Industry Data Security Standard',        controlsKey: 'pci-dss'      },
+  'SOC2':        { emoji: '🏢', desc: 'Service Organization Control 2',                      controlsKey: 'soc2'         },
+  'ISO27001':    { emoji: '🌐', desc: 'ISO/IEC 27001 Information Security Management',       controlsKey: 'iso27001'     },
+  'HIPAA':       { emoji: '🏥', desc: 'Health Insurance Portability and Accountability Act', controlsKey: 'hipaa'        },
+  'GDPR':        { emoji: '🇪🇺', desc: 'General Data Protection Regulation',                 controlsKey: 'gdpr'         },
+  'NIST-800-53': { emoji: '🏛️', desc: 'NIST SP 800-53 Security and Privacy Controls',       controlsKey: 'nist-800-53'  },
+  'NIST 800-53': { emoji: '🏛️', desc: 'NIST SP 800-53 Security and Privacy Controls',       controlsKey: 'nist-800-53'  },
+}
+
+function normaliseFrameworkKey(name) {
+  if (!name) return name
+  // normalise spacing/dash variants so NIST-800-53 and NIST 800-53 both match
+  return name.replace(/\s+/g, '-').toUpperCase() in FRAMEWORK_META
+    ? name.replace(/\s+/g, '-').toUpperCase()
+    : name
 }
 
 const STATUS_STYLE = {
@@ -33,20 +43,38 @@ function CoverageBar({ pct }) {
 }
 
 function FrameworkCard({ fw }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen]         = useState(false)
+  const [controls, setControls] = useState(null)
+  const [ctrlLoading, setCtrlLoading] = useState(false)
 
   const name      = fw.framework     ?? fw.Framework     ?? fw.name ?? ''
   const coverage  = fw.coverage      ?? fw.Coverage      ?? fw.coveragePercent ?? fw.CoveragePercent ?? 0
   const status    = fw.status        ?? fw.Status        ?? 'Unknown'
   const checks    = fw.checks        ?? fw.Checks        ?? fw.requirements ?? fw.Requirements ?? []
   const gaps      = fw.gaps          ?? fw.Gaps          ?? fw.failedChecks ?? fw.FailedChecks ?? []
-  const meta      = FRAMEWORK_META[name] || { emoji: '📋', desc: name }
+  const normName  = normaliseFrameworkKey(name)
+  const meta      = FRAMEWORK_META[normName] || FRAMEWORK_META[name] || { emoji: '📋', desc: name }
   const ss        = STATUS_STYLE[status] || STATUS_STYLE.Unknown
+
+  const handleToggle = () => {
+    const next = !open
+    setOpen(next)
+    if (next && meta.controlsKey && !controls && checks.length === 0 && gaps.length === 0) {
+      setCtrlLoading(true)
+      getComplianceControls(meta.controlsKey)
+        .then((data) => {
+          const list = Array.isArray(data) ? data : (data?.controls ?? data?.items ?? [])
+          setControls(list)
+        })
+        .catch(() => setControls([]))
+        .finally(() => setCtrlLoading(false))
+    }
+  }
 
   return (
     <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden">
       <button
-        onClick={() => setOpen((v) => !v)}
+        onClick={handleToggle}
         className="w-full px-6 py-5 text-left hover:bg-white/3 transition-colors"
       >
         <div className="flex items-start gap-4">
@@ -66,7 +94,7 @@ function FrameworkCard({ fw }) {
         </div>
       </button>
 
-      {open && (checks.length > 0 || gaps.length > 0) && (
+      {open && (
         <div className="border-t border-white/10 px-6 py-4 space-y-4">
           {gaps.length > 0 && (
             <div>
@@ -98,6 +126,40 @@ function FrameworkCard({ fw }) {
                 {checks.length > 10 && <li className="text-xs text-gray-600">+{checks.length - 10} more</li>}
               </ul>
             </div>
+          )}
+          {/* Dynamically loaded controls (e.g. NIST 800-53) */}
+          {ctrlLoading && (
+            <div className="flex items-center gap-2 text-xs text-gray-400 py-2">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />Loading controls…
+            </div>
+          )}
+          {controls && controls.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-blue-400 mb-2 flex items-center gap-1.5">
+                <Info className="w-3.5 h-3.5" />Controls ({controls.length})
+              </p>
+              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                {controls.map((c, i) => {
+                  const cid    = c.controlId ?? c.ControlId ?? c.id ?? c.Id ?? ''
+                  const cname  = c.name ?? c.Name ?? c.title ?? c.Title ?? ''
+                  const cstatus= c.status ?? c.Status ?? ''
+                  const isPassing = (cstatus ?? '').toLowerCase() === 'pass' || (cstatus ?? '').toLowerCase() === 'compliant'
+                  return (
+                    <div key={i} className="flex items-start gap-2.5 text-xs">
+                      {isPassing
+                        ? <CheckCircle2 className="w-3 h-3 text-green-400 shrink-0 mt-0.5" />
+                        : <XCircle className="w-3 h-3 text-red-400 shrink-0 mt-0.5" />
+                      }
+                      {cid && <span className="font-mono text-gray-500 shrink-0">{cid}</span>}
+                      <span className="text-gray-400">{cname}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+          {controls && controls.length === 0 && checks.length === 0 && gaps.length === 0 && !ctrlLoading && (
+            <p className="text-xs text-gray-600">No control details available.</p>
           )}
         </div>
       )}

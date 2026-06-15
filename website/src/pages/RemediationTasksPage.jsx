@@ -21,6 +21,16 @@ function authHeaders() {
   }
 }
 
+function dueBadge(dueDate) {
+  if (!dueDate) return null
+  const days = Math.ceil((new Date(dueDate) - Date.now()) / 86400000)
+  if (days < 0)  return { label: 'OVERDUE',        cls: 'text-red-400 bg-red-500/10 border-red-500/30' }
+  if (days === 0) return { label: 'Due today',      cls: 'text-red-400 bg-red-500/10 border-red-500/30' }
+  if (days <= 7)  return { label: `Due in ${days}d`, cls: 'text-orange-400 bg-orange-500/10 border-orange-500/30' }
+  if (days <= 30) return { label: `Due in ${days}d`, cls: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30' }
+  return           { label: `Due in ${days}d`,       cls: 'text-gray-400 bg-white/5 border-white/10' }
+}
+
 const SEV_STYLES = {
   critical: 'bg-red-500/15 text-red-400 border-red-500/30',
   high:     'bg-orange-500/15 text-orange-400 border-orange-500/30',
@@ -72,7 +82,9 @@ function TaskCard({ task, onAction, hasJira }) {
   const targetUrl   = field(task, 'targetUrl', 'TargetUrl', 'url', 'Url')
   const playbookUrl = field(task, 'playbookUrl', 'PlaybookUrl', 'playbook_url')
   const createdAt   = field(task, 'createdAt', 'CreatedAt', 'created', 'Created')
+  const dueDate     = field(task, 'dueDate', 'DueDate', 'due_date', 'due')
   const evidence    = task.evidence ?? task.Evidence ?? null
+  const due         = dueBadge(dueDate)
 
   const statusLow = status.toLowerCase()
   const isResolved      = statusLow === 'resolved' || statusLow === 'done'
@@ -133,6 +145,11 @@ function TaskCard({ task, onAction, hasJira }) {
             {jiraIssueKey && (
               <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-500/15 border border-indigo-500/30 text-indigo-400">
                 Jira
+              </span>
+            )}
+            {due && (
+              <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${due.cls}`}>
+                {due.label}
               </span>
             )}
           </div>

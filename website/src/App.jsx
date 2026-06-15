@@ -58,6 +58,7 @@ import TrendsPage from './pages/TrendsPage'
 import OrganizationPage from './pages/OrganizationPage'
 import ApiKeysPage from './pages/ApiKeysPage'
 import AuditLogPage from './pages/AuditLogPage'
+import SspmPage from './pages/SspmPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -112,6 +113,7 @@ export default function App() {
           <Route path="/scanner/code"      element={<CodeScanPage />} />
           <Route path="/scanner/cicd"      element={<CiCdPage />} />
           <Route path="/scanner/shadow-ai" element={<ShadowAiPage />} />
+          <Route path="/scanner/sspm"      element={<SspmPage />} />
           <Route path="/scanner/agent"    element={<PrivateRoute><ServerMonitorPage /></PrivateRoute>} />
 
           {/* Shareable scan — public */}

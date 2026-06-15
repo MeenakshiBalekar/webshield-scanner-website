@@ -1,6 +1,6 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Globe, Server, Cloud, Bot, FileCode2, GitBranch, Network, ArrowRight, Lock, Shield, Zap, CheckCircle2 } from 'lucide-react'
+import { Globe, Server, Cloud, Bot, FileCode2, GitBranch, Network, Layers, ArrowRight, Lock, Shield, Zap, CheckCircle2 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
@@ -96,6 +96,19 @@ const SCANNERS = [
     href: '/scanner/agent',
     requiresAuth: true,
     cta: 'Set Up Agent',
+  },
+  {
+    icon: Layers,
+    iconColor: 'text-violet-400',
+    iconBg: 'bg-violet-500/10 border-violet-500/20',
+    title: 'SaaS Security Posture Manager',
+    description: 'Audit Google Workspace, Microsoft 365, Slack, and GitHub Org for misconfigured MFA, excessive admin access, overshared data, and missing security controls.',
+    badge: 'New',
+    badgeColor: 'text-violet-400 bg-violet-500/10 border-violet-500/30',
+    features: ['Google Workspace & Microsoft 365', 'Slack & GitHub Org audits', 'MFA + admin privilege checks', 'Data sharing & DLP controls'],
+    href: '/scanner/sspm',
+    requiresAuth: false,
+    cta: 'Run SSPM Audit',
   },
 ]
 

@@ -349,3 +349,6 @@ export const getAuditLog = (params = {}) => {
 }
 export const getAuditSummary = () => request('/api/audit/summary')
 export const exportAuditCsv  = () => blobRequest('/api/audit/export?format=csv')
+
+// SSPM
+export const startSspmScan = (data) => request('/api/sspmscan', { method: 'POST', body: JSON.stringify(data) })

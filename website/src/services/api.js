@@ -31,8 +31,8 @@ async function blobRequest(path, options = {}) {
 }
 
 // Scan
-export const startScan = (url) =>
-  request('/api/scan/headers', { method: 'POST', body: JSON.stringify({ url }) })
+export const startScan = (url, opts = {}) =>
+  request('/api/scan/headers', { method: 'POST', body: JSON.stringify({ url, ...opts }) })
 
 export const getRiskHeatmap = (url) =>
   request('/api/scan/risk-heatmap', { method: 'POST', body: JSON.stringify({ url }) })
@@ -127,6 +127,10 @@ export const emailReport = (payload) =>
 // Authenticated scan
 export const startAuthenticatedScan = (payload) =>
   request('/api/scan/authenticated', { method: 'POST', body: JSON.stringify(payload) })
+
+// DNS scan
+export const startDnsScan = (domain) =>
+  request('/api/dnsscan', { method: 'POST', body: JSON.stringify({ domain }) })
 
 // Network / port scan
 export const startNetworkScan = (payload) =>

@@ -51,6 +51,7 @@ import AuthCallbackPage from './pages/AuthCallbackPage'
 import SettingsProfilePage from './pages/SettingsProfilePage'
 import ContainerScanPage from './pages/ContainerScanPage'
 import CrawlScanPage from './pages/CrawlScanPage'
+import DnsScanPage from './pages/DnsScanPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -141,6 +142,7 @@ export default function App() {
           <Route path="/discover"          element={<PrivateRoute><DiscoverPage /></PrivateRoute>} />
           <Route path="/container-scan"    element={<ContainerScanPage />} />
           <Route path="/crawl-scan"        element={<CrawlScanPage />} />
+          <Route path="/dns-scan"          element={<DnsScanPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

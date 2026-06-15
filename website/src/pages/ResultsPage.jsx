@@ -3,11 +3,17 @@ import { useLocation, Link } from 'react-router-dom'
 import {
   Shield, ArrowLeft, History, ChevronDown, ChevronUp,
   AlertTriangle, AlertCircle, Info, CheckCircle2, ExternalLink,
-  Plus, Loader2
+  Plus, Loader2, ShieldCheck, Zap,
 } from 'lucide-react'
 import { getRiskHeatmap, getRemediation } from '../services/api'
 import { getScanType } from '../config/scanTypes'
 import Navbar from '../components/Navbar'
+
+function extractJwtAlg(text) {
+  if (!text || typeof text !== 'string') return null
+  const m = text.match(/\b(HS|RS|ES|PS)(256|384|512)\b|none\b/i)
+  return m ? m[0].toUpperCase() : null
+}
 
 const severityConfig = {
   Critical: { color: 'text-red-400',    bg: 'bg-red-500/10',    border: 'border-red-500/30',    icon: AlertCircle },
@@ -87,6 +93,10 @@ function ResultRow({ result }) {
   const cfg = getSeverityCfg(result.severity)
   const Icon = cfg.icon
   const isPassed = result.status === 'Passed'
+  const isJwt   = result.checkName?.toLowerCase().includes('jwt')
+  const isCsrf  = result.checkName?.toLowerCase().includes('csrf')
+  const techDetails = result.technicalDetails ?? result.TechnicalDetails ?? result.details ?? ''
+  const jwtAlg  = isJwt ? extractJwtAlg(techDetails) : null
 
   return (
     <div className={`border rounded-xl overflow-hidden ${isPassed ? 'border-white/5' : cfg.border}`}>
@@ -109,6 +119,29 @@ function ResultRow({ result }) {
 
       {open && (
         <div className="px-4 py-4 border-t border-white/10 space-y-3 text-sm">
+          {/* CSRF inline warning */}
+          {isCsrf && !isPassed && (
+            <div className="flex items-center gap-2 bg-orange-500/10 border border-orange-500/30 text-orange-300 rounded-lg px-3 py-2 text-xs font-semibold">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+              Forms unprotected — CSRF tokens missing
+            </div>
+          )}
+          {/* JWT algorithm */}
+          {isJwt && (techDetails || jwtAlg) && (
+            <div>
+              <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">JWT Algorithm</p>
+              <div className="flex items-center gap-2">
+                {jwtAlg && (
+                  <span className={`text-xs font-bold font-mono px-2 py-0.5 rounded border ${
+                    jwtAlg === 'NONE' || jwtAlg.startsWith('HS')
+                      ? 'text-orange-400 bg-orange-500/10 border-orange-500/30'
+                      : 'text-green-400 bg-green-500/10 border-green-500/30'
+                  }`}>{jwtAlg}</span>
+                )}
+                {techDetails && <p className="text-gray-400 text-xs">{techDetails}</p>}
+              </div>
+            </div>
+          )}
           {result.owaspCategory && (
             <div>
               <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">OWASP Category</p>
@@ -259,6 +292,11 @@ export default function ResultsPage() {
 
   const allResults = scan.results ?? []
 
+  // Special result flags
+  const wafActive  = allResults.some(r => r.checkName === 'WAF Protection' && r.status === 'Passed')
+  const csrfFailed = allResults.some(r => r.checkName?.toLowerCase().includes('csrf') && r.status === 'Failed')
+  const deepScan   = state?.deepScan ?? false
+
   // Apply product-type filter if applicable
   const typeFiltered = config.resultFilter
     ? allResults.filter(config.resultFilter)
@@ -297,6 +335,18 @@ export default function ResultsPage() {
               {scan.targetUrl} <ExternalLink className="w-3 h-3" />
             </a>
             {scan.rawServerHeader && <p className="text-xs text-gray-500 mt-1">Server: {scan.rawServerHeader}</p>}
+            <div className="flex flex-wrap gap-2 mt-2">
+              {wafActive && (
+                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-green-400 bg-green-500/10 border border-green-500/30 px-2.5 py-1 rounded-full">
+                  <ShieldCheck className="w-3.5 h-3.5" /> WAF Active
+                </span>
+              )}
+              {deepScan && (
+                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-crimson-400 bg-crimson-500/10 border border-crimson-500/30 px-2.5 py-1 rounded-full">
+                  <Zap className="w-3.5 h-3.5" /> Deep Scan
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -336,6 +386,13 @@ export default function ResultsPage() {
 
         {tab === 'findings' && (
           <>
+            {/* CSRF global warning */}
+            {csrfFailed && (
+              <div className="flex items-center gap-2 bg-orange-500/10 border border-orange-500/30 text-orange-400 rounded-xl px-4 py-3 text-sm mb-4">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span><span className="font-semibold">Forms unprotected</span> — CSRF tokens are missing on one or more endpoints</span>
+              </div>
+            )}
             {/* Filter pills */}
             <div className="flex flex-wrap gap-2 mb-4">
               {[

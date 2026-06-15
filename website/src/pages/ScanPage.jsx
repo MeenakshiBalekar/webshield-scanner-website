@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
-import { Shield, Globe, ArrowRight, AlertCircle } from 'lucide-react'
+import { Shield, Globe, ArrowRight, AlertCircle, Zap } from 'lucide-react'
 import { startScan } from '../services/api'
 import { getScanType } from '../config/scanTypes'
 import Navbar from '../components/Navbar'
@@ -16,13 +16,23 @@ const SCAN_STEPS = [
   'Generating security report…',
 ]
 
-function ScanningOverlay({ url, title }) {
+const DEEP_SCAN_STEPS = [
+  ...SCAN_STEPS,
+  'Probing for command injection…',
+  'Testing path traversal vectors…',
+  'Checking for SSTI vulnerabilities…',
+  'Testing CRLF injection…',
+  'Probing default credentials…',
+]
+
+function ScanningOverlay({ url, title, deep }) {
+  const steps = deep ? DEEP_SCAN_STEPS : SCAN_STEPS
   const [step, setStep] = useState(0)
   const [progress, setProgress] = useState(5)
 
   useEffect(() => {
     const t = setInterval(() => {
-      setStep((s) => (s + 1) % SCAN_STEPS.length)
+      setStep((s) => (s + 1) % steps.length)
       setProgress((p) => Math.min(p + Math.floor(Math.random() * 7 + 4), 90))
     }, 2200)
     return () => clearInterval(t)
@@ -48,16 +58,17 @@ function ScanningOverlay({ url, title }) {
         <span>Progress</span>
         <span>{progress}%</span>
       </div>
-      <p className="text-sm text-crimson-400 animate-pulse min-h-[1.5rem]">{SCAN_STEPS[step]}</p>
+      <p className="text-sm text-crimson-400 animate-pulse min-h-[1.5rem]">{steps[step]}</p>
       <p className="text-xs text-gray-600 mt-4">This may take 15–30 seconds…</p>
     </div>
   )
 }
 
 export default function ScanPage() {
-  const [url, setUrl] = useState('')
+  const [url, setUrl]           = useState('')
+  const [deepScan, setDeepScan] = useState(false)
   const [scanning, setScanning] = useState(false)
-  const [error, setError] = useState(null)
+  const [error, setError]       = useState(null)
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const scanType = searchParams.get('type') || 'vuln'
@@ -72,8 +83,8 @@ export default function ScanPage() {
 
     setScanning(true)
     try {
-      const result = await startScan(target)
-      navigate('/scanner/results', { state: { scan: result, scanType } })
+      const result = await startScan(target, deepScan ? { mode: 'Deep' } : {})
+      navigate('/scanner/results', { state: { scan: result, scanType, deepScan } })
     } catch (err) {
       setError(err.message)
       setScanning(false)
@@ -85,7 +96,7 @@ export default function ScanPage() {
       <div className="min-h-screen page-bg flex flex-col">
         <Navbar />
         <main className="flex-1 flex items-center justify-center">
-          <ScanningOverlay url={url} title={`Running ${config.title}…`} />
+          <ScanningOverlay url={url} title={`Running ${deepScan ? 'Deep ' : ''}${config.title}…`} deep={deepScan} />
         </main>
       </div>
     )
@@ -118,6 +129,27 @@ export default function ScanPage() {
               />
             </div>
 
+            {/* Deep Scan toggle */}
+            <label className="flex items-center gap-3 cursor-pointer group w-fit">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={deepScan}
+                  onChange={e => setDeepScan(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-10 h-5 bg-white/10 rounded-full peer peer-checked:bg-crimson-500 transition-colors" />
+                <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-200 group-hover:text-white transition-colors">
+                  <Zap className="w-3.5 h-3.5 text-crimson-400" />
+                  Deep Scan
+                </div>
+                <p className="text-[10px] text-gray-500 mt-0.5">Adds command injection, path traversal, SSTI, CRLF & default credential probes</p>
+              </div>
+            </label>
+
             {error && (
               <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
                 <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
@@ -130,7 +162,8 @@ export default function ScanPage() {
               disabled={!url.trim()}
               className="w-full flex items-center justify-center gap-2 bg-crimson-500 hover:bg-crimson-600 disabled:bg-crimson-500/40 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-xl text-lg transition-colors"
             >
-              Start Scan <ArrowRight className="w-5 h-5" />
+              {deepScan ? <Zap className="w-5 h-5" /> : <ArrowRight className="w-5 h-5" />}
+              {deepScan ? 'Run Deep Scan' : 'Start Scan'}
             </button>
           </form>
 

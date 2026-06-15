@@ -254,6 +254,10 @@ export const startApiSpecScan = (payload) =>
 export const createJiraIssue = (taskId) =>
   request(`/api/remediationtasks/${encodeURIComponent(taskId)}/jira`, { method: 'POST' })
 
+// ServiceNow ticket creation from remediation task
+export const createServiceNowTicket = (taskId) =>
+  request(`/api/remediationtasks/${encodeURIComponent(taskId)}/servicenow`, { method: 'POST' })
+
 // Server monitor
 export const getServerMonitors = () => request('/api/servermonitor')
 export const registerServer = (data) =>

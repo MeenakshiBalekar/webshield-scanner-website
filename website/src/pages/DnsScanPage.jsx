@@ -16,6 +16,11 @@ const CHECK_META = {
   dkim:        { label: 'DKIM',         desc: 'DomainKeys Identified Mail — cryptographic email signing' },
   caa:         { label: 'CAA',          desc: 'Certification Authority Authorization — restricts which CAs can issue certs' },
   mx:          { label: 'MX',           desc: 'Mail Exchange records — routes email delivery' },
+  dnssec:      { label: 'DNSSEC',       desc: 'DNS Security Extensions — cryptographic signing of DNS records' },
+  'mta-sts':   { label: 'MTA-STS',      desc: 'Mail Transfer Agent Strict Transport Security — enforces TLS for email' },
+  'tls-rpt':   { label: 'TLS-RPT',      desc: 'TLS Reporting — SMTP TLS failure reports sent to a reporting address' },
+  tlsrpt:      { label: 'TLS-RPT',      desc: 'TLS Reporting — SMTP TLS failure reports sent to a reporting address' },
+  bimi:        { label: 'BIMI',         desc: 'Brand Indicators for Message Identification — email brand logo in inbox' },
 }
 
 function checkMeta(checkName) {

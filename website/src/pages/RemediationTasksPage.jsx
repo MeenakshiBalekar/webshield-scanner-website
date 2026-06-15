@@ -7,7 +7,7 @@ import {
 import { useAuth } from '../context/AuthContext'
 import Footer from '../components/Footer'
 import EvidencePanel from '../components/EvidencePanel'
-import { createJiraIssue, getIntegrations } from '../services/api'
+import { createJiraIssue, createServiceNowTicket, getIntegrations } from '../services/api'
 import Navbar from '../components/Navbar'
 
 const API     = import.meta.env.VITE_API_URL ?? ''
@@ -67,12 +67,15 @@ function SummaryStrip({ summary }) {
 }
 
 /* ── Task card ── */
-function TaskCard({ task, onAction, hasJira }) {
-  const [actioning, setActioning]       = useState(null)
-  const [localStatus, setLocalStatus]   = useState(null)
-  const [creatingJira, setCreatingJira] = useState(false)
-  const [jiraIssueKey, setJiraIssueKey] = useState(task.jiraIssueKey ?? task.JiraIssueKey ?? null)
-  const [jiraIssueUrl, setJiraIssueUrl] = useState(task.jiraIssueUrl ?? task.JiraIssueUrl ?? null)
+function TaskCard({ task, onAction, hasJira, hasServiceNow }) {
+  const [actioning, setActioning]           = useState(null)
+  const [localStatus, setLocalStatus]       = useState(null)
+  const [creatingJira, setCreatingJira]     = useState(false)
+  const [jiraIssueKey, setJiraIssueKey]     = useState(task.jiraIssueKey ?? task.JiraIssueKey ?? null)
+  const [jiraIssueUrl, setJiraIssueUrl]     = useState(task.jiraIssueUrl ?? task.JiraIssueUrl ?? null)
+  const [creatingSnow, setCreatingSnow]     = useState(false)
+  const [snowTicketNum, setSnowTicketNum]   = useState(task.snowTicketNumber ?? task.SnowTicketNumber ?? null)
+  const [snowTicketUrl, setSnowTicketUrl]   = useState(task.snowTicketUrl ?? task.SnowTicketUrl ?? null)
 
   const id          = field(task, 'id', 'Id', 'taskId', 'TaskId')
   const checkName   = field(task, 'checkName', 'CheckName', 'name', 'Name')
@@ -123,6 +126,19 @@ function TaskCard({ task, onAction, hasJira }) {
     }
   }
 
+  const handleCreateSnow = async () => {
+    setCreatingSnow(true)
+    try {
+      const res = await createServiceNowTicket(id)
+      setSnowTicketNum(res.ticketNumber ?? res.TicketNumber ?? res.number ?? res.Number ?? '')
+      setSnowTicketUrl(res.ticketUrl ?? res.TicketUrl ?? res.url ?? res.Url ?? '')
+    } catch (err) {
+      alert(err.message ?? 'Failed to create ServiceNow ticket')
+    } finally {
+      setCreatingSnow(false)
+    }
+  }
+
   return (
     <div className={`border rounded-2xl p-4 transition-all ${isResolved ? 'border-green-500/20 opacity-60' : 'border-white/10'}`}>
       <div className="flex items-start justify-between gap-3 mb-2">
@@ -145,6 +161,11 @@ function TaskCard({ task, onAction, hasJira }) {
             {jiraIssueKey && (
               <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-500/15 border border-indigo-500/30 text-indigo-400">
                 Jira
+              </span>
+            )}
+            {snowTicketNum && (
+              <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
+                ServiceNow
               </span>
             )}
             {due && (
@@ -223,6 +244,25 @@ function TaskCard({ task, onAction, hasJira }) {
           </a>
         )}
 
+        {/* ServiceNow button / ticket */}
+        {hasServiceNow && !snowTicketNum && (
+          <button onClick={handleCreateSnow} disabled={creatingSnow}
+            className="flex items-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 text-emerald-400 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50">
+            {creatingSnow ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+            {creatingSnow ? 'Creating…' : 'Create ServiceNow Ticket'}
+          </button>
+        )}
+        {snowTicketNum && (
+          <a
+            href={snowTicketUrl || '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-bold px-2.5 py-1.5 rounded-lg hover:bg-emerald-500/20 transition-colors"
+          >
+            {snowTicketNum} <ExternalLink className="w-3 h-3" />
+          </a>
+        )}
+
         {playbookUrl && (
           <a href={playbookUrl} target="_blank" rel="noopener noreferrer"
             className="flex items-center gap-1.5 text-crimson-400 hover:text-crimson-300 text-xs font-semibold ml-auto transition-colors">
@@ -243,8 +283,9 @@ export default function RemediationTasksPage() {
   const [tasks, setTasks]       = useState([])
   const [loading, setLoading]   = useState(true)
   const [error, setError]       = useState(null)
-  const [sevFilter, setSevFilter] = useState('')
-  const [hasJira, setHasJira]   = useState(false)
+  const [sevFilter, setSevFilter]       = useState('')
+  const [hasJira, setHasJira]           = useState(false)
+  const [hasServiceNow, setHasServiceNow] = useState(false)
 
   const token = localStorage.getItem('ws_token')
 
@@ -266,6 +307,7 @@ export default function RemediationTasksPage() {
         const ints = await getIntegrations()
         const list = Array.isArray(ints) ? ints : (ints?.integrations ?? [])
         setHasJira(list.some((i) => (i.type ?? i.Type ?? '').toLowerCase() === 'jira'))
+        setHasServiceNow(list.some((i) => (i.type ?? i.Type ?? '').toLowerCase() === 'servicenow'))
       } catch { /* non-critical */ }
     } catch (err) {
       setError(err.message)
@@ -350,6 +392,7 @@ export default function RemediationTasksPage() {
                 task={task}
                 onAction={handleAction}
                 hasJira={hasJira}
+                hasServiceNow={hasServiceNow}
               />
             ))}
           </div>

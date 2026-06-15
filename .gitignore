@@ -1,5 +1,6 @@
 # Dependencies
 website/node_modules/
+video/node_modules/
 
 # Build output
 website/dist/

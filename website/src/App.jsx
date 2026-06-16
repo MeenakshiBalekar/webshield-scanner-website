@@ -63,6 +63,7 @@ import PatchManagementPage from './pages/PatchManagementPage'
 import AgentManagementPage from './pages/AgentManagementPage'
 import ThreatIntelPage from './pages/ThreatIntelPage'
 import EdrPage from './pages/EdrPage'
+import VmdrPage from './pages/VmdrPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -122,6 +123,7 @@ export default function App() {
           <Route path="/agents"            element={<PrivateRoute><AgentManagementPage /></PrivateRoute>} />
           <Route path="/threat"            element={<ThreatIntelPage />} />
           <Route path="/edr"               element={<PrivateRoute><EdrPage /></PrivateRoute>} />
+          <Route path="/scanner/vmdr"     element={<PrivateRoute><VmdrPage /></PrivateRoute>} />
           <Route path="/scanner/agent"    element={<PrivateRoute><ServerMonitorPage /></PrivateRoute>} />
 
           {/* Shareable scan — public */}

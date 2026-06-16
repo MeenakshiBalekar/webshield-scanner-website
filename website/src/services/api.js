@@ -380,6 +380,12 @@ export const decommissionAgent    = (id)       => request(`/api/agent/${id}`, { 
 export const generateAgentToken   = ()         => request('/api/agent/token', { method: 'POST' })
 export const getAgentInstallScript = (platform) => request(`/api/agent/install/${platform}`)
 
+// VMDR
+export const scanVmdr            = (agentId)         => request(`/api/vmdr/scan/${agentId}`, { method: 'POST' })
+export const getVmdrFindings     = (agentId)         => request(`/api/vmdr/findings?agentId=${agentId}`)
+export const getVmdrSummary      = ()                => request('/api/vmdr/summary')
+export const updateFindingStatus = (id, status)      => request(`/api/vmdr/findings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) })
+
 // Compliance
 export const getComplianceFrameworks = ()    => request('/api/compliance/frameworks')
 export const getFrameworkControls    = (id)  => request(`/api/compliance/frameworks/${id}`)

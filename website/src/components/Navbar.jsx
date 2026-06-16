@@ -48,6 +48,8 @@ const COMMON_NAV = [
       { label: 'Auto Scan',         href: '/autoscan' },
       { label: 'Remediation Tasks', href: '/remediation-tasks' },
       { label: 'Server Monitor',    href: '/servermonitor' },
+      { label: 'EASM Scan',         href: '/easm' },
+      { label: 'Container Scan',    href: '/container-scan' },
     ],
   },
   {
@@ -60,6 +62,7 @@ const COMMON_NAV = [
       { label: 'Patch Management',  href: '/patch' },
       { label: 'Scheduled Reports', href: '/reports/schedule' },
       { label: 'Attack Surface',    href: '/discover' },
+      { label: 'Compliance Report', href: '/compliance' },
     ],
   },
   {

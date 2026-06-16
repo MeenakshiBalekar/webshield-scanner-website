@@ -133,32 +133,60 @@ function ControlRow({ ctrl }) {
   const id         = field(ctrl, 'controlId', 'ControlId', 'id', 'Id', 'number', 'Number') ?? ''
   const name       = field(ctrl, 'name', 'Name', 'title', 'Title', 'controlName', 'ControlName') ?? '—'
   const rawStatus  = field(ctrl, 'status', 'Status', 'result', 'Result') ?? null
-  const evidence   = field(ctrl, 'evidence', 'Evidence', 'detail', 'Detail', 'description', 'Description') ?? ''
+  const rawEvidence = field(ctrl, 'evidence', 'Evidence') ?? null
+  const legacyText = (rawEvidence == null || typeof rawEvidence === 'object')
+    ? (field(ctrl, 'detail', 'Detail', 'description', 'Description') ?? '')
+    : ''
+  const evidenceObj = (rawEvidence && typeof rawEvidence === 'object') ? rawEvidence : null
+  const evidenceText = (rawEvidence && typeof rawEvidence === 'string') ? rawEvidence : legacyText
   const remUrl     = field(ctrl, 'remediationUrl', 'RemediationUrl', 'remediation', 'Remediation', 'link', 'Link') ?? ''
   const remText    = field(ctrl, 'remediationText', 'RemediationText') ?? ''
-  const hasMore    = !!(evidence || remUrl || remText)
+  const hasMore    = !!(evidenceObj || evidenceText || remUrl || remText || rawEvidence != null)
+
+  /* Evidence object sub-fields */
+  const evCapturedValue = evidenceObj ? (field(evidenceObj, 'capturedValue', 'CapturedValue') ?? null) : null
+  const evCapturedAt    = evidenceObj ? (field(evidenceObj, 'capturedAt', 'CapturedAt') ?? null) : null
+  const evSource        = evidenceObj ? (field(evidenceObj, 'source', 'Source') ?? null) : null
+  const evExpected      = evidenceObj ? (field(evidenceObj, 'expectedValue', 'ExpectedValue') ?? null) : null
 
   return (
     <div className="border-b border-white/5 last:border-0">
       <button
-        onClick={() => hasMore && setOpen(v => !v)}
-        className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${hasMore ? 'hover:bg-white/3' : ''}`}
+        onClick={() => setOpen(v => !v)}
+        className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/3"
       >
         {id && (
           <span className="text-[10px] font-mono text-gray-500 w-16 shrink-0">{id}</span>
         )}
         <span className="flex-1 text-xs text-gray-300 min-w-0 truncate">{name}</span>
         <StatusBadge raw={rawStatus} />
-        {hasMore && (open
+        {open
           ? <ChevronUp className="w-3.5 h-3.5 text-gray-600 shrink-0" />
-          : <ChevronDown className="w-3.5 h-3.5 text-gray-600 shrink-0" />)}
+          : <ChevronDown className="w-3.5 h-3.5 text-gray-600 shrink-0" />}
       </button>
 
-      {open && hasMore && (
+      {open && (
         <div className="px-4 pb-3.5 space-y-2" style={{ marginLeft: id ? '76px' : undefined }}>
-          {evidence && (
-            <p className="text-xs text-gray-400 leading-relaxed">{evidence}</p>
-          )}
+          {/* Evidence sub-panel */}
+          <div className="bg-black/30 rounded-lg px-4 py-3">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">📋 Evidence</p>
+            {evidenceObj ? (
+              <div className="grid grid-cols-[auto_1fr_auto_auto] gap-x-4 gap-y-1 text-[10px]">
+                <span className="text-gray-500 font-semibold">Source</span>
+                <span className="text-gray-500 font-semibold">Captured Value</span>
+                <span className="text-gray-500 font-semibold">Expected</span>
+                <span className="text-gray-500 font-semibold">Timestamp</span>
+                <span className="text-gray-300">{evSource ?? '—'}</span>
+                <span className="font-mono text-xs text-gray-300 truncate max-w-xs">{evCapturedValue != null ? String(evCapturedValue) : '—'}</span>
+                <span className="text-gray-300">{evExpected != null ? String(evExpected) : '—'}</span>
+                <span className="text-gray-400">{evCapturedAt ? new Date(evCapturedAt).toLocaleString() : '—'}</span>
+              </div>
+            ) : evidenceText ? (
+              <p className="text-xs text-gray-400 leading-relaxed">{evidenceText}</p>
+            ) : (
+              <p className="text-xs text-gray-500 italic">No evidence captured for this control.</p>
+            )}
+          </div>
           {(remUrl || remText) && (
             <div className="flex items-center gap-2">
               {remText && <span className="text-xs text-blue-300">{remText}</span>}
@@ -178,13 +206,15 @@ function ControlRow({ ctrl }) {
 
 /* ── Assessment view ── */
 function AssessmentView({ fw, onBack, deepScanAgentId }) {
-  const [controls, setControls]   = useState([])
-  const [loading, setLoading]     = useState(false)
-  const [assessing, setAssessing] = useState(false)
-  const [deepScanning, setDeepSc] = useState(false)
-  const [exporting, setExporting] = useState(false)
-  const [error, setError]         = useState(null)
-  const [assessed, setAssessed]   = useState(false)
+  const [controls, setControls]             = useState([])
+  const [loading, setLoading]               = useState(false)
+  const [assessing, setAssessing]           = useState(false)
+  const [deepScanning, setDeepSc]           = useState(false)
+  const [exporting, setExporting]           = useState(false)
+  const [exportingEvidence, setExportingEvidence] = useState(false)
+  const [error, setError]                   = useState(null)
+  const [assessed, setAssessed]             = useState(false)
+  const [scanId, setScanId]                 = useState('latest')
 
   const loadControls = useCallback(async () => {
     setLoading(true); setError(null)
@@ -219,9 +249,29 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
       const data = await assessCompliance(fw.id)
       const list = Array.isArray(data) ? data : (data?.controls ?? data?.Controls ?? data?.results ?? data?.Results ?? data?.items ?? data?.Items ?? [])
       if (list.length > 0) setControls(list)
+      const sid = field(data, 'scanId', 'ScanId', 'scan_id', 'id', 'Id')
+      if (sid) setScanId(String(sid))
       setAssessed(true)
     } catch (e) { setError(e.message || 'Assessment failed') }
     setAssessing(false)
+  }
+
+  const handleExportEvidence = async () => {
+    setExportingEvidence(true)
+    try {
+      const BASE = import.meta.env.VITE_API_URL || 'https://webshield-backend-api.onrender.com'
+      const token = localStorage.getItem('ws_token')
+      const res = await fetch(`${BASE}/api/compliance/${scanId}/${fw.id}/evidence`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      })
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a'); a.href = url
+      a.download = `evidence-${fw.id}-${scanId}.zip`
+      document.body.appendChild(a); a.click(); a.remove()
+      URL.revokeObjectURL(url)
+    } catch (e) { alert(e.message || 'Evidence export failed') }
+    setExportingEvidence(false)
   }
 
   const handleExport = async () => {
@@ -279,6 +329,11 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
             className="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/15 text-gray-300 text-xs font-semibold px-3 py-2 rounded-xl transition-colors disabled:opacity-40">
             {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
             Export CSV
+          </button>
+          <button onClick={handleExportEvidence} disabled={exportingEvidence || controls.length === 0}
+            className="flex items-center gap-1.5 bg-white/5 border border-white/15 hover:bg-white/10 text-gray-300 hover:text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40">
+            {exportingEvidence ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+            Download Evidence Package
           </button>
         </div>
       </div>

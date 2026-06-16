@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import {
   Container, ScanLine, Loader2, AlertCircle,
   CheckCircle2, ChevronDown, ChevronUp, Link2, FileText, Trash2,
-  Package, Download, History, Image, AlertTriangle,
+  Package, Download, History, Image, AlertTriangle, Server,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
@@ -580,6 +580,297 @@ function ImageCveTab() {
   )
 }
 
+/* ── Kubernetes scan tab ── */
+function KubernetesTab() {
+  const [manifestUrl, setManifestUrl]       = useState('')
+  const [clusterContext, setClusterContext] = useState('')
+  const [scanning, setScanning]             = useState(false)
+  const [result, setResult]                 = useState(null)
+  const [error, setError]                   = useState(null)
+
+  const handleScan = async (e) => {
+    e.preventDefault()
+    if (!manifestUrl.trim() && !clusterContext.trim()) {
+      setError('Enter a Manifest URL or a Cluster Context.')
+      return
+    }
+    setScanning(true); setError(null); setResult(null)
+    try {
+      const BASE = import.meta.env.VITE_API_URL || 'https://webshield-backend-api.onrender.com'
+      const token = localStorage.getItem('ws_token')
+      const res = await fetch(`${BASE}/api/k8s/scan`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          manifestUrl: manifestUrl.trim() || undefined,
+          clusterContext: clusterContext.trim() || undefined,
+        })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || data?.message || `Error ${res.status}`)
+      setResult(data)
+    } catch (err) {
+      setError(err.message || 'Scan failed')
+    }
+    setScanning(false)
+  }
+
+  const podFindings     = result?.podFindings            ?? []
+  const rbacFindings    = result?.rbacFindings           ?? []
+  const netFindings     = result?.networkPolicyFindings  ?? []
+  const runtimeFindings = result?.runtimeFindings        ?? []
+
+  /* small reusable finding table */
+  const FindingTable = ({ rows, withNamespace }) => {
+    const [expandedRows, setExpandedRows] = useState({})
+    if (!rows.length) return (
+      <div className="flex flex-col items-center gap-2 py-8 text-center">
+        <CheckCircle2 className="w-8 h-8 text-green-400" />
+        <p className="text-sm text-gray-400">No issues found</p>
+      </div>
+    )
+    return (
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs min-w-[560px]">
+          <thead>
+            <tr className="border-b border-white/10 text-gray-500">
+              <th className="text-left px-4 py-3">Resource</th>
+              {withNamespace && <th className="text-left px-4 py-3">Namespace</th>}
+              <th className="text-left px-4 py-3">Check</th>
+              <th className="text-left px-4 py-3">Severity</th>
+              <th className="text-left px-4 py-3">Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => {
+              const st = sevStyle(r.severity)
+              const isExpanded = expandedRows[i]
+              const details = r.details || ''
+              const truncated = details.length > 80 && !isExpanded
+              return (
+                <tr key={i} className="border-b border-white/5 last:border-0 hover:bg-white/3 transition-colors">
+                  <td className="px-4 py-2.5 text-white font-mono font-medium">{r.resource || '—'}</td>
+                  {withNamespace && <td className="px-4 py-2.5 text-gray-400 font-mono">{r.namespace || '—'}</td>}
+                  <td className="px-4 py-2.5 text-gray-300">{r.check || '—'}</td>
+                  <td className="px-4 py-2.5">
+                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${st.badge}`}>
+                      {r.severity || '—'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2.5 text-gray-400 max-w-[260px]">
+                    {truncated ? (
+                      <span>
+                        {details.slice(0, 80)}…{' '}
+                        <button
+                          onClick={() => setExpandedRows(prev => ({ ...prev, [i]: true }))}
+                          className="text-cyan-400 hover:text-cyan-300 underline ml-1"
+                        >
+                          more
+                        </button>
+                      </span>
+                    ) : (
+                      <span>
+                        {details}
+                        {details.length > 80 && (
+                          <button
+                            onClick={() => setExpandedRows(prev => ({ ...prev, [i]: false }))}
+                            className="text-cyan-400 hover:text-cyan-300 underline ml-1"
+                          >
+                            less
+                          </button>
+                        )}
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Input form */}
+      <form onSubmit={handleScan} className="bg-white/3 border border-white/10 rounded-2xl p-6 space-y-4">
+        <div>
+          <label className="block text-xs text-gray-400 mb-1.5">Manifest URL</label>
+          <input
+            type="url"
+            value={manifestUrl}
+            onChange={e => setManifestUrl(e.target.value)}
+            placeholder="https://raw.githubusercontent.com/org/repo/main/k8s/deployment.yaml"
+            className="w-full bg-white/5 border border-white/15 focus:border-cyan-500 text-white placeholder-gray-600 px-4 py-2.5 rounded-xl text-sm outline-none transition-colors font-mono"
+          />
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-px bg-white/10" />
+          <span className="text-xs text-gray-500 font-semibold">OR</span>
+          <div className="flex-1 h-px bg-white/10" />
+        </div>
+
+        <div>
+          <label className="block text-xs text-gray-400 mb-1.5">
+            Cluster Context <span className="text-gray-600">(optional — for agent-based scanning)</span>
+          </label>
+          <input
+            type="text"
+            value={clusterContext}
+            onChange={e => setClusterContext(e.target.value)}
+            placeholder="my-prod-cluster"
+            className="w-full bg-white/5 border border-white/15 focus:border-cyan-500 text-white placeholder-gray-600 px-4 py-2.5 rounded-xl text-sm outline-none transition-colors font-mono"
+          />
+        </div>
+
+        {error && (
+          <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
+            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />{error}
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={scanning}
+          className="flex items-center gap-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-cyan-600/50 text-white font-semibold px-6 py-2.5 rounded-xl text-sm transition-colors"
+        >
+          {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Server className="w-4 h-4" />}
+          {scanning ? 'Scanning…' : 'Scan Kubernetes Config'}
+        </button>
+      </form>
+
+      {/* Results */}
+      {result && (
+        <div className="space-y-6">
+          {/* Summary cards row */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: 'Pod Issues',            val: podFindings.length,     cls: 'text-red-400'    },
+              { label: 'RBAC Issues',           val: rbacFindings.length,    cls: 'text-orange-400' },
+              { label: 'Network Policy Issues', val: netFindings.length,     cls: 'text-yellow-400' },
+              { label: 'Runtime Issues',        val: runtimeFindings.length, cls: 'text-purple-400' },
+            ].map(({ label, val, cls }) => (
+              <div key={label} className="bg-white/3 border border-white/10 rounded-xl px-3 py-3 text-center">
+                <div className={`text-xl font-extrabold ${cls}`}>{val}</div>
+                <div className="text-[10px] text-gray-400 mt-0.5">{label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Scanned at */}
+          {result.scannedAt && (
+            <p className="text-[10px] text-gray-600">
+              Scanned at {new Date(result.scannedAt).toLocaleString()}
+            </p>
+          )}
+
+          {/* Pod Security */}
+          <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-white/10 flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-red-500" />
+              <p className="text-sm font-semibold text-white">Pod Security</p>
+              <span className="ml-auto text-xs text-gray-500">{podFindings.length} issue{podFindings.length !== 1 ? 's' : ''}</span>
+            </div>
+            <FindingTable rows={podFindings} withNamespace={true} />
+          </div>
+
+          {/* RBAC Findings */}
+          <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-white/10 flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-orange-500" />
+              <p className="text-sm font-semibold text-white">RBAC Findings</p>
+              <span className="ml-auto text-xs text-gray-500">{rbacFindings.length} issue{rbacFindings.length !== 1 ? 's' : ''}</span>
+            </div>
+            <FindingTable rows={rbacFindings} withNamespace={false} />
+          </div>
+
+          {/* Network Policy */}
+          <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-white/10 flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-yellow-400" />
+              <p className="text-sm font-semibold text-white">Network Policy</p>
+              <span className="ml-auto text-xs text-gray-500">{netFindings.length} issue{netFindings.length !== 1 ? 's' : ''}</span>
+            </div>
+            <FindingTable rows={netFindings} withNamespace={false} />
+          </div>
+
+          {/* Runtime Container Status */}
+          <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-white/10 flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-purple-500" />
+              <p className="text-sm font-semibold text-white">Runtime Container Status</p>
+              <span className="ml-auto text-xs text-gray-500">{runtimeFindings.length} container{runtimeFindings.length !== 1 ? 's' : ''}</span>
+            </div>
+            {runtimeFindings.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 py-8 text-center">
+                <CheckCircle2 className="w-8 h-8 text-green-400" />
+                <p className="text-sm text-gray-400">No runtime issues found</p>
+              </div>
+            ) : (
+              <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {runtimeFindings.map((r, i) => {
+                  const st = sevStyle(r.severity)
+                  return (
+                    <div key={i} className="bg-white/3 border border-white/10 rounded-2xl p-4 space-y-3 relative">
+                      {/* Severity badge — top-right corner */}
+                      <span className={`absolute top-3 right-3 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${st.badge}`}>
+                        {r.severity || '—'}
+                      </span>
+
+                      {/* Container + pod name */}
+                      <div>
+                        <p className="text-sm font-semibold text-white font-mono truncate pr-16">{r.container || '—'}</p>
+                        {r.pod && <p className="text-[10px] text-gray-500 font-mono truncate">{r.pod}</p>}
+                      </div>
+
+                      {/* Status chips */}
+                      <div className="flex flex-wrap gap-2">
+                        {/* Privileged */}
+                        {r.privileged ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border bg-red-500/10 text-red-400 border-red-500/30">
+                            ⚠ Privileged
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border bg-green-500/10 text-green-400 border-green-500/30">
+                            ✓ Unprivileged
+                          </span>
+                        )}
+
+                        {/* Resource limits */}
+                        {r.noResourceLimits ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border bg-red-500/10 text-red-400 border-red-500/30">
+                            ✗ No Limits
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border bg-green-500/10 text-green-400 border-green-500/30">
+                            ✓ Limits Set
+                          </span>
+                        )}
+
+                        {/* Mounted secrets */}
+                        {Array.isArray(r.mountedSecrets) && r.mountedSecrets.map((secret, si) => (
+                          <span key={si} className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border bg-orange-500/10 text-orange-400 border-orange-500/30 font-mono">
+                            {secret}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 /* ── Page ── */
 export default function ContainerScanPage() {
   const [tab, setTab] = useState('dockerfile')
@@ -587,6 +878,7 @@ export default function ContainerScanPage() {
   const TABS = [
     { id: 'dockerfile', label: 'Dockerfile Scan', icon: FileText },
     { id: 'image',      label: 'Image CVE Scan',  icon: Image    },
+    { id: 'k8s',        label: 'Kubernetes',       icon: Server   },
   ]
 
   return (
@@ -622,8 +914,9 @@ export default function ContainerScanPage() {
             ))}
           </div>
 
-          {tab === 'dockerfile' && <DockerfileTab />}
-          {tab === 'image'      && <ImageCveTab  />}
+          {tab === 'dockerfile' && <DockerfileTab    />}
+          {tab === 'image'      && <ImageCveTab     />}
+          {tab === 'k8s'        && <KubernetesTab   />}
         </div>
       </main>
 

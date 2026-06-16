@@ -172,12 +172,91 @@ function sevTheme(s) {
   return SEV_THEME[(s ?? '').charAt(0).toUpperCase() + (s ?? '').slice(1).toLowerCase()] ?? SEV_THEME.Low
 }
 
+const PRIORITY_STYLE = {
+  1: 'bg-red-500/20 text-red-300 border-red-500/40',
+  2: 'bg-orange-500/20 text-orange-300 border-orange-500/40',
+  3: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40',
+}
+
+function FindingGroupCard({ group }) {
+  const [expanded, setExpanded] = useState(false)
+  const title        = group.title          ?? group.Title          ?? 'Finding Group'
+  const severity     = group.severity       ?? group.Severity       ?? 'Medium'
+  const priority     = group.priority       ?? group.Priority       ?? null
+  const findingCount = group.findingCount   ?? group.FindingCount   ?? 0
+  const attackPath   = group.attackPath     ?? group.AttackPath     ?? []
+  const narrative    = group.attackNarrative ?? group.AttackNarrative ?? null
+  const c = sevTheme(severity)
+  const pStyle = PRIORITY_STYLE[priority] ?? 'bg-white/10 text-gray-400 border-white/15'
+
+  return (
+    <div className={`rounded-2xl border ${c.border} ${c.bg} p-5 space-y-4`}>
+      {/* Header */}
+      <div className="flex items-start gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap mb-1.5">
+            {priority != null && (
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${pStyle}`}>P{priority}</span>
+            )}
+            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded text-white ${c.badge}`}>{severity}</span>
+            {findingCount > 0 && (
+              <span className="text-[10px] text-gray-400 border border-white/10 bg-white/5 px-2 py-0.5 rounded">
+                {findingCount} finding{findingCount !== 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
+          <h3 className={`text-sm font-bold text-white leading-snug`}>{title}</h3>
+        </div>
+      </div>
+
+      {/* Attack path timeline */}
+      {attackPath.length > 0 && (
+        <div className="space-y-0 pl-0.5">
+          {attackPath.map((step, i) => (
+            <div key={i} className="flex items-start gap-3">
+              <div className="flex flex-col items-center shrink-0 mt-0.5">
+                <div className={`w-2.5 h-2.5 rounded-full border-2 ${
+                  i === 0
+                    ? 'border-gray-400 bg-gray-600'
+                    : i === attackPath.length - 1
+                      ? 'border-current bg-current ' + c.text
+                      : 'border-gray-500 bg-gray-700'
+                }`} />
+                {i < attackPath.length - 1 && <div className="w-px h-4 bg-white/10 my-0.5" />}
+              </div>
+              <p className={`text-xs leading-relaxed pb-1 ${i === attackPath.length - 1 ? 'font-semibold ' + c.text : 'text-gray-300'}`}>
+                {step}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Attack narrative */}
+      {narrative && (
+        <div className="border-t border-white/10 pt-3">
+          <p className={`text-xs text-gray-300 leading-relaxed ${!expanded ? 'line-clamp-2' : ''}`}>
+            {narrative}
+          </p>
+          {narrative.length > 100 && (
+            <button onClick={() => setExpanded((v) => !v)}
+              className={`mt-1.5 text-[10px] font-semibold ${c.text} hover:opacity-80 transition-opacity`}>
+              {expanded ? 'Show less ↑' : 'Read attack story →'}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function FindingCard({ item }) {
   const [open, setOpen] = useState(false)
 
   const passed          = item.passed === true || (item.status?.toLowerCase() === 'passed') || (item.status?.toLowerCase() === 'pass')
   const checkName       = item.checkName       || item.name           || item.header         || 'Unknown check'
   const severity        = item.severity        || item.Severity       || ''
+  const findingType     = item.findingType     || item.FindingType    || null
   const remediationId   = item.remediationId   || item.RemediationId  || ''
   const evidence        = item.evidence        || item.Evidence       || null
   const technicalDetails = item.technicalDetails || item.TechnicalDetails || item.details     || null
@@ -208,6 +287,16 @@ function FindingCard({ item }) {
           <span className="text-sm font-semibold text-white">{checkName}</span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          {findingType === 'Confirmed' && (
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded border bg-red-500/15 text-red-400 border-red-500/30 shrink-0">
+              Confirmed Issue
+            </span>
+          )}
+          {findingType === 'Potential' && (
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded border bg-orange-500/15 text-orange-400 border-orange-500/30 shrink-0">
+              Attack Surface
+            </span>
+          )}
           {severity && (
             <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded text-white ${c.badge}`}>
               {severity}
@@ -468,6 +557,7 @@ export default function ProductPage() {
   const [crawlerEnabled, setCrawlerEnabled] = useState(false)
   const [crawlDepth, setCrawlDepth] = useState('2')
   const [maxPages, setMaxPages] = useState('25')
+  const [resultsView, setResultsView] = useState('groups')
 
   if (!product) {
     return (
@@ -490,6 +580,7 @@ export default function ProductPage() {
     setResult(null)
     setTrend([])
     setScheduled(false)
+    setResultsView('groups')
     try {
       let data
       const base = { url: url.trim(), mode: scanMode }
@@ -550,6 +641,21 @@ export default function ProductPage() {
     ?? (result?.previousScore != null && result?.securityScore != null
         ? result.securityScore - result.previousScore : null)
   const deltaUp = scoreDelta != null && scoreDelta >= 0
+
+  const topIssues      = result?.topIssues      ?? result?.TopIssues      ?? null
+  const findingGroups  = result?.findingGroups  ?? result?.FindingGroups  ?? null
+  const confirmedCount = result?.confirmedCount  ?? result?.ConfirmedCount
+    ?? result?.summary?.confirmedCount ?? result?.Summary?.ConfirmedCount ?? null
+  const potentialCount = result?.potentialCount  ?? result?.PotentialCount
+    ?? result?.summary?.potentialCount ?? result?.Summary?.PotentialCount ?? null
+  const scoreReason    = result?.scoreBreakdown?.reason   ?? result?.ScoreBreakdown?.Reason
+    ?? result?.scoreBreakdown?.Reason  ?? result?.ScoreBreakdown?.reason  ?? null
+  const urgentGroups   = (findingGroups ?? []).filter((g) => {
+    const s = (g.severity ?? g.Severity ?? '').toLowerCase()
+    return s === 'critical' || s === 'high'
+  }).length
+  const displayResults = resultsView === 'top' && topIssues ? topIssues : results
+  const hasGroups      = findingGroups && findingGroups.length > 0
 
   return (
     <div className="min-h-screen page-bg flex flex-col">
@@ -862,6 +968,9 @@ export default function ProductPage() {
                 </div>
                 {trend.length >= 2 && <Sparkline points={trend} />}
                 <p className="text-xs text-gray-400 mt-1">Score</p>
+                {scoreReason && (
+                  <p className="text-[10px] text-gray-500 mt-1 leading-snug" title={scoreReason}>{scoreReason}</p>
+                )}
               </div>
 
               {/* Passed */}
@@ -876,6 +985,27 @@ export default function ProductPage() {
                 <p className="text-xs text-gray-400 mt-1">Failed</p>
               </div>
             </div>
+
+            {/* Confirmed / Potential / Groups summary bar */}
+            {(confirmedCount != null || potentialCount != null || urgentGroups > 0) && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                {confirmedCount != null && (
+                  <div className="flex items-center gap-1.5 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl px-3 py-2 text-xs font-semibold">
+                    🔴 {confirmedCount} Confirmed Issue{confirmedCount !== 1 ? 's' : ''}
+                  </div>
+                )}
+                {potentialCount != null && (
+                  <div className="flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 text-orange-400 rounded-xl px-3 py-2 text-xs font-semibold">
+                    🟠 {potentialCount} Potential Risk{potentialCount !== 1 ? 's' : ''}
+                  </div>
+                )}
+                {urgentGroups > 0 && (
+                  <div className="flex items-center gap-1.5 bg-purple-500/10 border border-purple-500/20 text-purple-300 rounded-xl px-3 py-2 text-xs font-semibold">
+                    📊 {urgentGroups} group{urgentGroups !== 1 ? 's' : ''} need immediate attention
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Schedule scan button */}
             <div className="flex items-center justify-end mb-4">
@@ -896,18 +1026,85 @@ export default function ProductPage() {
               </button>
             </div>
 
-            {/* Result rows */}
-            <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden mb-2">
-              <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
-                <p className="text-sm font-semibold text-white">Scan Results</p>
-                <p className="text-xs text-gray-500">{results.length} checks · click a row to see details</p>
+            {/* Results — tabbed: Intelligence View | All Checks */}
+            <div className="mb-2">
+              {/* Tab bar */}
+              <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-xl p-1 mb-4 w-fit">
+                {hasGroups && (
+                  <button
+                    onClick={() => setResultsView('groups')}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                      resultsView === 'groups' ? 'bg-crimson-500 text-white shadow' : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    <span>⚡</span> Intelligence View
+                  </button>
+                )}
+                {topIssues && (
+                  <button
+                    onClick={() => setResultsView('top')}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                      resultsView === 'top' ? 'bg-crimson-500 text-white shadow' : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    Top Issues
+                  </button>
+                )}
+                <button
+                  onClick={() => setResultsView('all')}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                    resultsView === 'all' ? 'bg-crimson-500 text-white shadow' : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  View All Checks {results.length > 0 && <span className="opacity-60">({results.length})</span>}
+                </button>
               </div>
-              {results.length === 0 && (
-                <p className="text-gray-500 text-sm py-10 text-center">No results returned.</p>
+
+              {/* Intelligence View — finding groups */}
+              {resultsView === 'groups' && hasGroups && (
+                <div className="space-y-3">
+                  {findingGroups.map((g, i) => <FindingGroupCard key={i} group={g} />)}
+                </div>
               )}
-              {results.map((item, i) => (
-                <FindingCard key={i} item={item} />
-              ))}
+
+              {/* Top Issues view */}
+              {resultsView === 'top' && topIssues && (
+                <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden">
+                  <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
+                    <p className="text-sm font-semibold text-white">Top Issues</p>
+                    <p className="text-xs text-gray-500">{topIssues.length} priority checks</p>
+                  </div>
+                  {topIssues.map((item, i) => <FindingCard key={i} item={item} />)}
+                </div>
+              )}
+
+              {/* All Checks flat list */}
+              {resultsView === 'all' && (
+                <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden">
+                  <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
+                    <p className="text-sm font-semibold text-white">All Checks</p>
+                    <p className="text-xs text-gray-500">{results.length} checks · click a row to see details</p>
+                  </div>
+                  {results.length === 0 && (
+                    <p className="text-gray-500 text-sm py-10 text-center">No results returned.</p>
+                  )}
+                  {results.map((item, i) => <FindingCard key={i} item={item} />)}
+                </div>
+              )}
+
+              {/* Fallback when no groups and no topIssues */}
+              {!hasGroups && !topIssues && resultsView === 'groups' && (
+                <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden">
+                  <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
+                    <p className="text-sm font-semibold text-white">Scan Results</p>
+                    <p className="text-xs text-gray-500">{results.length} checks · click a row to see details</p>
+                  </div>
+                  {results.length === 0 && (
+                    <p className="text-gray-500 text-sm py-10 text-center">No results returned.</p>
+                  )}
+                  {results.map((item, i) => <FindingCard key={i} item={item} />)}
+                </div>
+              )}
             </div>
 
             {/* Authenticated pages scanned */}

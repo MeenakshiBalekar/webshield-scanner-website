@@ -1,13 +1,14 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import {
   ShieldCheck, Loader2, AlertCircle, CheckCircle2, XCircle,
   ChevronDown, ChevronUp, Download, ArrowLeft, RefreshCw,
-  AlertTriangle, ExternalLink, Minus,
+  AlertTriangle, ExternalLink, Minus, ScanLine, Cpu,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import {
   getFrameworkControls, assessCompliance, exportComplianceReport,
+  deepScanCompliance, getAgents,
 } from '../services/api'
 
 const field = (obj, ...keys) => { for (const k of keys) if (obj?.[k] != null) return obj[k]; return null }
@@ -176,10 +177,11 @@ function ControlRow({ ctrl }) {
 }
 
 /* ── Assessment view ── */
-function AssessmentView({ fw, onBack }) {
+function AssessmentView({ fw, onBack, deepScanAgentId }) {
   const [controls, setControls]   = useState([])
   const [loading, setLoading]     = useState(false)
   const [assessing, setAssessing] = useState(false)
+  const [deepScanning, setDeepSc] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [error, setError]         = useState(null)
   const [assessed, setAssessed]   = useState(false)
@@ -194,7 +196,22 @@ function AssessmentView({ fw, onBack }) {
     setLoading(false)
   }, [fw.id])
 
-  React.useEffect(() => { loadControls() }, [loadControls])
+  useEffect(() => { loadControls() }, [loadControls])
+
+  /* Auto-run deep scan when opened via Deep Scan button */
+  useEffect(() => {
+    if (!deepScanAgentId) return
+    const run = async () => {
+      setDeepSc(true); setError(null)
+      try {
+        const data = await deepScanCompliance(fw.id, deepScanAgentId)
+        const list = Array.isArray(data) ? data : (data?.controls ?? data?.Controls ?? data?.results ?? data?.Results ?? data?.items ?? data?.Items ?? [])
+        if (list.length > 0) { setControls(list); setAssessed(true) }
+      } catch (e) { setError(e.message || 'Deep scan failed') }
+      setDeepSc(false)
+    }
+    run()
+  }, [fw.id, deepScanAgentId])
 
   const runAssessment = async () => {
     setAssessing(true); setError(null)
@@ -248,8 +265,13 @@ function AssessmentView({ fw, onBack }) {
           <ArrowLeft className="w-4 h-4" /> All Frameworks
         </button>
         <div className="flex items-center gap-2">
-          <button onClick={runAssessment} disabled={assessing || loading}
-            className="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/15 text-gray-300 text-xs font-semibold px-3 py-2 rounded-xl transition-colors">
+          {deepScanning && (
+            <span className="flex items-center gap-1.5 text-xs text-sky-400 font-semibold">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Deep Scanning…
+            </span>
+          )}
+          <button onClick={runAssessment} disabled={assessing || loading || deepScanning}
+            className="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/15 text-gray-300 text-xs font-semibold px-3 py-2 rounded-xl transition-colors disabled:opacity-50">
             {assessing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
             {assessing ? 'Assessing…' : assessed ? 'Re-run' : 'Run Assessment'}
           </button>
@@ -336,27 +358,66 @@ function AssessmentView({ fw, onBack }) {
 /* ─────────────────────────────────────────
    Framework Selector
 ───────────────────────────────────────── */
-function FrameworkSelector({ onSelect }) {
+function FrameworkSelector({ onSelect, onDeepScan, agents, agentId, onAgentChange }) {
   return (
     <div>
-      <p className="text-sm text-gray-400 mb-6">Select a framework to view your current posture and run a fresh assessment.</p>
+      <div className="flex flex-wrap items-end gap-4 mb-6">
+        <p className="text-sm text-gray-400 flex-1">Select a framework to view your current posture and run a fresh assessment.</p>
+        {agents.length > 0 && (
+          <div className="flex items-center gap-2 shrink-0">
+            <Cpu className="w-4 h-4 text-gray-500" />
+            <label className="text-xs text-gray-500 whitespace-nowrap">Agent for Deep Scan:</label>
+            <select
+              value={agentId}
+              onChange={e => onAgentChange(e.target.value)}
+              className="bg-white/5 border border-white/15 focus:border-sky-500 text-white px-3 py-1.5 rounded-xl text-xs outline-none transition-colors"
+            >
+              {agents.map((a, i) => {
+                const id   = field(a, 'agentId', 'AgentId', 'id', 'Id') ?? i
+                const name = field(a, 'name', 'Name', 'hostname', 'Hostname') ?? `Agent ${i + 1}`
+                return <option key={id} value={id} className="bg-gray-900">{name}</option>
+              })}
+            </select>
+          </div>
+        )}
+      </div>
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {FRAMEWORKS.map(fw => (
-          <button
+          <div
             key={fw.id}
-            onClick={() => onSelect(fw)}
-            className={`text-left ${fw.bg} border ${fw.border} rounded-2xl p-5 hover:scale-[1.02] transition-transform`}
+            className={`${fw.bg} border ${fw.border} rounded-2xl p-5 hover:scale-[1.02] transition-transform flex flex-col`}
           >
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <p className={`text-base font-extrabold ${fw.color}`}>{fw.name}</p>
-                <p className="text-[10px] text-gray-500 font-mono mt-0.5">{fw.version}</p>
+            <button
+              onClick={() => onSelect(fw)}
+              className="text-left flex-1"
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <p className={`text-base font-extrabold ${fw.color}`}>{fw.name}</p>
+                  <p className="text-[10px] text-gray-500 font-mono mt-0.5">{fw.version}</p>
+                </div>
+                <ShieldCheck className={`w-5 h-5 ${fw.color} opacity-60`} />
               </div>
-              <ShieldCheck className={`w-5 h-5 ${fw.color} opacity-60`} />
+              <p className="text-xs text-gray-500 leading-relaxed">{fw.desc}</p>
+              <div className={`mt-3 h-0.5 rounded-full ${fw.accent} opacity-30`} />
+            </button>
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={() => onSelect(fw)}
+                className="flex-1 text-xs font-semibold text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg py-1.5 transition-colors"
+              >
+                View Assessment
+              </button>
+              {agents.length > 0 && (
+                <button
+                  onClick={() => onDeepScan(fw)}
+                  className={`flex items-center gap-1 text-xs font-semibold ${fw.color} bg-white/5 hover:bg-white/10 border ${fw.border} rounded-lg px-2.5 py-1.5 transition-colors`}
+                >
+                  <ScanLine className="w-3 h-3" /> Deep Scan
+                </button>
+              )}
             </div>
-            <p className="text-xs text-gray-500 leading-relaxed">{fw.desc}</p>
-            <div className={`mt-3 h-0.5 rounded-full ${fw.accent} opacity-30`} />
-          </button>
+          </div>
         ))}
       </div>
     </div>
@@ -367,7 +428,33 @@ function FrameworkSelector({ onSelect }) {
    Page
 ───────────────────────────────────────── */
 export default function CompliancePage() {
-  const [selectedFw, setSelectedFw] = useState(null)
+  const [selectedFw, setSelectedFw]       = useState(null)
+  const [deepScanAgentId, setDeepAgent]   = useState(null)
+  const [agents, setAgents]               = useState([])
+  const [selectorAgentId, setSelectorAgt] = useState('')
+
+  useEffect(() => {
+    getAgents()
+      .then(data => {
+        const list = Array.isArray(data) ? data : (data?.agents ?? data?.Agents ?? [])
+        setAgents(list)
+        if (list.length > 0) {
+          const firstId = field(list[0], 'agentId', 'AgentId', 'id', 'Id') ?? ''
+          setSelectorAgt(firstId)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const handleDeepScan = (fw) => {
+    setDeepAgent(selectorAgentId || null)
+    setSelectedFw(fw)
+  }
+
+  const handleBack = () => {
+    setSelectedFw(null)
+    setDeepAgent(null)
+  }
 
   return (
     <div className="min-h-screen page-bg flex flex-col">
@@ -389,8 +476,22 @@ export default function CompliancePage() {
 
         <div className="max-w-5xl mx-auto px-4 py-8">
           {!selectedFw
-            ? <FrameworkSelector onSelect={setSelectedFw} />
-            : <AssessmentView fw={selectedFw} onBack={() => setSelectedFw(null)} />}
+            ? (
+              <FrameworkSelector
+                onSelect={(fw) => { setDeepAgent(null); setSelectedFw(fw) }}
+                onDeepScan={handleDeepScan}
+                agents={agents}
+                agentId={selectorAgentId}
+                onAgentChange={setSelectorAgt}
+              />
+            )
+            : (
+              <AssessmentView
+                fw={selectedFw}
+                onBack={handleBack}
+                deepScanAgentId={deepScanAgentId}
+              />
+            )}
         </div>
       </main>
 

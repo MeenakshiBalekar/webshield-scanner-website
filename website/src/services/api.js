@@ -386,6 +386,19 @@ export const getVmdrFindings     = (agentId)         => request(`/api/vmdr/findi
 export const getVmdrSummary      = ()                => request('/api/vmdr/summary')
 export const updateFindingStatus = (id, status)      => request(`/api/vmdr/findings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) })
 
+// Patch Deployments
+export const deployPatch         = (data) => request('/api/patch/deploy', { method: 'POST', body: JSON.stringify(data) })
+export const getPatchDeployments = ()     => request('/api/patch/deployments')
+export const getPatchDeployment  = (id)   => request(`/api/patch/deployments/${id}`)
+
+// EDR Behavioral Analysis
+export const runBehavioralAnalysis = (agentId) => request(`/api/edr/behavioral/${agentId}`, { method: 'POST' })
+export const getBehavioralSummary  = ()        => request('/api/edr/behavioral/summary')
+
+// Compliance Deep Scan
+export const deepScanCompliance = (frameworkId, agentId) =>
+  request(`/api/compliance/deep-scan/${frameworkId}?agentId=${agentId}`, { method: 'POST' })
+
 // Compliance
 export const getComplianceFrameworks = ()    => request('/api/compliance/frameworks')
 export const getFrameworkControls    = (id)  => request(`/api/compliance/frameworks/${id}`)

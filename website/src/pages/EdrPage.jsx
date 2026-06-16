@@ -2,14 +2,14 @@ import React, { useState, useEffect, useCallback, useRef } from 'react'
 import {
   ShieldAlert, Loader2, AlertCircle, CheckCircle2, XCircle,
   RefreshCw, Plus, X, Trash2, Activity, Flag, Check,
-  AlertTriangle, ChevronDown, ChevronUp,
+  AlertTriangle, ChevronDown, ChevronUp, Brain, TrendingUp,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import {
   getEdrAlerts, updateEdrAlert, getEdrRules,
   createEdrRule, toggleEdrRule, deleteEdrRule,
-  analyzeAgent, getAgents,
+  analyzeAgent, getAgents, runBehavioralAnalysis, getBehavioralSummary,
 } from '../services/api'
 
 const field = (obj, ...keys) => { for (const k of keys) if (obj?.[k] != null) return obj[k]; return null }
@@ -571,12 +571,231 @@ function CheckRow({ check, passed }) {
 }
 
 /* ─────────────────────────────────────────
+   Tab 4 — Behavioral Analysis
+───────────────────────────────────────── */
+function RiskGauge({ score }) {
+  const r = 48
+  const circ = 2 * Math.PI * r
+  const offset = circ - (Math.min(100, Math.max(0, score)) / 100) * circ
+  const color = score >= 80 ? '#ef4444' : score >= 60 ? '#f97316' : score >= 30 ? '#f59e0b' : '#22c55e'
+  const label = score >= 80 ? 'Critical' : score >= 60 ? 'High' : score >= 30 ? 'Medium' : 'Low'
+  const textColor = score >= 80 ? 'text-red-400' : score >= 60 ? 'text-orange-400' : score >= 30 ? 'text-amber-400' : 'text-green-400'
+  return (
+    <div className="flex items-center gap-5">
+      <div className="relative w-28 h-28 shrink-0">
+        <svg className="w-full h-full -rotate-90" viewBox="0 0 110 110">
+          <circle cx="55" cy="55" r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="8" />
+          <circle cx="55" cy="55" r={r} fill="none" stroke={color} strokeWidth="8"
+            strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset}
+            style={{ transition: 'stroke-dashoffset 0.8s ease' }} />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-2xl font-extrabold text-white">{score}</span>
+          <span className="text-[9px] text-gray-500 uppercase tracking-wide">/ 100</span>
+        </div>
+      </div>
+      <div>
+        <p className="text-xs text-gray-400 mb-1">Behavioral Risk Score</p>
+        <p className={`text-xl font-extrabold ${textColor}`}>{label} Risk</p>
+        <p className="text-[10px] text-gray-600 mt-0.5">0 = clean · 100 = highly suspicious</p>
+      </div>
+    </div>
+  )
+}
+
+function BehavioralTab() {
+  const [agents, setAgents]     = useState([])
+  const [agentsLoad, setAL]     = useState(true)
+  const [selected, setSelected] = useState('')
+  const [result, setResult]     = useState(null)
+  const [summary, setSummary]   = useState(null)
+  const [loading, setLoad]      = useState(false)
+  const [error, setError]       = useState(null)
+  const [openSig, setOpenSig]   = useState({})
+
+  useEffect(() => {
+    getAgents()
+      .then(data => {
+        const list = Array.isArray(data) ? data : (data?.agents ?? data?.Agents ?? [])
+        setAgents(list)
+        if (list.length > 0) setSelected(field(list[0], 'agentId', 'AgentId', 'id', 'Id') ?? '')
+      })
+      .catch(() => {})
+      .finally(() => setAL(false))
+
+    getBehavioralSummary().then(setSummary).catch(() => {})
+  }, [])
+
+  const run = async () => {
+    if (!selected) return
+    setLoad(true); setError(null); setResult(null)
+    try { setResult(await runBehavioralAnalysis(selected)) }
+    catch (e) { setError(e.message || 'Analysis failed') }
+    setLoad(false)
+  }
+
+  const riskScore = result ? (field(result, 'behavioralRiskScore', 'BehavioralRiskScore', 'riskScore', 'RiskScore') ?? 0) : null
+  const signals   = result ? (field(result, 'signals', 'Signals') ?? []) : []
+  const changes   = result ? (field(result, 'changeDetection', 'ChangeDetection', 'changes', 'Changes') ?? []) : []
+
+  const CHANGE_RISK_CLS = { High: 'text-red-400', Medium: 'text-amber-400', Low: 'text-blue-400', Critical: 'text-red-400' }
+  const CHANGE_TYPE_CLS = { Added: 'text-green-400', Removed: 'text-red-400' }
+
+  return (
+    <div className="space-y-6">
+      {/* Summary card */}
+      {summary && (
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-white/3 border border-white/10 rounded-2xl p-4 text-center">
+            <p className="text-2xl font-extrabold text-white">{field(summary, 'totalAnalyzed', 'TotalAnalyzed') ?? '—'}</p>
+            <p className="text-xs text-gray-500 mt-0.5">Agents Analyzed</p>
+          </div>
+          <div className="bg-white/3 border border-white/10 rounded-2xl p-4 text-center">
+            <p className="text-2xl font-extrabold text-red-400">{field(summary, 'highRiskCount', 'HighRiskCount') ?? '—'}</p>
+            <p className="text-xs text-gray-500 mt-0.5">High-Risk Agents</p>
+          </div>
+        </div>
+      )}
+
+      {/* Agent selector */}
+      <div className="bg-white/3 border border-white/10 rounded-2xl p-6">
+        <h2 className="text-sm font-bold text-white mb-1">Run Behavioral Analysis</h2>
+        <p className="text-xs text-gray-500 mb-4">Analyses process behaviour, open connections, and system changes to detect suspicious patterns.</p>
+
+        {agentsLoad ? (
+          <div className="flex items-center gap-2 text-gray-400 text-xs"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading agents…</div>
+        ) : agents.length === 0 ? (
+          <p className="text-xs text-gray-500">No agents registered. Deploy an agent first via the <a href="/agents" className="text-amber-400 hover:underline">Agents</a> page.</p>
+        ) : (
+          <div className="flex gap-3 flex-wrap">
+            <select value={selected} onChange={e => setSelected(e.target.value)}
+              className="flex-1 min-w-48 bg-white/5 border border-white/15 focus:border-amber-500 text-white px-3 py-2.5 rounded-xl text-sm outline-none transition-colors">
+              {agents.map((a, i) => {
+                const id   = field(a, 'agentId', 'AgentId', 'id', 'Id') ?? i
+                const name = field(a, 'name', 'Name', 'hostname', 'Hostname', 'agentName', 'AgentName') ?? `Agent ${i + 1}`
+                return <option key={id} value={id} className="bg-gray-900">{name}</option>
+              })}
+            </select>
+            <button onClick={run} disabled={loading || !selected}
+              className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-500/30 disabled:text-white/30 text-white font-semibold px-6 py-2.5 rounded-xl text-sm transition-colors shrink-0">
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Brain className="w-4 h-4" />}
+              {loading ? 'Analyzing…' : 'Run Analysis'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {error && <ErrorBanner error={error} />}
+
+      {riskScore !== null && (
+        <div className="bg-white/3 border border-white/10 rounded-2xl p-6">
+          <RiskGauge score={riskScore} />
+        </div>
+      )}
+
+      {/* Signals */}
+      {signals.length > 0 && (
+        <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden">
+          <div className="px-5 py-3 border-b border-white/10 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-400" />
+            <span className="text-sm font-bold text-white">Signals Detected ({signals.length})</span>
+          </div>
+          <div className="divide-y divide-white/5">
+            {signals.map((sig, i) => {
+              const name       = field(sig, 'signalName', 'SignalName', 'name', 'Name') ?? '—'
+              const confidence = field(sig, 'confidence', 'Confidence')
+              const evidence   = field(sig, 'evidence', 'Evidence', 'detail', 'Detail') ?? ''
+              const isOpen     = openSig[i]
+              const pct        = confidence != null ? Math.round(confidence * 100) : null
+              const confColor  = pct >= 80 ? 'text-red-400' : pct >= 50 ? 'text-amber-400' : 'text-blue-400'
+
+              return (
+                <div key={i} className="border-b border-white/5 last:border-0">
+                  <button
+                    onClick={() => setOpenSig(s => ({ ...s, [i]: !s[i] }))}
+                    className="w-full flex items-center gap-3 px-5 py-3.5 text-left hover:bg-white/3 transition-colors"
+                  >
+                    <TrendingUp className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span className="flex-1 text-sm text-white">{name}</span>
+                    {pct != null && (
+                      <span className={`text-xs font-bold ${confColor}`}>{pct}% confidence</span>
+                    )}
+                    {evidence && (isOpen
+                      ? <ChevronUp className="w-4 h-4 text-gray-500 shrink-0" />
+                      : <ChevronDown className="w-4 h-4 text-gray-500 shrink-0" />)}
+                  </button>
+                  {isOpen && evidence && (
+                    <div className="px-12 pb-4">
+                      <div className="bg-amber-500/5 border border-amber-500/15 rounded-lg px-3 py-2">
+                        <p className="text-[10px] text-amber-400 font-semibold mb-0.5">Evidence</p>
+                        <p className="text-xs text-gray-300 font-mono">{typeof evidence === 'string' ? evidence : JSON.stringify(evidence)}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Change Detection */}
+      {changes.length > 0 && (
+        <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden">
+          <div className="px-5 py-3 border-b border-white/10">
+            <span className="text-sm font-bold text-white">Change Detection ({changes.length})</span>
+          </div>
+          <div className="grid grid-cols-12 px-5 py-3 border-b border-white/10 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+            <span className="col-span-3">Item Type</span>
+            <span className="col-span-5">Name</span>
+            <span className="col-span-2">Change</span>
+            <span className="col-span-2 text-right">Risk</span>
+          </div>
+          <div className="divide-y divide-white/5">
+            {changes.map((c, i) => {
+              const itemType = field(c, 'itemType', 'ItemType', 'type', 'Type') ?? '—'
+              const name     = field(c, 'name', 'Name', 'item', 'Item') ?? '—'
+              const change   = field(c, 'change', 'Change', 'changeType', 'ChangeType') ?? '—'
+              const risk     = field(c, 'risk', 'Risk', 'riskLevel', 'RiskLevel') ?? '—'
+              return (
+                <div key={i} className="grid grid-cols-12 px-5 py-3 items-center hover:bg-white/2 transition-colors">
+                  <div className="col-span-3">
+                    <span className="text-[10px] font-mono bg-white/5 border border-white/10 text-gray-400 px-1.5 py-0.5 rounded">{itemType}</span>
+                  </div>
+                  <div className="col-span-5 min-w-0">
+                    <span className="text-xs font-mono text-white truncate block">{name}</span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className={`text-xs font-semibold ${CHANGE_TYPE_CLS[change] ?? 'text-gray-400'}`}>{change}</span>
+                  </div>
+                  <div className="col-span-2 text-right">
+                    <span className={`text-xs font-bold ${CHANGE_RISK_CLS[risk] ?? 'text-gray-400'}`}>{risk}</span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {result && signals.length === 0 && changes.length === 0 && !error && (
+        <div className="text-center text-sm text-gray-500 py-8">
+          <CheckCircle2 className="w-8 h-8 text-green-400/40 mx-auto mb-2" />
+          No suspicious signals or changes detected.
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ─────────────────────────────────────────
    Page
 ───────────────────────────────────────── */
 const TABS = [
-  { id: 'alerts',  label: 'Alerts',            icon: ShieldAlert },
-  { id: 'rules',   label: 'Detection Rules',   icon: Activity    },
-  { id: 'analyze', label: 'Analyze Agent',     icon: CheckCircle2},
+  { id: 'alerts',     label: 'Alerts',                icon: ShieldAlert  },
+  { id: 'rules',      label: 'Detection Rules',        icon: Activity     },
+  { id: 'analyze',    label: 'Analyze Agent',          icon: CheckCircle2 },
+  { id: 'behavioral', label: 'Behavioral Analysis',    icon: Brain        },
 ]
 
 export default function EdrPage() {
@@ -610,9 +829,10 @@ export default function EdrPage() {
             ))}
           </div>
 
-          {tab === 'alerts'  && <AlertsTab />}
-          {tab === 'rules'   && <RulesTab />}
-          {tab === 'analyze' && <AnalyzeTab />}
+          {tab === 'alerts'     && <AlertsTab />}
+          {tab === 'rules'      && <RulesTab />}
+          {tab === 'analyze'    && <AnalyzeTab />}
+          {tab === 'behavioral' && <BehavioralTab />}
         </div>
       </main>
 

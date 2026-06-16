@@ -49,51 +49,31 @@ function StatusPill({ status }) {
   )
 }
 
-function SummaryCards({ summary, findings }) {
+function SummaryCards({ summary, findings, scanMeta }) {
   const crit = field(summary, 'criticalCount') ?? findings.filter(f => field(f, 'severity') === 'Critical').length
   const high = field(summary, 'highCount')     ?? findings.filter(f => field(f, 'severity') === 'High').length
   const med  = field(summary, 'mediumCount')   ?? findings.filter(f => field(f, 'severity') === 'Medium').length
   const low  = field(summary, 'lowCount')      ?? findings.filter(f => field(f, 'severity') === 'Low').length
-  const risk = field(summary, 'riskScore') ?? Math.min(100, Math.round(crit * 20 + high * 8 + med * 2 + low * 0.5))
+  const vulnPkgs = field(scanMeta, 'vulnerablePackages', 'VulnerablePackages')
+    ?? field(summary, 'vulnerablePackages', 'VulnerablePackages')
+    ?? [...new Set(findings.map(f => field(f, 'packageName', 'PackageName')).filter(Boolean))].length
 
   const cards = [
-    { label: 'Critical', count: crit, color: 'text-red-400',    bg: 'bg-red-500/10',    border: 'border-red-500/20'    },
-    { label: 'High',     count: high, color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/20' },
-    { label: 'Medium',   count: med,  color: 'text-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/20'  },
-    { label: 'Low',      count: low,  color: 'text-blue-400',   bg: 'bg-blue-500/10',   border: 'border-blue-500/20'   },
+    { label: 'Critical',     count: crit,     color: 'text-red-400',    bg: 'bg-red-500/10',    border: 'border-red-500/20'    },
+    { label: 'High',         count: high,     color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/20' },
+    { label: 'Medium',       count: med,      color: 'text-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/20'  },
+    { label: 'Low',          count: low,      color: 'text-blue-400',   bg: 'bg-blue-500/10',   border: 'border-blue-500/20'   },
+    { label: 'Vuln Packages',count: vulnPkgs, color: 'text-white',      bg: 'bg-white/5',       border: 'border-white/10'      },
   ]
-
-  const riskColor = risk >= 75 ? 'text-red-400' : risk >= 50 ? 'text-orange-400' : risk >= 25 ? 'text-amber-400' : 'text-green-400'
-  const circ = 2 * Math.PI * 30
-  const offset = circ - (risk / 100) * circ
-  const strokeColor = risk >= 75 ? '#f87171' : risk >= 50 ? '#fb923c' : risk >= 25 ? '#fbbf24' : '#4ade80'
 
   return (
     <div className="flex flex-wrap gap-4">
       {cards.map(c => (
-        <div key={c.label} className={`flex-1 min-w-[120px] ${c.bg} border ${c.border} rounded-xl px-5 py-4`}>
+        <div key={c.label} className={`flex-1 min-w-[110px] ${c.bg} border ${c.border} rounded-xl px-5 py-4`}>
           <div className={`text-2xl font-extrabold ${c.color}`}>{c.count}</div>
           <div className="text-xs text-gray-400 mt-0.5">{c.label}</div>
         </div>
       ))}
-      <div className="flex-1 min-w-[140px] bg-white/3 border border-white/10 rounded-xl px-5 py-4 flex items-center gap-4">
-        <svg width="70" height="70" viewBox="0 0 70 70">
-          <circle cx="35" cy="35" r="30" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="6" />
-          <circle
-            cx="35" cy="35" r="30" fill="none"
-            stroke={strokeColor} strokeWidth="6"
-            strokeLinecap="round"
-            strokeDasharray={circ}
-            strokeDashoffset={offset}
-            transform="rotate(-90 35 35)"
-          />
-          <text x="35" y="39" textAnchor="middle" fill="white" fontSize="13" fontWeight="800">{risk}</text>
-        </svg>
-        <div>
-          <div className={`text-lg font-extrabold ${riskColor}`}>Risk Score</div>
-          <div className="text-xs text-gray-400">0 = safe · 100 = critical</div>
-        </div>
-      </div>
     </div>
   )
 }
@@ -102,24 +82,22 @@ function FindingRow({ finding, onStatusChange }) {
   const [expanded, setExpanded] = useState(false)
   const [updating, setUpdating] = useState(false)
 
-  const id      = field(finding, 'id')
-  const cveId   = field(finding, 'cveId', 'CveId')
-  const pkg     = field(finding, 'packageName', 'PackageName')
-  const inst    = field(finding, 'installedVersion', 'InstalledVersion')
-  const fixed   = field(finding, 'fixedVersion', 'FixedVersion')
-  const cvss    = field(finding, 'cvssScore', 'CvssScore')
-  const sev     = field(finding, 'severity', 'Severity') || 'Low'
-  const epss    = field(finding, 'epssScore', 'EpssScore')
-  const desc    = field(finding, 'description', 'Description')
-  const status  = field(finding, 'status', 'Status') || 'Open'
+  const id     = field(finding, 'id')
+  const cveId  = field(finding, 'cveId', 'CveId')
+  const pkg    = field(finding, 'packageName', 'PackageName')
+  const inst   = field(finding, 'installedVersion', 'InstalledVersion')
+  const fixed  = field(finding, 'fixedVersion', 'FixedVersion')
+  const cvss   = field(finding, 'cvssScore', 'CvssScore')
+  const sev    = field(finding, 'severity', 'Severity') || 'Low'
+  const epss   = field(finding, 'epssScore', 'EpssScore')
+  const desc   = field(finding, 'description', 'Description')
+  const status = field(finding, 'status', 'Status') || 'Open'
 
-  const handleStatus = async (newStatus) => {
+  const handleStatusChange = async (e) => {
+    const newStatus = e.target.value
     setUpdating(true)
-    try {
-      await onStatusChange(id, newStatus)
-    } finally {
-      setUpdating(false)
-    }
+    try { await onStatusChange(id, newStatus) }
+    finally { setUpdating(false) }
   }
 
   return (
@@ -155,34 +133,24 @@ function FindingRow({ finding, onStatusChange }) {
           {epss != null ? `${(epss * 100).toFixed(1)}%` : '—'}
         </td>
         <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-          <StatusPill status={status} />
-        </td>
-        <td className="px-4 py-3 text-right" onClick={e => e.stopPropagation()}>
-          {status !== 'Fixed' && (
-            <div className="flex gap-1 justify-end">
-              {status !== 'Accepted' && (
-                <button
-                  disabled={updating}
-                  onClick={() => handleStatus('Accepted')}
-                  className="px-2 py-1 text-[10px] font-semibold rounded bg-blue-500/15 text-blue-400 border border-blue-500/30 hover:bg-blue-500/25 disabled:opacity-50"
-                >
-                  Accept
-                </button>
-              )}
-              <button
-                disabled={updating}
-                onClick={() => handleStatus('Fixed')}
-                className="px-2 py-1 text-[10px] font-semibold rounded bg-green-500/15 text-green-400 border border-green-500/30 hover:bg-green-500/25 disabled:opacity-50"
+          {updating
+            ? <RefreshCw className="w-3.5 h-3.5 animate-spin text-gray-500" />
+            : (
+              <select
+                value={status}
+                onChange={handleStatusChange}
+                className="bg-white/5 border border-white/15 text-xs text-white rounded-lg px-2 py-1 outline-none focus:border-sky-500/50 disabled:opacity-50"
               >
-                Mark Fixed
-              </button>
-            </div>
-          )}
+                <option value="Open">Open</option>
+                <option value="Accepted">Accepted</option>
+                <option value="Fixed">Fixed</option>
+              </select>
+            )}
         </td>
       </tr>
       {expanded && (
         <tr className="border-b border-white/5 bg-white/2">
-          <td colSpan={10} className="px-6 py-4">
+          <td colSpan={9} className="px-6 py-4">
             <p className="text-sm text-gray-300 leading-relaxed">{desc || 'No description available.'}</p>
           </td>
         </tr>
@@ -378,7 +346,7 @@ export default function VmdrPage() {
 
           {/* Summary cards */}
           {(findings.length > 0 || summary) && (
-            <SummaryCards summary={summary || {}} findings={findings} />
+            <SummaryCards summary={summary || {}} findings={findings} scanMeta={scanMeta} />
           )}
 
           {/* Findings table */}
@@ -441,7 +409,6 @@ export default function VmdrPage() {
                         <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-500">Severity</th>
                         <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-500">EPSS</th>
                         <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-500">Status</th>
-                        <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-500 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody>

@@ -12,7 +12,7 @@ import { useAuth } from '../context/AuthContext'
 
 const API = import.meta.env.VITE_API_URL ?? ''
 const BACKEND = API || 'https://webshield-backend-api.onrender.com'
-import { getRemediation, downloadReportPdf, emailReport, createSchedule, startAuthenticatedScan } from '../services/api'
+import { getRemediation, downloadReportPdf, emailReport, createSchedule, startAuthenticatedScan, startCrawlScan } from '../services/api'
 import EvidencePanel from '../components/EvidencePanel'
 import Navbar from '../components/Navbar'
 
@@ -464,6 +464,10 @@ export default function ProductPage() {
   const [authType, setAuthType] = useState('none')
   const [authForm, setAuthForm] = useState({ loginUrl: '', usernameField: 'email', passwordField: 'password', username: '', password: '', bearerToken: '', cookieName: '', cookieValue: '' })
   const setAuth = (k) => (e) => setAuthForm((f) => ({ ...f, [k]: e.target.value }))
+  const [advancedOpen, setAdvancedOpen] = useState(false)
+  const [crawlerEnabled, setCrawlerEnabled] = useState(false)
+  const [crawlDepth, setCrawlDepth] = useState('2')
+  const [maxPages, setMaxPages] = useState('25')
 
   if (!product) {
     return (
@@ -489,7 +493,10 @@ export default function ProductPage() {
     try {
       let data
       const base = { url: url.trim(), mode: scanMode }
-      if (type === 'web' && authType === 'formlogin') {
+      if (type === 'web' && crawlerEnabled) {
+        const authConfig = authType !== 'none' ? { authType, ...authForm } : undefined
+        data = await startCrawlScan({ url: url.trim(), depth: Number(crawlDepth), maxPages: Number(maxPages), ...(authConfig ? { authConfig } : {}) })
+      } else if (type === 'web' && authType === 'formlogin') {
         data = await startAuthenticatedScan({ targetUrl: url.trim(), mode: scanMode, ...authForm })
       } else if (type === 'web' && authType === 'bearer') {
         const res = await axios.post(`${API}/api${product.endpoint}`, { ...base, authType: 'bearer', bearerToken: authForm.bearerToken })
@@ -601,98 +608,174 @@ export default function ProductPage() {
             </button>
           </div>
 
-          {/* Auth Config — web scanner only */}
+          {/* Advanced Options — web scanner only */}
           {type === 'web' && (
             <div>
-              <div className="flex items-center gap-3">
-                <Lock className="w-3.5 h-3.5 text-gray-500" />
-                <label className="text-xs font-semibold text-gray-400">Auth Config:</label>
-                <select
-                  value={authType}
-                  onChange={(e) => setAuthType(e.target.value)}
-                  className="bg-white/5 border border-white/15 focus:border-crimson-500 text-white text-xs px-3 py-1.5 rounded-lg outline-none transition-colors"
-                  style={{ colorScheme: 'dark' }}
-                >
-                  <option value="none"      className="bg-[#0d1f3c]">None</option>
-                  <option value="basic"     className="bg-[#0d1f3c]">Basic Auth</option>
-                  <option value="bearer"    className="bg-[#0d1f3c]">Bearer Token</option>
-                  <option value="cookie"    className="bg-[#0d1f3c]">Cookie</option>
-                  <option value="formlogin" className="bg-[#0d1f3c]">Form Login</option>
-                </select>
-              </div>
+              <button
+                type="button"
+                onClick={() => setAdvancedOpen((v) => !v)}
+                className="flex items-center gap-2 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
+              >
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${advancedOpen ? 'rotate-180' : ''}`} />
+                Advanced Options
+                {(authType !== 'none' || crawlerEnabled) && (
+                  <span className="ml-1 text-[10px] bg-crimson-500/20 text-crimson-400 border border-crimson-500/30 px-1.5 py-0.5 rounded font-bold">Active</span>
+                )}
+              </button>
 
-              {authType !== 'none' && (
-                <div className="mt-3 bg-white/3 border border-white/15 rounded-2xl p-5 space-y-3">
-                  {authType === 'bearer' && (
-                    <div>
-                      <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Bearer Token</label>
-                      <input value={authForm.bearerToken} onChange={setAuth('bearerToken')} placeholder="eyJhbGciOiJIUzI1NiJ9…"
-                        className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors font-mono" />
-                    </div>
-                  )}
-                  {authType === 'basic' && (
-                    <div className="grid sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Username</label>
-                        <input value={authForm.username} onChange={setAuth('username')} placeholder="admin" autoComplete="off"
-                          className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors" />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Password</label>
-                        <input type="password" value={authForm.password} onChange={setAuth('password')} placeholder="••••••••" autoComplete="new-password"
-                          className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors" />
-                      </div>
-                    </div>
-                  )}
-                  {authType === 'cookie' && (
-                    <div className="grid sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Cookie Name</label>
-                        <input value={authForm.cookieName} onChange={setAuth('cookieName')} placeholder="session"
-                          className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors font-mono" />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Cookie Value</label>
-                        <input value={authForm.cookieValue} onChange={setAuth('cookieValue')} placeholder="abc123…"
-                          className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors font-mono" />
-                      </div>
-                    </div>
-                  )}
-                  {authType === 'formlogin' && (
-                    <div className="grid sm:grid-cols-2 gap-3">
-                      <div className="sm:col-span-2">
-                        <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Login URL <span className="text-gray-600 normal-case font-normal">(leave blank to auto-detect)</span></label>
-                        <input value={authForm.loginUrl} onChange={setAuth('loginUrl')} placeholder={`${url || 'https://example.com'}/login`}
-                          className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors" />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Username field <span className="text-gray-600 normal-case font-normal">(HTML name attr)</span></label>
-                        <input value={authForm.usernameField} onChange={setAuth('usernameField')} placeholder="email"
-                          className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors font-mono" />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Password field <span className="text-gray-600 normal-case font-normal">(HTML name attr)</span></label>
-                        <input value={authForm.passwordField} onChange={setAuth('passwordField')} placeholder="password"
-                          className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors font-mono" />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Your username</label>
-                        <input value={authForm.username} onChange={setAuth('username')} placeholder="user@example.com" autoComplete="off"
-                          className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors" />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Your password</label>
-                        <input type="password" value={authForm.password} onChange={setAuth('password')} placeholder="••••••••" autoComplete="new-password"
-                          className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors" />
-                      </div>
-                    </div>
-                  )}
-                  {(authType === 'basic' || authType === 'formlogin') && (
-                    <p className="text-[10px] text-gray-600 flex items-start gap-1.5 pt-1">
-                      <span className="text-amber-500 shrink-0">⚠</span>
-                      Credentials are sent directly to your target site only. Udyo360 never stores or logs them.
+              {advancedOpen && (
+                <div className="mt-3 bg-white/3 border border-white/15 rounded-2xl p-5 space-y-5">
+
+                  {/* Authenticated Scan section */}
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                      <Lock className="w-3 h-3" /> Authenticated Scan
                     </p>
-                  )}
+                    <div className="flex items-center gap-3 mb-3">
+                      <label className="text-xs text-gray-400">Auth type:</label>
+                      <select
+                        value={authType}
+                        onChange={(e) => setAuthType(e.target.value)}
+                        className="bg-white/5 border border-white/15 focus:border-crimson-500 text-white text-xs px-3 py-1.5 rounded-lg outline-none transition-colors"
+                        style={{ colorScheme: 'dark' }}
+                      >
+                        <option value="none"      className="bg-[#0d1f3c]">None</option>
+                        <option value="basic"     className="bg-[#0d1f3c]">Basic Auth</option>
+                        <option value="bearer"    className="bg-[#0d1f3c]">Bearer Token</option>
+                        <option value="cookie"    className="bg-[#0d1f3c]">Cookie</option>
+                        <option value="formlogin" className="bg-[#0d1f3c]">Form Login</option>
+                      </select>
+                    </div>
+
+                    {authType !== 'none' && (
+                      <div className="space-y-3">
+                        {authType === 'bearer' && (
+                          <div>
+                            <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Bearer Token</label>
+                            <input value={authForm.bearerToken} onChange={setAuth('bearerToken')} placeholder="eyJhbGciOiJIUzI1NiJ9…"
+                              className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors font-mono" />
+                          </div>
+                        )}
+                        {authType === 'basic' && (
+                          <div className="grid sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Username</label>
+                              <input value={authForm.username} onChange={setAuth('username')} placeholder="admin" autoComplete="off"
+                                className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors" />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Password</label>
+                              <input type="password" value={authForm.password} onChange={setAuth('password')} placeholder="••••••••" autoComplete="new-password"
+                                className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors" />
+                            </div>
+                          </div>
+                        )}
+                        {authType === 'cookie' && (
+                          <div className="grid sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Cookie Name</label>
+                              <input value={authForm.cookieName} onChange={setAuth('cookieName')} placeholder="session"
+                                className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors font-mono" />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Cookie Value</label>
+                              <input value={authForm.cookieValue} onChange={setAuth('cookieValue')} placeholder="abc123…"
+                                className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors font-mono" />
+                            </div>
+                          </div>
+                        )}
+                        {authType === 'formlogin' && (
+                          <div className="grid sm:grid-cols-2 gap-3">
+                            <div className="sm:col-span-2">
+                              <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Login URL <span className="text-gray-600 normal-case font-normal">(leave blank to auto-detect)</span></label>
+                              <input value={authForm.loginUrl} onChange={setAuth('loginUrl')} placeholder={`${url || 'https://example.com'}/login`}
+                                className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors" />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Username field <span className="text-gray-600 normal-case font-normal">(HTML name attr)</span></label>
+                              <input value={authForm.usernameField} onChange={setAuth('usernameField')} placeholder="email"
+                                className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors font-mono" />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Password field <span className="text-gray-600 normal-case font-normal">(HTML name attr)</span></label>
+                              <input value={authForm.passwordField} onChange={setAuth('passwordField')} placeholder="password"
+                                className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors font-mono" />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Your username</label>
+                              <input value={authForm.username} onChange={setAuth('username')} placeholder="user@example.com" autoComplete="off"
+                                className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors" />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Your password</label>
+                              <input type="password" value={authForm.password} onChange={setAuth('password')} placeholder="••••••••" autoComplete="new-password"
+                                className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors" />
+                            </div>
+                          </div>
+                        )}
+                        {(authType === 'basic' || authType === 'formlogin') && (
+                          <p className="text-[10px] text-gray-600 flex items-start gap-1.5 pt-1">
+                            <span className="text-amber-500 shrink-0">⚠</span>
+                            Credentials are sent directly to your target site only. WebShield never stores or logs them.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Crawl Settings section */}
+                  <div className="border-t border-white/10 pt-4">
+                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                      <Globe className="w-3 h-3" /> Crawl Settings
+                    </p>
+                    <div className="flex items-center gap-3 mb-3">
+                      <button
+                        type="button"
+                        onClick={() => setCrawlerEnabled((v) => !v)}
+                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${
+                          crawlerEnabled ? 'bg-crimson-500' : 'bg-white/15'
+                        }`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${crawlerEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
+                      </button>
+                      <span className="text-xs text-gray-300">Enable Crawler</span>
+                      {crawlerEnabled && (
+                        <span className="text-[10px] text-crimson-400 font-semibold">— will crawl site pages before scanning</span>
+                      )}
+                    </div>
+
+                    {crawlerEnabled && (
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Crawl Depth</label>
+                          <select
+                            value={crawlDepth}
+                            onChange={(e) => setCrawlDepth(e.target.value)}
+                            className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white text-sm px-3 py-2 rounded-xl outline-none transition-colors"
+                            style={{ colorScheme: 'dark' }}
+                          >
+                            <option value="1" className="bg-[#0d1f3c]">1 — Shallow</option>
+                            <option value="2" className="bg-[#0d1f3c]">2 — Standard</option>
+                            <option value="3" className="bg-[#0d1f3c]">3 — Deep</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Max Pages</label>
+                          <select
+                            value={maxPages}
+                            onChange={(e) => setMaxPages(e.target.value)}
+                            className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white text-sm px-3 py-2 rounded-xl outline-none transition-colors"
+                            style={{ colorScheme: 'dark' }}
+                          >
+                            <option value="10"  className="bg-[#0d1f3c]">10 pages</option>
+                            <option value="25"  className="bg-[#0d1f3c]">25 pages</option>
+                            <option value="50"  className="bg-[#0d1f3c]">50 pages</option>
+                          </select>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                 </div>
               )}
             </div>
@@ -863,6 +946,25 @@ export default function ProductPage() {
                       technicalDetails: item.description ?? item.Description ?? item.detail ?? null,
                       evidence:  item.evidence  ?? item.Evidence  ?? null,
                     }} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Crawled pages */}
+            {(result.crawledPages ?? result.CrawledPages)?.length > 0 && (
+              <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden mb-2">
+                <div className="px-4 py-3 border-b border-white/10 flex items-center gap-2">
+                  <Globe className="w-3.5 h-3.5 text-blue-400" />
+                  <p className="text-sm font-semibold text-white">Crawled Pages</p>
+                  <span className="ml-auto text-xs text-gray-500">{(result.crawledPages ?? result.CrawledPages).length} pages discovered</span>
+                </div>
+                <div className="px-4 py-3 space-y-1 max-h-48 overflow-y-auto">
+                  {(result.crawledPages ?? result.CrawledPages).map((page, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
+                      <span className="text-xs font-mono text-gray-300 truncate">{page}</span>
+                    </div>
                   ))}
                 </div>
               </div>

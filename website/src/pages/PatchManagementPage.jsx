@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   Wrench, Loader2, AlertCircle, ChevronDown, ChevronUp,
   ExternalLink, CheckCircle2, XCircle, AlertTriangle, RefreshCw,
-  ClipboardList, Package, Newspaper, Plus,
+  ClipboardList, Package, Newspaper, Plus, Rocket, Terminal, X, Cpu,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-import { lookupCves, auditSoftware, getPatchBulletins } from '../services/api'
+import {
+  lookupCves, auditSoftware, getPatchBulletins,
+  deployPatch, getPatchDeployments, getAgents,
+} from '../services/api'
 
 const field = (obj, ...keys) => { for (const k of keys) if (obj?.[k] != null) return obj[k]; return null }
 
@@ -16,6 +19,13 @@ const SEV_STYLE = {
   Medium:   'bg-amber-500/15 text-amber-400 border-amber-500/30',
   Low:      'bg-blue-500/15 text-blue-400 border-blue-500/30',
   Info:     'bg-gray-500/15 text-gray-400 border-gray-500/30',
+}
+
+const JOB_STATUS_STYLE = {
+  Pending: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  Running: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
+  Success: 'bg-green-500/15 text-green-400 border-green-500/30',
+  Failed:  'bg-red-500/15 text-red-400 border-red-500/30',
 }
 
 function EpssBar({ value }) {
@@ -123,6 +133,121 @@ function CveCard({ cve }) {
   )
 }
 
+/* ─── Deploy Modal ─── */
+function DeployModal({ pkg, cves, onClose, onDeployed }) {
+  const [agents, setAgents]   = useState([])
+  const [agentId, setAgentId] = useState('')
+  const [loading, setLoad]    = useState(true)
+  const [deploying, setDep]   = useState(false)
+  const [done, setDone]       = useState(false)
+  const [error, setError]     = useState(null)
+
+  useEffect(() => {
+    getAgents()
+      .then(data => {
+        const list = Array.isArray(data) ? data : (data?.agents ?? data?.Agents ?? [])
+        setAgents(list)
+        if (list.length > 0) setAgentId(field(list[0], 'agentId', 'AgentId', 'id', 'Id') ?? '')
+      })
+      .catch(() => {})
+      .finally(() => setLoad(false))
+  }, [])
+
+  const confirm = async () => {
+    if (!agentId) return
+    setDep(true); setError(null)
+    try {
+      const cveIds = cves.map(c => field(c, 'cveId', 'CveId', 'id', 'Id', 'cve', 'Cve')).filter(Boolean)
+      await deployPatch({ agentId, packageName: pkg.name, cveIds })
+      setDone(true)
+      onDeployed?.()
+    } catch (e) { setError(e.message || 'Deploy failed') }
+    setDep(false)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-[#0d0f14] border border-white/15 rounded-2xl w-full max-w-md shadow-2xl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
+          <div className="flex items-center gap-2">
+            <Rocket className="w-4 h-4 text-orange-400" />
+            <span className="text-sm font-bold text-white">Deploy Fix</span>
+          </div>
+          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors"><X className="w-4 h-4" /></button>
+        </div>
+
+        {done ? (
+          <div className="px-5 py-8 flex flex-col items-center gap-3 text-center">
+            <CheckCircle2 className="w-10 h-10 text-green-400" />
+            <p className="text-sm font-semibold text-white">Deployment job created</p>
+            <p className="text-xs text-gray-400">Track progress in the Deployments tab.</p>
+            <button onClick={onClose} className="mt-2 text-sm text-orange-400 hover:text-orange-300 transition-colors">Close</button>
+          </div>
+        ) : (
+          <div className="px-5 py-5 space-y-4">
+            <div>
+              <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Package</p>
+              <p className="text-sm font-mono text-white">{pkg.name} <span className="text-gray-500">v{pkg.version}</span></p>
+            </div>
+
+            {cves.length > 0 && (
+              <div>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">CVEs to patch ({cves.length})</p>
+                <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
+                  {cves.map((c, i) => {
+                    const id = field(c, 'cveId', 'CveId', 'id', 'Id', 'cve', 'Cve') ?? `CVE-${i}`
+                    return (
+                      <span key={i} className="text-[10px] font-mono bg-white/5 border border-white/10 text-gray-300 px-2 py-0.5 rounded">{id}</span>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div>
+              <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1.5">Target Agent</p>
+              {loading ? (
+                <div className="flex items-center gap-2 text-xs text-gray-400"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading agents…</div>
+              ) : agents.length === 0 ? (
+                <p className="text-xs text-gray-500">No agents available. Deploy an agent first.</p>
+              ) : (
+                <select
+                  value={agentId}
+                  onChange={e => setAgentId(e.target.value)}
+                  className="w-full bg-white/5 border border-white/15 focus:border-orange-500 text-white px-3 py-2.5 rounded-xl text-sm outline-none transition-colors"
+                >
+                  {agents.map((a, i) => {
+                    const id   = field(a, 'agentId', 'AgentId', 'id', 'Id') ?? i
+                    const name = field(a, 'name', 'Name', 'hostname', 'Hostname') ?? `Agent ${i + 1}`
+                    return <option key={id} value={id} className="bg-gray-900">{name}</option>
+                  })}
+                </select>
+              )}
+            </div>
+
+            {error && <p className="text-xs text-red-400">{error}</p>}
+          </div>
+        )}
+
+        {!done && (
+          <div className="flex gap-2 px-5 pb-5">
+            <button
+              onClick={confirm}
+              disabled={deploying || loading || !agentId}
+              className="flex-1 flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-500/30 disabled:text-white/30 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors"
+            >
+              {deploying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Rocket className="w-4 h-4" />}
+              {deploying ? 'Deploying…' : 'Confirm Deploy'}
+            </button>
+            <button onClick={onClose} className="px-4 py-2.5 text-sm text-gray-400 hover:text-white transition-colors">Cancel</button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 /* ─── Tab 1: CVE Lookup ─── */
 function CveLookupTab() {
   const [text, setText]     = useState('')
@@ -206,12 +331,13 @@ const EXAMPLE_ROWS = [
   { name: 'libwebp',   version: '1.2.4'   },
 ]
 
-function SoftwareAuditTab() {
-  const [os, setOs]         = useState('linux-debian')
-  const [rows, setRows]     = useState([{ name: '', version: '' }])
-  const [result, setResult] = useState(null)
-  const [loading, setLoad]  = useState(false)
-  const [error, setError]   = useState(null)
+function SoftwareAuditTab({ onDeployCreated }) {
+  const [os, setOs]               = useState('linux-debian')
+  const [rows, setRows]           = useState([{ name: '', version: '' }])
+  const [result, setResult]       = useState(null)
+  const [loading, setLoad]        = useState(false)
+  const [error, setError]         = useState(null)
+  const [deployTarget, setDeploy] = useState(null)
 
   const setRow = (i, k, v) => setRows(r => r.map((row, idx) => idx === i ? { ...row, [k]: v } : row))
   const addRow    = () => setRows(r => [...r, { name: '', version: '' }])
@@ -237,8 +363,6 @@ function SoftwareAuditTab() {
   return (
     <div className="space-y-5">
       <div className="bg-white/3 border border-white/10 rounded-2xl p-6 space-y-5">
-
-        {/* OS selector */}
         <div>
           <label className="block text-xs text-gray-400 mb-1.5">Operating System</label>
           <select value={os} onChange={e => setOs(e.target.value)}
@@ -247,7 +371,6 @@ function SoftwareAuditTab() {
           </select>
         </div>
 
-        {/* Package rows */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="text-xs text-gray-400">Installed Packages</label>
@@ -341,9 +464,17 @@ function SoftwareAuditTab() {
                     </span>
                   )}
                   {cves.length > 0 && (
-                    <span className="text-xs font-bold text-red-400 bg-red-500/10 border border-red-500/25 px-2 py-0.5 rounded ml-auto">
-                      {cves.length} CVE{cves.length !== 1 ? 's' : ''}
-                    </span>
+                    <>
+                      <span className="text-xs font-bold text-red-400 bg-red-500/10 border border-red-500/25 px-2 py-0.5 rounded">
+                        {cves.length} CVE{cves.length !== 1 ? 's' : ''}
+                      </span>
+                      <button
+                        onClick={() => setDeploy({ name, version, cves })}
+                        className="flex items-center gap-1.5 text-xs font-semibold text-orange-400 bg-orange-500/10 border border-orange-500/25 px-2.5 py-0.5 rounded hover:bg-orange-500/20 transition-colors ml-auto"
+                      >
+                        <Rocket className="w-3 h-3" /> Deploy Fix
+                      </button>
+                    </>
                   )}
                   {clean && <span className="text-xs text-green-400 ml-auto">No known CVEs</span>}
                 </div>
@@ -356,6 +487,15 @@ function SoftwareAuditTab() {
             )
           })}
         </div>
+      )}
+
+      {deployTarget && (
+        <DeployModal
+          pkg={deployTarget}
+          cves={deployTarget.cves}
+          onClose={() => setDeploy(null)}
+          onDeployed={() => { setDeploy(null); onDeployCreated?.() }}
+        />
       )}
     </div>
   )
@@ -419,10 +559,9 @@ function BulletinsTab() {
 
       {!loading && bulletins.length > 0 && (
         <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden">
-          <div className="px-5 py-2.5 border-b border-white/10 flex items-center justify-between">
+          <div className="px-5 py-2.5 border-b border-white/10">
             <span className="text-xs text-gray-500">{bulletins.length} Critical / High CVE{bulletins.length !== 1 ? 's' : ''} in the last {days} days</span>
           </div>
-          {/* Header */}
           <div className="grid grid-cols-12 px-5 py-3 border-b border-white/10 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
             <span className="col-span-3">CVE ID</span>
             <span className="col-span-1">CVSS</span>
@@ -447,9 +586,7 @@ function BulletinsTab() {
                 <div key={i} className="grid grid-cols-12 px-5 py-3 items-center hover:bg-white/3 transition-colors">
                   <div className="col-span-3">
                     <a href={`https://nvd.nist.gov/vuln/detail/${id}`} target="_blank" rel="noopener noreferrer"
-                      className="text-xs font-mono text-orange-400 hover:text-orange-300 transition-colors">
-                      {id}
-                    </a>
+                      className="text-xs font-mono text-orange-400 hover:text-orange-300 transition-colors">{id}</a>
                   </div>
                   <div className="col-span-1">
                     <span className="text-xs font-bold text-white">{cvss ?? '—'}</span>
@@ -457,9 +594,7 @@ function BulletinsTab() {
                   <div className="col-span-2">
                     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${sStyle}`}>{severity}</span>
                   </div>
-                  <div className="col-span-2">
-                    <EpssBar value={epss} />
-                  </div>
+                  <div className="col-span-2"><EpssBar value={epss} /></div>
                   <div className="col-span-2">
                     <span className="text-xs text-gray-400 truncate block" title={typeof product === 'string' ? product : undefined}>
                       {typeof product === 'string' ? product : (product?.name ?? product?.Name ?? '—')}
@@ -488,15 +623,175 @@ function BulletinsTab() {
   )
 }
 
+/* ─── Tab 4: Deployments ─── */
+function DeploymentsTab({ refreshTrigger }) {
+  const [jobs, setJobs]         = useState([])
+  const [loading, setLoad]      = useState(true)
+  const [error, setError]       = useState(null)
+  const [expanded, setExpanded] = useState({})
+  const timerRef                = useRef(null)
+
+  const load = async (silent = false) => {
+    if (!silent) setLoad(true)
+    setError(null)
+    try {
+      const data = await getPatchDeployments()
+      const list = Array.isArray(data) ? data : (data?.jobs ?? data?.Jobs ?? data?.deployments ?? data?.Deployments ?? [])
+      setJobs(list)
+      return list
+    } catch (e) {
+      setError(e.message || 'Failed to load deployments')
+      return []
+    } finally {
+      if (!silent) setLoad(false)
+    }
+  }
+
+  const scheduleNext = (list) => {
+    clearTimeout(timerRef.current)
+    const active = list.some(j => {
+      const s = (field(j, 'status', 'Status') ?? '').toLowerCase()
+      return s === 'pending' || s === 'running'
+    })
+    if (active) {
+      timerRef.current = setTimeout(async () => {
+        const updated = await load(true)
+        scheduleNext(updated)
+      }, 10000)
+    }
+  }
+
+  useEffect(() => {
+    load().then(scheduleNext)
+    return () => clearTimeout(timerRef.current)
+  }, [refreshTrigger])
+
+  const toggleExpand = (id) => setExpanded(e => ({ ...e, [id]: !e[id] }))
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center gap-2 text-gray-400 py-16 text-sm">
+        <Loader2 className="w-4 h-4 animate-spin" /> Loading deployments…
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
+        <AlertCircle className="w-4 h-4 shrink-0" />{error}
+      </div>
+    )
+  }
+
+  if (jobs.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
+        <div className="w-14 h-14 bg-orange-500/10 border border-orange-500/20 rounded-2xl flex items-center justify-center">
+          <Rocket className="w-7 h-7 text-orange-400" />
+        </div>
+        <p className="text-gray-400 text-sm">No deployments yet. Use "Deploy Fix" in Software Audit to create a job.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-gray-500">{jobs.length} deployment job{jobs.length !== 1 ? 's' : ''}</p>
+        <button onClick={() => load().then(scheduleNext)} className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-white transition-colors">
+          <RefreshCw className="w-3.5 h-3.5" /> Refresh
+        </button>
+      </div>
+
+      <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden">
+        <div className="grid grid-cols-12 px-5 py-3 border-b border-white/10 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+          <span className="col-span-2">Job ID</span>
+          <span className="col-span-2">Agent</span>
+          <span className="col-span-3">Package</span>
+          <span className="col-span-2">Started At</span>
+          <span className="col-span-2">Status</span>
+          <span className="col-span-1 text-right">Output</span>
+        </div>
+        <div className="divide-y divide-white/5">
+          {jobs.map((job, i) => {
+            const id        = field(job, 'jobId', 'JobId', 'id', 'Id') ?? i
+            const agent     = field(job, 'agentName', 'AgentName', 'agent', 'Agent') ?? '—'
+            const pkg       = field(job, 'packageName', 'PackageName', 'package', 'Package') ?? '—'
+            const startedAt = field(job, 'startedAt', 'StartedAt', 'createdAt', 'CreatedAt')
+            const status    = field(job, 'status', 'Status') ?? 'Pending'
+            const output    = field(job, 'output', 'Output', 'log', 'Log') ?? ''
+            const isOpen    = expanded[id]
+            const statusCls = JOB_STATUS_STYLE[status] || JOB_STATUS_STYLE.Pending
+            const isActive  = status === 'Pending' || status === 'Running'
+
+            return (
+              <React.Fragment key={id}>
+                <div className="grid grid-cols-12 px-5 py-3.5 items-center hover:bg-white/2 transition-colors">
+                  <div className="col-span-2">
+                    <span className="text-[10px] font-mono text-gray-500">{String(id).slice(0, 8)}</span>
+                  </div>
+                  <div className="col-span-2 min-w-0">
+                    <span className="text-xs text-gray-300 truncate block">{agent}</span>
+                  </div>
+                  <div className="col-span-3 min-w-0">
+                    <span className="text-xs font-mono text-white truncate block">{pkg}</span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-[10px] text-gray-500 font-mono">
+                      {startedAt ? new Date(startedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                    </span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded border ${statusCls}`}>
+                      {isActive && <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse inline-block" />}
+                      {status}
+                    </span>
+                  </div>
+                  <div className="col-span-1 text-right">
+                    {output && (
+                      <button
+                        onClick={() => toggleExpand(id)}
+                        className="flex items-center justify-end gap-1 text-[10px] text-gray-500 hover:text-white transition-colors"
+                      >
+                        <Terminal className="w-3.5 h-3.5" />
+                        {isOpen ? 'Hide' : 'View'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {isOpen && output && (
+                  <div className="px-5 pb-4 pt-2 bg-white/2">
+                    <div className="bg-black/40 border border-white/10 rounded-xl px-4 py-3 font-mono text-xs text-green-300 leading-relaxed whitespace-pre-wrap overflow-x-auto max-h-48 overflow-y-auto">
+                      {output}
+                    </div>
+                  </div>
+                )}
+              </React.Fragment>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ─── Page ─── */
 const TABS = [
-  { id: 'lookup',    label: 'CVE Lookup',        icon: ClipboardList },
-  { id: 'audit',     label: 'Software Audit',     icon: Package },
-  { id: 'bulletins', label: 'Security Bulletins', icon: Newspaper },
+  { id: 'lookup',      label: 'CVE Lookup',         icon: ClipboardList },
+  { id: 'audit',       label: 'Software Audit',      icon: Package },
+  { id: 'bulletins',   label: 'Security Bulletins',  icon: Newspaper },
+  { id: 'deployments', label: 'Deployments',         icon: Rocket },
 ]
 
 export default function PatchManagementPage() {
-  const [tab, setTab] = useState('lookup')
+  const [tab, setTab]               = useState('lookup')
+  const [deployRefresh, setDeplRef] = useState(0)
+
+  const handleDeployCreated = () => {
+    setTab('deployments')
+    setDeplRef(n => n + 1)
+  }
 
   return (
     <div className="min-h-screen page-bg flex flex-col">
@@ -517,8 +812,7 @@ export default function PatchManagementPage() {
         </div>
 
         <div className="max-w-5xl mx-auto px-4 py-8">
-          {/* Tab bar */}
-          <div className="flex gap-1 bg-white/5 border border-white/10 rounded-xl p-1 mb-8 w-fit">
+          <div className="flex flex-wrap gap-1 bg-white/5 border border-white/10 rounded-xl p-1 mb-8 w-fit">
             {TABS.map(({ id, label, icon: Icon }) => (
               <button key={id} onClick={() => setTab(id)}
                 className={`flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg transition-colors ${
@@ -529,9 +823,10 @@ export default function PatchManagementPage() {
             ))}
           </div>
 
-          {tab === 'lookup'    && <CveLookupTab />}
-          {tab === 'audit'     && <SoftwareAuditTab />}
-          {tab === 'bulletins' && <BulletinsTab />}
+          {tab === 'lookup'      && <CveLookupTab />}
+          {tab === 'audit'       && <SoftwareAuditTab onDeployCreated={handleDeployCreated} />}
+          {tab === 'bulletins'   && <BulletinsTab />}
+          {tab === 'deployments' && <DeploymentsTab refreshTrigger={deployRefresh} />}
         </div>
       </main>
 

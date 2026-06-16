@@ -15,6 +15,8 @@ const TYPE_META = {
   webhook: { label: 'Generic Webhook', color: 'bg-blue-500/15 text-blue-400 border-blue-500/30',      urlHint: 'https://yourserver.com/webhook' },
   teams:   { label: 'Microsoft Teams', color: 'bg-sky-500/15 text-sky-400 border-sky-500/30',         urlHint: 'https://outlook.office.com/webhook/…' },
   jira:    { label: 'Jira',            color: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30', urlHint: 'https://yoursite.atlassian.net' },
+  splunk:  { label: 'Splunk HEC',      color: 'bg-orange-500/15 text-orange-400 border-orange-500/30', urlHint: 'https://splunk.yourcompany.com:8088' },
+  qradar:  { label: 'IBM QRadar',      color: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30',      urlHint: 'https://qradar.yourcompany.com' },
 }
 
 const JIRA_ISSUE_TYPES = ['Bug', 'Task', 'Story', 'Security']
@@ -101,33 +103,129 @@ function buildJiraPayload(form) {
   }
 }
 
+function SplunkFields({ form, set }) {
+  return (
+    <>
+      <div>
+        <label className={LABEL}>Splunk Host URL</label>
+        <input value={form.webhookUrl} onChange={set('webhookUrl')} placeholder="https://splunk.yourcompany.com:8088"
+          className={FIELD} />
+      </div>
+      <div>
+        <label className={LABEL}>HEC Token</label>
+        <input value={form.splunkToken} onChange={set('splunkToken')} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+          className={FIELD + ' font-mono'} autoComplete="off" />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={LABEL}>Index</label>
+          <input value={form.splunkIndex} onChange={set('splunkIndex')} placeholder="main" className={FIELD} />
+        </div>
+        <div>
+          <label className={LABEL}>Source Type</label>
+          <input value={form.splunkSourceType} onChange={set('splunkSourceType')} placeholder="webshield:scan" className={FIELD} />
+        </div>
+      </div>
+    </>
+  )
+}
+
+function QRadarFields({ form, set }) {
+  return (
+    <>
+      <div>
+        <label className={LABEL}>QRadar Host URL</label>
+        <input value={form.webhookUrl} onChange={set('webhookUrl')} placeholder="https://qradar.yourcompany.com"
+          className={FIELD} />
+      </div>
+      <div>
+        <label className={LABEL}>API Token</label>
+        <input value={form.qradarToken} onChange={set('qradarToken')} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+          className={FIELD + ' font-mono'} autoComplete="off" />
+      </div>
+      <div>
+        <label className={LABEL}>Log Source Name</label>
+        <input value={form.qradarLogSource} onChange={set('qradarLogSource')} placeholder="WebShield" className={FIELD} />
+      </div>
+    </>
+  )
+}
+
+function buildSplunkPayload(form) {
+  return {
+    type: 'splunk',
+    name: form.name,
+    webhookUrl: form.webhookUrl,
+    configJson: JSON.stringify({
+      hecToken: form.splunkToken,
+      index: form.splunkIndex || 'main',
+      sourceType: form.splunkSourceType || 'webshield:scan',
+    }),
+  }
+}
+
+function buildQRadarPayload(form) {
+  return {
+    type: 'qradar',
+    name: form.name,
+    webhookUrl: form.webhookUrl,
+    configJson: JSON.stringify({
+      apiToken: form.qradarToken,
+      logSourceName: form.qradarLogSource || 'WebShield',
+    }),
+  }
+}
+
+function buildPayload(form) {
+  if (form.type === 'jira')   return buildJiraPayload(form)
+  if (form.type === 'splunk') return buildSplunkPayload(form)
+  if (form.type === 'qradar') return buildQRadarPayload(form)
+  return { type: form.type, name: form.name, webhookUrl: form.webhookUrl }
+}
+
+function TypeFields({ form, set }) {
+  if (form.type === 'jira')   return <JiraFields   form={form} set={set} />
+  if (form.type === 'splunk') return <SplunkFields form={form} set={set} />
+  if (form.type === 'qradar') return <QRadarFields form={form} set={set} />
+  const meta = TYPE_META[form.type] || TYPE_META.webhook
+  return (
+    <div>
+      <label className={LABEL}>Webhook URL</label>
+      <input value={form.webhookUrl} onChange={set('webhookUrl')} placeholder={meta.urlHint} className={FIELD} />
+    </div>
+  )
+}
+
+const EMPTY_FORM = {
+  type: 'slack', name: '', webhookUrl: '',
+  email: '', apiToken: '', projectKey: '', issueType: 'Bug',
+  splunkToken: '', splunkIndex: 'main', splunkSourceType: 'webshield:scan',
+  qradarToken: '', qradarLogSource: 'WebShield',
+}
+
+function validateForm(form) {
+  if (!form.name.trim()) return 'Name is required'
+  if (!form.webhookUrl.trim()) return form.type === 'jira' ? 'Jira Site URL is required' : form.type === 'splunk' ? 'Splunk Host URL is required' : form.type === 'qradar' ? 'QRadar Host URL is required' : 'Webhook URL is required'
+  if (form.type === 'jira' && !form.email.trim()) return 'Account email is required'
+  if (form.type === 'jira' && !form.apiToken.trim()) return 'API token is required'
+  if (form.type === 'jira' && !form.projectKey.trim()) return 'Project key is required'
+  if (form.type === 'splunk' && !form.splunkToken.trim()) return 'HEC token is required'
+  if (form.type === 'qradar' && !form.qradarToken.trim()) return 'API token is required'
+  return null
+}
+
 function AddModal({ onClose, onSaved }) {
-  const [form, setForm] = useState({
-    type: 'slack', name: '', webhookUrl: '',
-    email: '', apiToken: '', projectKey: '', issueType: 'Bug',
-  })
+  const [form, setForm] = useState({ ...EMPTY_FORM })
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState(null)
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
-  const meta = TYPE_META[form.type]
-  const isJira = form.type === 'jira'
-
-  const validate = () => {
-    if (!form.name.trim()) return 'Name is required'
-    if (!form.webhookUrl.trim()) return isJira ? 'Jira Site URL is required' : 'Webhook URL is required'
-    if (isJira && !form.email.trim()) return 'Account email is required'
-    if (isJira && !form.apiToken.trim()) return 'API token is required'
-    if (isJira && !form.projectKey.trim()) return 'Project key is required'
-    return null
-  }
 
   const save = async () => {
-    const validErr = validate()
+    const validErr = validateForm(form)
     if (validErr) { setErr(validErr); return }
     setSaving(true); setErr(null)
     try {
-      const payload = isJira ? buildJiraPayload(form) : { type: form.type, name: form.name, webhookUrl: form.webhookUrl }
-      onSaved(await createIntegration(payload))
+      onSaved(await createIntegration(buildPayload(form)))
     } catch (e) { setErr(e.message || 'Save failed') }
     setSaving(false)
   }
@@ -150,6 +248,8 @@ function AddModal({ onClose, onSaved }) {
               <option value="webhook" className="bg-navy-900">Generic Webhook</option>
               <option value="teams"   className="bg-navy-900">Microsoft Teams</option>
               <option value="jira"    className="bg-navy-900">Jira</option>
+              <option value="splunk"  className="bg-navy-900">Splunk HEC</option>
+              <option value="qradar"  className="bg-navy-900">IBM QRadar</option>
             </select>
           </div>
 
@@ -159,16 +259,7 @@ function AddModal({ onClose, onSaved }) {
               className={FIELD} />
           </div>
 
-          {isJira
-            ? <JiraFields form={form} set={set} />
-            : (
-              <div>
-                <label className={LABEL}>Webhook URL</label>
-                <input value={form.webhookUrl} onChange={set('webhookUrl')} placeholder={meta.urlHint}
-                  className={FIELD} />
-              </div>
-            )
-          }
+          <TypeFields form={form} set={set} />
 
           {err && <p className="text-red-400 text-xs">{err}</p>}
 
@@ -194,29 +285,30 @@ function EditModal({ integration, onClose, onSaved }) {
   })()
 
   const [form, setForm] = useState({
-    type:       rawType,
-    name:       integration.name       ?? integration.Name       ?? '',
-    webhookUrl: integration.webhookUrl ?? integration.WebhookUrl ?? '',
-    email:      existing.email      ?? '',
-    apiToken:   existing.apiToken   ?? '',
-    projectKey: existing.projectKey ?? '',
-    issueType:  existing.issueType  ?? 'Bug',
+    ...EMPTY_FORM,
+    type:             rawType,
+    name:             integration.name       ?? integration.Name       ?? '',
+    webhookUrl:       integration.webhookUrl ?? integration.WebhookUrl ?? '',
+    email:            existing.email        ?? '',
+    apiToken:         existing.apiToken     ?? '',
+    projectKey:       existing.projectKey   ?? '',
+    issueType:        existing.issueType    ?? 'Bug',
+    splunkToken:      existing.hecToken     ?? '',
+    splunkIndex:      existing.index        ?? 'main',
+    splunkSourceType: existing.sourceType   ?? 'webshield:scan',
+    qradarToken:      existing.apiToken     ?? '',
+    qradarLogSource:  existing.logSourceName ?? 'WebShield',
   })
   const [saving, setSaving] = useState(false)
   const [err, setErr]       = useState(null)
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
-  const isJira = form.type === 'jira'
-  const meta = TYPE_META[form.type] || TYPE_META.webhook
 
   const save = async () => {
-    if (!form.name.trim()) { setErr('Name is required'); return }
-    if (!form.webhookUrl.trim()) { setErr(isJira ? 'Jira Site URL is required' : 'Webhook URL is required'); return }
+    const validErr = validateForm(form)
+    if (validErr) { setErr(validErr); return }
     setSaving(true); setErr(null)
     try {
-      const payload = isJira
-        ? { ...buildJiraPayload(form), id }
-        : { type: form.type, name: form.name, webhookUrl: form.webhookUrl, id }
-      onSaved(await createIntegration(payload))
+      onSaved(await createIntegration({ ...buildPayload(form), id }))
     } catch (e) { setErr(e.message || 'Save failed') }
     setSaving(false)
   }
@@ -232,19 +324,9 @@ function EditModal({ integration, onClose, onSaved }) {
         <div className="space-y-4">
           <div>
             <label className={LABEL}>Name</label>
-            <input value={form.name} onChange={set('name')}
-              className={FIELD} />
+            <input value={form.name} onChange={set('name')} className={FIELD} />
           </div>
-          {isJira
-            ? <JiraFields form={form} set={set} />
-            : (
-              <div>
-                <label className={LABEL}>Webhook URL</label>
-                <input value={form.webhookUrl} onChange={set('webhookUrl')} placeholder={meta.urlHint}
-                  className={FIELD} />
-              </div>
-            )
-          }
+          <TypeFields form={form} set={set} />
           {err && <p className="text-red-400 text-xs">{err}</p>}
           <div className="flex gap-3 pt-2">
             <button onClick={onClose} className="flex-1 text-sm text-gray-400 border border-white/15 rounded-xl py-2.5 hover:text-white transition-colors">Cancel</button>

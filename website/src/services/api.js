@@ -154,7 +154,7 @@ export const startCloudScanOci   = (payload) => request('/api/cloudscan/oci',   
 export const startContainerScan = (payload) => request('/api/containerscan', { method: 'POST', body: JSON.stringify(payload) })
 
 // Web crawler scan
-export const startCrawlScan = (payload) => request('/api/crawlscan', { method: 'POST', body: JSON.stringify(payload) })
+export const startCrawlScan = (payload) => request('/api/scan/crawl', { method: 'POST', body: JSON.stringify(payload) })
 
 // Code scan
 export const scanCodeFiles = (formData) => {
@@ -379,3 +379,39 @@ export const getAgentDetail       = (id)       => request(`/api/agent/${id}`)
 export const decommissionAgent    = (id)       => request(`/api/agent/${id}`, { method: 'DELETE' })
 export const generateAgentToken   = ()         => request('/api/agent/token', { method: 'POST' })
 export const getAgentInstallScript = (platform) => request(`/api/agent/install/${platform}`)
+
+// EASM (External Attack Surface Management)
+export const scanEasm          = (domain) => request('/api/easm/scan', { method: 'POST', body: JSON.stringify({ domain }) })
+export const addEasmMonitor    = (domain) => request('/api/easm/monitor', { method: 'POST', body: JSON.stringify({ domain }) })
+export const getEasmMonitors   = ()       => request('/api/easm/monitors')
+export const removeEasmMonitor = (id)     => request(`/api/easm/monitors/${id}`, { method: 'DELETE' })
+
+// Container image scan
+export const scanContainerImage  = (image) => request('/api/container/image-scan', { method: 'POST', body: JSON.stringify({ image }) })
+export const getImageScanHistory = ()      => request('/api/container/image-scans')
+
+// VMDR
+export const scanVmdr            = (agentId)         => request(`/api/vmdr/scan/${agentId}`, { method: 'POST' })
+export const getVmdrFindings     = (agentId)         => request(`/api/vmdr/findings?agentId=${agentId}`)
+export const getVmdrSummary      = ()                => request('/api/vmdr/summary')
+export const updateFindingStatus = (id, status)      => request(`/api/vmdr/findings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) })
+
+// Patch Deployments
+export const deployPatch         = (data) => request('/api/patch/deploy', { method: 'POST', body: JSON.stringify(data) })
+export const getPatchDeployments = ()     => request('/api/patch/deployments')
+export const getPatchDeployment  = (id)   => request(`/api/patch/deployments/${id}`)
+
+// EDR Behavioral Analysis
+export const runBehavioralAnalysis = (agentId) => request(`/api/edr/behavioral/${agentId}`, { method: 'POST' })
+export const getBehavioralSummary  = ()        => request('/api/edr/behavioral/summary')
+
+// Compliance Deep Scan
+export const deepScanCompliance = (frameworkId, agentId) =>
+  request(`/api/compliance/deep-scan/${frameworkId}?agentId=${agentId}`, { method: 'POST' })
+
+// Compliance
+export const getComplianceFrameworks = ()    => request('/api/compliance/frameworks')
+export const getFrameworkControls    = (id)  => request(`/api/compliance/frameworks/${id}`)
+export const assessCompliance        = (id)  => request(`/api/compliance/assess/${id}`, { method: 'POST' })
+export const exportComplianceReport  = (id)  => blobRequest(`/api/compliance/report/${id}?format=csv`)
+export const getComplianceSummary    = ()    => request('/api/compliance/summary')

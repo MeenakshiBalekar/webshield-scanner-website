@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import {
   Container, ScanLine, Loader2, AlertCircle,
   CheckCircle2, ChevronDown, ChevronUp, Link2, FileText, Trash2,
-  Package, Download, History, Image,
+  Package, Download, History, Image, AlertTriangle,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
@@ -339,7 +339,24 @@ function ImageCveTab() {
   const highCount     = result?.highCount     ?? result?.HighCount     ?? counts.High
   const mediumCount   = result?.mediumCount   ?? result?.MediumCount   ?? counts.Medium
   const lowCount      = result?.lowCount      ?? result?.LowCount      ?? counts.Low
-  const totalPackages = result?.totalPackages ?? result?.TotalPackages ?? null
+  const totalPackages      = result?.totalPackages ?? result?.TotalPackages ?? null
+  const secretsFound       = result?.secretsFound ?? result?.SecretsFound ?? []
+  const benchmarkFindings  = result?.benchmarkFindings ?? result?.BenchmarkFindings ?? null
+
+  const downloadSbom = async (scanId, imageName) => {
+    const token = localStorage.getItem('ws_token')
+    const BASE = import.meta.env.VITE_API_URL || 'https://webshield-backend-api.onrender.com'
+    const res = await fetch(`${BASE}/api/docker/image-scans/${scanId}/sbom`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
+    if (!res.ok) return
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a'); a.href = url
+    a.download = `sbom-${(imageName || 'image').replace(/[/:]/g, '-')}.json`
+    document.body.appendChild(a); a.click(); a.remove()
+    URL.revokeObjectURL(url)
+  }
 
   return (
     <div className="space-y-6">
@@ -372,13 +389,14 @@ function ImageCveTab() {
       {result && (
         <div className="space-y-5">
           {/* Summary cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
             {[
-              { label: 'Critical',        val: criticalCount, cls: 'text-red-400'    },
-              { label: 'High',            val: highCount,     cls: 'text-orange-400' },
-              { label: 'Medium',          val: mediumCount,   cls: 'text-yellow-400' },
-              { label: 'Low',             val: lowCount,      cls: 'text-blue-400'   },
-              { label: 'Total Packages',  val: totalPackages, cls: 'text-white'      },
+              { label: 'Critical',          val: criticalCount,    cls: 'text-red-400'    },
+              { label: 'High',              val: highCount,        cls: 'text-orange-400' },
+              { label: 'Medium',            val: mediumCount,      cls: 'text-yellow-400' },
+              { label: 'Low',               val: lowCount,         cls: 'text-blue-400'   },
+              { label: 'Total Packages',    val: totalPackages,    cls: 'text-white'      },
+              ...(benchmarkFindings != null ? [{ label: 'Benchmark Issues', val: benchmarkFindings, cls: 'text-amber-400' }] : []),
             ].map(({ label, val, cls }) => (
               <div key={label} className="bg-white/3 border border-white/10 rounded-xl px-3 py-3 text-center">
                 <div className={`text-xl font-extrabold ${cls}`}>{val ?? '—'}</div>
@@ -475,6 +493,41 @@ function ImageCveTab() {
               </div>
             </div>
           )}
+
+          {/* Secrets detected */}
+          {secretsFound.length > 0 && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+                <p className="text-sm font-semibold text-red-300">Secrets Detected</p>
+                <span className="ml-auto text-[10px] font-bold bg-red-500/20 border border-red-500/30 text-red-400 px-2 py-0.5 rounded-full">
+                  {secretsFound.length}
+                </span>
+              </div>
+              <div className="space-y-2">
+                {secretsFound.map((s, i) => {
+                  const secretType = field(s, 'secretType', 'SecretType')
+                  const location   = field(s, 'location', 'Location')
+                  const preview    = field(s, 'preview', 'Preview')
+                  return (
+                    <div key={i} className="flex flex-wrap items-center gap-2 text-xs">
+                      {secretType && (
+                        <span className="font-bold uppercase px-2 py-0.5 rounded border bg-red-500/15 text-red-400 border-red-500/30 shrink-0">
+                          {secretType}
+                        </span>
+                      )}
+                      {location && (
+                        <span className="font-mono text-gray-400 truncate">{location}</span>
+                      )}
+                      {preview && (
+                        <span className="font-mono text-xs text-red-300 truncate">{preview}…</span>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -494,8 +547,9 @@ function ImageCveTab() {
               const high   = field(h, 'highCount', 'HighCount') || 0
               const medium = field(h, 'mediumCount', 'MediumCount') || 0
               const low    = field(h, 'lowCount', 'LowCount') || 0
+              const scanId = field(h, 'id', 'Id', 'scanId', 'ScanId')
               return (
-                <div key={i} className="flex items-center gap-4 px-4 py-3 hover:bg-white/3 transition-colors">
+                <div key={i} className="group flex items-center gap-4 px-4 py-3 hover:bg-white/3 transition-colors">
                   <Package className="w-4 h-4 text-gray-600 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-mono text-white truncate">{img || '—'}</p>
@@ -507,6 +561,14 @@ function ImageCveTab() {
                     {medium > 0 && <span className="text-yellow-400 font-bold">{medium}M</span>}
                     {low > 0 && <span className="text-blue-400 font-bold">{low}L</span>}
                     {!crit && !high && !medium && !low && <span className="text-green-400 font-semibold">Clean</span>}
+                    {scanId && (
+                      <button
+                        onClick={() => downloadSbom(scanId, img)}
+                        className="opacity-0 group-hover:opacity-100 flex items-center gap-1 text-[10px] font-semibold text-gray-400 hover:text-white border border-white/15 hover:border-white/30 px-2 py-0.5 rounded transition-all"
+                      >
+                        <Download className="w-3 h-3" /> SBOM
+                      </button>
+                    )}
                   </div>
                 </div>
               )

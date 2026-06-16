@@ -73,71 +73,106 @@ function SubdomainsTab({ subdomains }) {
     <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden">
       <div className="grid grid-cols-12 px-5 py-3 border-b border-white/10 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
         <span className="col-span-1" />
-        <span className="col-span-4">Subdomain</span>
+        <span className="col-span-5">Subdomain</span>
         <span className="col-span-2">IP</span>
-        <span className="col-span-3">Open Ports</span>
+        <span className="col-span-2">Open Ports</span>
         <span className="col-span-2 text-right">Risk</span>
       </div>
       <div className="divide-y divide-white/5">
         {subdomains.map((s, i) => {
-          const sub   = field(s, 'subdomain', 'Subdomain', 'host', 'Host') ?? '—'
-          const ip    = field(s, 'ip', 'Ip', 'IP') ?? '—'
-          const ports = field(s, 'openPorts', 'OpenPorts', 'ports', 'Ports') ?? []
-          const risk  = field(s, 'risk', 'Risk') ?? 'Info'
-          const dns   = field(s, 'dnsRecords', 'DnsRecords', 'records', 'Records') ?? {}
+          const sub          = field(s, 'subdomain', 'Subdomain', 'host', 'Host') ?? '—'
+          const ip           = field(s, 'ip', 'Ip', 'IP') ?? '—'
+          const ports        = field(s, 'openPorts', 'OpenPorts', 'ports', 'Ports') ?? []
+          const risk         = field(s, 'risk', 'Risk') ?? 'Info'
+          const dns          = field(s, 'dnsRecords', 'DnsRecords', 'records', 'Records') ?? {}
+          const source       = field(s, 'source', 'Source') ?? null
+          const takeoverRisk = field(s, 'takeoverRisk', 'TakeoverRisk') ?? null
+          const tech         = field(s, 'tech', 'Tech') ?? null
           const hasDns = Object.keys(dns).length > 0 || Object.keys(s).some(k => ['A','AAAA','MX','TXT','CNAME','NS'].includes(k.toUpperCase()))
           const isOpen = expanded[i]
+          const hasExpanded = hasDns || (tech && Object.values(tech).some(v => v != null))
+
+          const sourceBadgeCls = source === 'CT'
+            ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
+            : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
 
           return (
             <React.Fragment key={i}>
               <div
                 className="grid grid-cols-12 px-5 py-3 items-center hover:bg-white/3 transition-colors cursor-pointer"
-                onClick={() => hasDns && setExpanded(e => ({ ...e, [i]: !e[i] }))}
+                onClick={() => hasExpanded && setExpanded(e => ({ ...e, [i]: !e[i] }))}
               >
                 <div className="col-span-1">
-                  {hasDns && (isOpen
+                  {hasExpanded && (isOpen
                     ? <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
                     : <ChevronRight className="w-3.5 h-3.5 text-gray-500" />)}
                 </div>
-                <div className="col-span-4 min-w-0">
-                  <span className="text-xs font-mono text-green-300 truncate block">{sub}</span>
+                <div className="col-span-5 min-w-0 flex items-center gap-1.5 flex-wrap">
+                  <span className="text-xs font-mono text-green-300 truncate">{sub}</span>
+                  {source && (
+                    <span className={`inline-flex text-[10px] font-bold px-1.5 py-0.5 rounded border shrink-0 ${sourceBadgeCls}`}>{source}</span>
+                  )}
                 </div>
                 <div className="col-span-2">
                   <span className="text-xs font-mono text-gray-400">{ip}</span>
                 </div>
-                <div className="col-span-3">
+                <div className="col-span-2">
                   <div className="flex flex-wrap gap-1">
-                    {(Array.isArray(ports) ? ports : []).slice(0, 6).map(p => (
+                    {(Array.isArray(ports) ? ports : []).slice(0, 4).map(p => (
                       <span key={p} className="text-[10px] font-mono bg-white/5 border border-white/10 text-gray-300 px-1.5 py-0.5 rounded">{p}</span>
                     ))}
-                    {ports.length > 6 && <span className="text-[10px] text-gray-500">+{ports.length - 6}</span>}
+                    {ports.length > 4 && <span className="text-[10px] text-gray-500">+{ports.length - 4}</span>}
                   </div>
                 </div>
-                <div className="col-span-2 text-right">
+                <div className="col-span-2 text-right flex items-center justify-end gap-1.5 flex-wrap">
+                  {takeoverRisk && (
+                    <span className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded border bg-orange-500/10 text-orange-400 border-orange-500/20 shrink-0">
+                      <AlertTriangle className="w-2.5 h-2.5" /> Takeover Risk
+                    </span>
+                  )}
                   <RiskBadge risk={risk} />
                 </div>
               </div>
-              {isOpen && hasDns && (
-                <div className="px-8 pb-3 pt-1 bg-white/2 border-b border-white/5">
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">DNS Records</p>
-                  <div className="space-y-1">
-                    {Object.entries(dns).map(([type, val]) => (
-                      <div key={type} className="flex gap-2 text-xs">
-                        <span className="w-12 text-green-400 font-mono font-bold shrink-0">{type}</span>
-                        <span className="text-gray-300 font-mono break-all">{Array.isArray(val) ? val.join(', ') : String(val)}</span>
+              {isOpen && hasExpanded && (
+                <div className="px-8 pb-3 pt-1 bg-white/2 border-b border-white/5 space-y-3">
+                  {tech && Object.values(tech).some(v => v != null) && (
+                    <div>
+                      <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Tech Stack</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[
+                          { key: 'webServer',      label: tech.webServer      ?? tech.WebServer },
+                          { key: 'framework',      label: tech.framework      ?? tech.Framework },
+                          { key: 'cdn',            label: tech.cdn            ?? tech.Cdn },
+                          { key: 'cmsOrPlatform',  label: tech.cmsOrPlatform  ?? tech.CmsOrPlatform },
+                        ].filter(({ label }) => label != null).map(({ key, label }) => (
+                          <span key={key} className="bg-white/5 border border-white/10 text-gray-300 text-[10px] px-2 py-0.5 rounded">{label}</span>
+                        ))}
                       </div>
-                    ))}
-                    {['A','AAAA','MX','TXT','CNAME','NS'].map(t => {
-                      const v = s[t] || s[t.toLowerCase()]
-                      if (!v || dns[t]) return null
-                      return (
-                        <div key={t} className="flex gap-2 text-xs">
-                          <span className="w-12 text-green-400 font-mono font-bold shrink-0">{t}</span>
-                          <span className="text-gray-300 font-mono break-all">{Array.isArray(v) ? v.join(', ') : String(v)}</span>
-                        </div>
-                      )
-                    })}
-                  </div>
+                    </div>
+                  )}
+                  {hasDns && (
+                    <div>
+                      <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">DNS Records</p>
+                      <div className="space-y-1">
+                        {Object.entries(dns).map(([type, val]) => (
+                          <div key={type} className="flex gap-2 text-xs">
+                            <span className="w-12 text-green-400 font-mono font-bold shrink-0">{type}</span>
+                            <span className="text-gray-300 font-mono break-all">{Array.isArray(val) ? val.join(', ') : String(val)}</span>
+                          </div>
+                        ))}
+                        {['A','AAAA','MX','TXT','CNAME','NS'].map(t => {
+                          const v = s[t] || s[t.toLowerCase()]
+                          if (!v || dns[t]) return null
+                          return (
+                            <div key={t} className="flex gap-2 text-xs">
+                              <span className="w-12 text-green-400 font-mono font-bold shrink-0">{t}</span>
+                              <span className="text-gray-300 font-mono break-all">{Array.isArray(v) ? v.join(', ') : String(v)}</span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </React.Fragment>
@@ -424,11 +459,14 @@ export default function EasmPage() {
     setScanning(false)
   }
 
-  const subdomains = result ? (field(result,'subdomains','Subdomains') ?? []) : []
-  const certs      = result ? (field(result,'certificates','Certificates') ?? []) : []
-  const services   = result ? (field(result,'exposedServices','ExposedServices') ?? []) : []
-  const dnsChecks  = result ? (field(result,'dnsChecks','DnsChecks') ?? []) : []
-  const riskScore  = result ? field(result,'riskScore','RiskScore') : null
+  const subdomains    = result ? (field(result,'subdomains','Subdomains') ?? []) : []
+  const certs         = result ? (field(result,'certificates','Certificates') ?? []) : []
+  const services      = result ? (field(result,'exposedServices','ExposedServices') ?? []) : []
+  const dnsChecks     = result ? (field(result,'dnsChecks','DnsChecks') ?? []) : []
+  const riskScore     = result ? field(result,'riskScore','RiskScore') : null
+  const riskLevel     = result ? field(result,'riskLevel','RiskLevel') : null
+  const ctSubdomains  = result ? field(result,'ctSubdomainsFound','CtSubdomainsFound') : null
+  const takeoverRisks = result ? (field(result,'takeoverRisks','TakeoverRisks') ?? []) : []
   const scannedDomain = result ? (field(result,'domain','Domain') || domain) : ''
 
   const tabCounts = {
@@ -499,6 +537,11 @@ export default function EasmPage() {
               <div className="flex flex-wrap gap-4 items-center">
                 <div className="bg-white/3 border border-white/10 rounded-2xl p-5">
                   <RiskRing score={riskScore} />
+                  {riskLevel && (
+                    <p className={`text-[11px] font-bold mt-2 text-center ${(RISK_STYLE[riskLevel] || RISK_STYLE.Info).split(' ').find(c => c.startsWith('text-'))}`}>
+                      {riskLevel}
+                    </p>
+                  )}
                 </div>
                 <div className="flex flex-wrap gap-3 flex-1">
                   {[
@@ -512,6 +555,12 @@ export default function EasmPage() {
                       <p className="text-xs text-gray-400 mt-0.5">{label}</p>
                     </div>
                   ))}
+                  {ctSubdomains != null && (
+                    <div className="bg-white/3 border border-white/10 rounded-xl px-5 py-4 min-w-[110px]">
+                      <p className="text-2xl font-extrabold text-purple-400">{ctSubdomains}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">CT Subdomains</p>
+                    </div>
+                  )}
                   {field(result,'scannedAt','ScannedAt') && (
                     <div className="bg-white/3 border border-white/10 rounded-xl px-5 py-4 min-w-[140px]">
                       <p className="text-xs text-gray-500 mb-0.5">Scanned</p>
@@ -522,6 +571,16 @@ export default function EasmPage() {
                   )}
                 </div>
               </div>
+
+              {/* Takeover risk warning banner */}
+              {takeoverRisks.length > 0 && (
+                <div className="flex items-center gap-3 bg-orange-500/10 border border-orange-500/30 rounded-xl px-4 py-3">
+                  <AlertTriangle className="w-4 h-4 text-orange-400 shrink-0" />
+                  <span className="text-sm text-orange-300">
+                    <span className="font-bold text-orange-400">{takeoverRisks.length}</span> potential subdomain takeover risk{takeoverRisks.length !== 1 ? 's' : ''} detected — check expanded rows for details
+                  </span>
+                </div>
+              )}
 
               {/* Tab bar */}
               <div className="flex flex-wrap gap-1 bg-white/5 border border-white/10 rounded-xl p-1 w-fit">

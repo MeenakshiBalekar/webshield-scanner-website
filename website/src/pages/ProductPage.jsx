@@ -536,6 +536,80 @@ function ReportPanel({ scanUrl, scanResult }) {
   )
 }
 
+/* ── Score breakdown panel ── */
+function ScoreBreakdownPanel({ bkd }) {
+  const [open, setOpen] = useState(false)
+
+  if (!bkd) return null
+
+  const criticalPenalty = bkd.criticalPenalty ?? bkd.CriticalPenalty ?? 0
+  const highPenalty     = bkd.highPenalty     ?? bkd.HighPenalty     ?? 0
+  const mediumPenalty   = bkd.mediumPenalty   ?? bkd.MediumPenalty   ?? 0
+  const lowPenalty      = bkd.lowPenalty      ?? bkd.LowPenalty      ?? 0
+
+  if (!criticalPenalty && !highPenalty && !mediumPenalty && !lowPenalty) return null
+
+  const criticalCount = bkd.criticalCount ?? bkd.CriticalCount ?? 0
+  const highCount     = bkd.highCount     ?? bkd.HighCount     ?? 0
+  const mediumCount   = bkd.mediumCount   ?? bkd.MediumCount   ?? 0
+  const lowCount      = bkd.lowCount      ?? bkd.LowCount      ?? 0
+  const totalPenalty  = bkd.totalPenalty  ?? bkd.TotalPenalty  ?? (criticalPenalty + highPenalty + mediumPenalty + lowPenalty)
+
+  const rows = [
+    { label: 'Critical', count: criticalCount, penaltyEach: criticalCount > 0 ? Math.round(criticalPenalty / criticalCount) : 0, total: criticalPenalty, theme: SEV_THEME.Critical },
+    { label: 'High',     count: highCount,     penaltyEach: highCount     > 0 ? Math.round(highPenalty     / highCount)     : 0, total: highPenalty,     theme: SEV_THEME.High     },
+    { label: 'Medium',   count: mediumCount,   penaltyEach: mediumCount   > 0 ? Math.round(mediumPenalty   / mediumCount)   : 0, total: mediumPenalty,   theme: SEV_THEME.Medium   },
+    { label: 'Low',      count: lowCount,      penaltyEach: lowCount      > 0 ? Math.round(lowPenalty      / lowCount)      : 0, total: lowPenalty,      theme: SEV_THEME.Low      },
+  ].filter((r) => r.count > 0)
+
+  return (
+    <div className="bg-white/3 border border-white/10 rounded-2xl mb-4 overflow-hidden">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-white/3 transition-colors"
+      >
+        <span className="text-xs font-semibold text-gray-400">Score breakdown</span>
+        <span className="text-gray-500 text-xs">{open ? '▴' : '▾'}</span>
+      </button>
+
+      {open && (
+        <div className="border-t border-white/10 px-4 pb-4 pt-3">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                <th className="text-left pb-2">Severity</th>
+                <th className="text-center pb-2">Count</th>
+                <th className="text-center pb-2">Penalty / finding</th>
+                <th className="text-right pb-2">Total deduction</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {rows.map(({ label, count, penaltyEach, total, theme }) => (
+                <tr key={label}>
+                  <td className="py-2">
+                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded text-white ${theme.badge}`}>
+                      {label}
+                    </span>
+                  </td>
+                  <td className="py-2 text-center text-gray-300 font-semibold">{count}</td>
+                  <td className="py-2 text-center text-gray-400">{penaltyEach > 0 ? `-${penaltyEach}` : '—'}</td>
+                  <td className={`py-2 text-right font-bold ${theme.text}`}>-{total}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t border-white/15">
+                <td colSpan={3} className="pt-2.5 text-xs font-semibold text-gray-400">Total Penalty</td>
+                <td className="pt-2.5 text-right text-sm font-extrabold text-white">-{totalPenalty}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function ProductPage() {
   const { type } = useParams()
   const { logout } = useAuth()
@@ -650,6 +724,7 @@ export default function ProductPage() {
     ?? result?.summary?.potentialCount ?? result?.Summary?.PotentialCount ?? null
   const scoreReason    = result?.scoreBreakdown?.reason   ?? result?.ScoreBreakdown?.Reason
     ?? result?.scoreBreakdown?.Reason  ?? result?.ScoreBreakdown?.reason  ?? null
+  const bkd = result?.scoreBreakdown ?? result?.ScoreBreakdown ?? null
   const urgentGroups   = (findingGroups ?? []).filter((g) => {
     const s = (g.severity ?? g.Severity ?? '').toLowerCase()
     return s === 'critical' || s === 'high'
@@ -1006,6 +1081,9 @@ export default function ProductPage() {
                 )}
               </div>
             )}
+
+            {/* Score breakdown panel */}
+            <ScoreBreakdownPanel bkd={bkd} />
 
             {/* Schedule scan button */}
             <div className="flex items-center justify-end mb-4">

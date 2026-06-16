@@ -178,6 +178,7 @@ function FindingCard({ item }) {
   const passed          = item.passed === true || (item.status?.toLowerCase() === 'passed') || (item.status?.toLowerCase() === 'pass')
   const checkName       = item.checkName       || item.name           || item.header         || 'Unknown check'
   const severity        = item.severity        || item.Severity       || ''
+  const findingType     = item.findingType     || item.FindingType    || null
   const remediationId   = item.remediationId   || item.RemediationId  || ''
   const evidence        = item.evidence        || item.Evidence       || null
   const technicalDetails = item.technicalDetails || item.TechnicalDetails || item.details     || null
@@ -208,6 +209,16 @@ function FindingCard({ item }) {
           <span className="text-sm font-semibold text-white">{checkName}</span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          {findingType === 'Confirmed' && (
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded border bg-red-500/15 text-red-400 border-red-500/30 shrink-0">
+              Confirmed Issue
+            </span>
+          )}
+          {findingType === 'Potential' && (
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded border bg-orange-500/15 text-orange-400 border-orange-500/30 shrink-0">
+              Attack Surface
+            </span>
+          )}
           {severity && (
             <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded text-white ${c.badge}`}>
               {severity}
@@ -468,6 +479,7 @@ export default function ProductPage() {
   const [crawlerEnabled, setCrawlerEnabled] = useState(false)
   const [crawlDepth, setCrawlDepth] = useState('2')
   const [maxPages, setMaxPages] = useState('25')
+  const [showAllResults, setShowAllResults] = useState(false)
 
   if (!product) {
     return (
@@ -490,6 +502,7 @@ export default function ProductPage() {
     setResult(null)
     setTrend([])
     setScheduled(false)
+    setShowAllResults(false)
     try {
       let data
       const base = { url: url.trim(), mode: scanMode }
@@ -550,6 +563,15 @@ export default function ProductPage() {
     ?? (result?.previousScore != null && result?.securityScore != null
         ? result.securityScore - result.previousScore : null)
   const deltaUp = scoreDelta != null && scoreDelta >= 0
+
+  const topIssues      = result?.topIssues      ?? result?.TopIssues      ?? null
+  const confirmedCount = result?.confirmedCount  ?? result?.ConfirmedCount
+    ?? result?.summary?.confirmedCount ?? result?.Summary?.ConfirmedCount ?? null
+  const potentialCount = result?.potentialCount  ?? result?.PotentialCount
+    ?? result?.summary?.potentialCount ?? result?.Summary?.PotentialCount ?? null
+  const scoreReason    = result?.scoreBreakdown?.reason   ?? result?.ScoreBreakdown?.Reason
+    ?? result?.scoreBreakdown?.Reason  ?? result?.ScoreBreakdown?.reason  ?? null
+  const displayResults = (topIssues && !showAllResults) ? topIssues : results
 
   return (
     <div className="min-h-screen page-bg flex flex-col">
@@ -862,6 +884,9 @@ export default function ProductPage() {
                 </div>
                 {trend.length >= 2 && <Sparkline points={trend} />}
                 <p className="text-xs text-gray-400 mt-1">Score</p>
+                {scoreReason && (
+                  <p className="text-[10px] text-gray-500 mt-1 leading-snug" title={scoreReason}>{scoreReason}</p>
+                )}
               </div>
 
               {/* Passed */}
@@ -876,6 +901,22 @@ export default function ProductPage() {
                 <p className="text-xs text-gray-400 mt-1">Failed</p>
               </div>
             </div>
+
+            {/* Confirmed / Potential counts */}
+            {(confirmedCount != null || potentialCount != null) && (
+              <div className="flex flex-wrap gap-3 mb-4">
+                {confirmedCount != null && (
+                  <div className="flex items-center gap-1.5 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl px-3 py-2 text-xs font-semibold">
+                    🔴 {confirmedCount} Confirmed Issue{confirmedCount !== 1 ? 's' : ''}
+                  </div>
+                )}
+                {potentialCount != null && (
+                  <div className="flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 text-orange-400 rounded-xl px-3 py-2 text-xs font-semibold">
+                    🟠 {potentialCount} Potential Risk{potentialCount !== 1 ? 's' : ''}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Schedule scan button */}
             <div className="flex items-center justify-end mb-4">
@@ -898,14 +939,26 @@ export default function ProductPage() {
 
             {/* Result rows */}
             <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden mb-2">
-              <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
-                <p className="text-sm font-semibold text-white">Scan Results</p>
-                <p className="text-xs text-gray-500">{results.length} checks · click a row to see details</p>
+              <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold text-white">
+                  {topIssues && !showAllResults ? 'Top Issues' : 'Scan Results'}
+                </p>
+                <div className="flex items-center gap-3">
+                  <p className="text-xs text-gray-500">{displayResults.length} checks · click a row to see details</p>
+                  {topIssues && (
+                    <button
+                      onClick={() => setShowAllResults((v) => !v)}
+                      className="text-xs font-semibold text-crimson-400 hover:text-crimson-300 transition-colors shrink-0"
+                    >
+                      {showAllResults ? '← Top Issues' : `View All (${results.length})`}
+                    </button>
+                  )}
+                </div>
               </div>
-              {results.length === 0 && (
+              {displayResults.length === 0 && (
                 <p className="text-gray-500 text-sm py-10 text-center">No results returned.</p>
               )}
-              {results.map((item, i) => (
+              {displayResults.map((item, i) => (
                 <FindingCard key={i} item={item} />
               ))}
             </div>

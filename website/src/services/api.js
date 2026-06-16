@@ -154,7 +154,7 @@ export const startCloudScanOci   = (payload) => request('/api/cloudscan/oci',   
 export const startContainerScan = (payload) => request('/api/containerscan', { method: 'POST', body: JSON.stringify(payload) })
 
 // Web crawler scan
-export const startCrawlScan = (payload) => request('/api/crawlscan', { method: 'POST', body: JSON.stringify(payload) })
+export const startCrawlScan = (payload) => request('/api/scan/crawl', { method: 'POST', body: JSON.stringify(payload) })
 
 // Code scan
 export const scanCodeFiles = (formData) => {
@@ -379,6 +379,16 @@ export const getAgentDetail       = (id)       => request(`/api/agent/${id}`)
 export const decommissionAgent    = (id)       => request(`/api/agent/${id}`, { method: 'DELETE' })
 export const generateAgentToken   = ()         => request('/api/agent/token', { method: 'POST' })
 export const getAgentInstallScript = (platform) => request(`/api/agent/install/${platform}`)
+
+// EASM (External Attack Surface Management)
+export const scanEasm          = (domain) => request('/api/easm/scan', { method: 'POST', body: JSON.stringify({ domain }) })
+export const addEasmMonitor    = (domain) => request('/api/easm/monitor', { method: 'POST', body: JSON.stringify({ domain }) })
+export const getEasmMonitors   = ()       => request('/api/easm/monitors')
+export const removeEasmMonitor = (id)     => request(`/api/easm/monitors/${id}`, { method: 'DELETE' })
+
+// Container image scan
+export const scanContainerImage  = (image) => request('/api/container/image-scan', { method: 'POST', body: JSON.stringify({ image }) })
+export const getImageScanHistory = ()      => request('/api/container/image-scans')
 
 // VMDR
 export const scanVmdr            = (agentId)         => request(`/api/vmdr/scan/${agentId}`, { method: 'POST' })

@@ -409,6 +409,20 @@ export const getBehavioralSummary  = ()        => request('/api/edr/behavioral/s
 export const deepScanCompliance = (frameworkId, agentId) =>
   request(`/api/compliance/deep-scan/${frameworkId}?agentId=${agentId}`, { method: 'POST' })
 
+// Compliance evidence export (blob)
+export const downloadComplianceEvidence = (scanId, frameworkId) =>
+  blobRequest(`/api/compliance/${scanId}/${frameworkId}/evidence`)
+
+// Kubernetes scan
+export const scanKubernetes = (payload) => request('/api/k8s/scan', { method: 'POST', body: JSON.stringify(payload) })
+
+// VMDR host vulnerabilities
+export const getAgentVulnerabilities = (agentId) => request(`/api/agent/scans/${agentId}/vulnerabilities`)
+
+// EASM history + diff
+export const getEasmHistory = (domain) => request(`/api/easm/history/${encodeURIComponent(domain)}`)
+export const getEasmDiff    = (domain, fromScanId) => request(`/api/easm/diff/${encodeURIComponent(domain)}?from=${fromScanId}`)
+
 // Compliance
 export const getComplianceFrameworks = ()    => request('/api/compliance/frameworks')
 export const getFrameworkControls    = (id)  => request(`/api/compliance/frameworks/${id}`)

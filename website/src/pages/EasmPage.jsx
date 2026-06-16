@@ -431,11 +431,282 @@ function Empty({ text }) {
   )
 }
 
+/* ── Tab 5: History ── */
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://webshield-backend-api.onrender.com'
+
+function HistoryTab({ domain }) {
+  const [history, setHistory]           = useState([])
+  const [diff, setDiff]                 = useState(null)
+  const [loading, setLoading]           = useState(false)
+  const [diffLoading, setDiffLoading]   = useState(false)
+  const [selectedScan, setSelectedScan] = useState(null)
+
+  useEffect(() => {
+    if (!domain) return
+    setLoading(true)
+    const token = localStorage.getItem('ws_token')
+    fetch(`${BASE_URL}/api/easm/history/${encodeURIComponent(domain)}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
+      .then(r => r.json())
+      .then(data => setHistory(Array.isArray(data) ? data : []))
+      .catch(() => setHistory([]))
+      .finally(() => setLoading(false))
+  }, [domain])
+
+  const handleViewDiff = async (scanId) => {
+    setSelectedScan(scanId)
+    setDiff(null)
+    setDiffLoading(true)
+    const token = localStorage.getItem('ws_token')
+    try {
+      const res = await fetch(
+        `${BASE_URL}/api/easm/diff/${encodeURIComponent(domain)}?from=${scanId}`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      )
+      const data = await res.json()
+      setDiff(data)
+    } catch {
+      setDiff(null)
+    }
+    setDiffLoading(false)
+  }
+
+  const scoreColor = (score) => {
+    if (score < 25) return 'text-green-400'
+    if (score < 50) return 'text-amber-400'
+    if (score < 75) return 'text-orange-400'
+    return 'text-red-400'
+  }
+
+  const fmtDateTime = (iso) => {
+    if (!iso) return '—'
+    const d = new Date(iso)
+    return d.toLocaleString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    })
+  }
+
+  if (!domain) {
+    return <Empty text="Run a scan first to see history." />
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16 gap-2 text-gray-500 text-sm">
+        <Loader2 className="w-5 h-5 animate-spin" /> Loading history…
+      </div>
+    )
+  }
+
+  if (!history.length) {
+    return <Empty text="No scan history found for this domain." />
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Timeline */}
+      <div className="bg-white/3 border border-white/10 rounded-2xl divide-y divide-white/5">
+        {history.map((scan, i) => {
+          const scanId         = field(scan, 'scanId', 'ScanId', 'id', 'Id') ?? String(i)
+          const scannedAt      = field(scan, 'scannedAt', 'ScannedAt', 'createdAt', 'CreatedAt')
+          const riskScore      = field(scan, 'riskScore', 'RiskScore')
+          const riskLevel      = field(scan, 'riskLevel', 'RiskLevel') ?? 'Info'
+          const subdomainCount = field(scan, 'subdomainCount', 'SubdomainCount')
+          const serviceCount   = field(scan, 'exposedServiceCount', 'ExposedServiceCount', 'serviceCount', 'ServiceCount')
+          const isSelected     = selectedScan === scanId
+
+          return (
+            <div
+              key={scanId}
+              className={`group flex items-center gap-4 px-5 py-4 transition-colors ${isSelected ? 'bg-white/5' : 'hover:bg-white/3'}`}
+            >
+              {/* Timeline dot */}
+              <div className="flex flex-col items-center shrink-0">
+                <div className={`w-2.5 h-2.5 rounded-full border-2 ${i === 0 ? 'border-green-400 bg-green-400/30' : 'border-gray-600 bg-gray-700'}`} />
+                {i < history.length - 1 && <div className="w-px h-6 bg-white/10 mt-1" />}
+              </div>
+
+              {/* Date */}
+              <div className="w-44 shrink-0">
+                <p className="text-xs font-mono text-white">{fmtDateTime(scannedAt)}</p>
+                {i === 0 && <p className="text-[10px] text-green-400 font-semibold mt-0.5">Latest</p>}
+              </div>
+
+              {/* Risk score */}
+              {riskScore != null && (
+                <div className="w-20 shrink-0">
+                  <span className={`text-lg font-extrabold ${scoreColor(riskScore)}`}>{riskScore}</span>
+                  <span className="text-[10px] text-gray-600">/100</span>
+                </div>
+              )}
+
+              {/* Risk level badge */}
+              <div className="w-24 shrink-0">
+                <RiskBadge risk={riskLevel} />
+              </div>
+
+              {/* Count chips */}
+              <div className="flex gap-2 flex-1 flex-wrap">
+                {subdomainCount != null && (
+                  <span className="text-[10px] font-mono bg-white/5 border border-white/10 text-gray-300 px-2 py-0.5 rounded">
+                    {subdomainCount} subdomains
+                  </span>
+                )}
+                {serviceCount != null && (
+                  <span className="text-[10px] font-mono bg-white/5 border border-white/10 text-gray-300 px-2 py-0.5 rounded">
+                    {serviceCount} services
+                  </span>
+                )}
+              </div>
+
+              {/* View Diff button */}
+              <button
+                onClick={() => handleViewDiff(scanId)}
+                disabled={diffLoading && isSelected}
+                className="shrink-0 flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg border transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 bg-white/5 hover:bg-white/10 border-white/15 text-gray-300 hover:text-white disabled:opacity-40"
+              >
+                {diffLoading && isSelected
+                  ? <Loader2 className="w-3 h-3 animate-spin" />
+                  : <RefreshCw className="w-3 h-3" />}
+                View Diff
+              </button>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Diff panel */}
+      {(diffLoading || diff) && (
+        <div className="bg-white/3 border border-white/10 rounded-2xl p-5 space-y-5">
+          {diffLoading ? (
+            <div className="flex items-center gap-2 text-gray-400 text-sm py-4 justify-center">
+              <Loader2 className="w-4 h-4 animate-spin" /> Loading diff…
+            </div>
+          ) : diff && (
+            <>
+              {/* Diff header */}
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-bold text-white">
+                  Changes:{' '}
+                  <span className="font-mono text-gray-400 text-xs">{fmtDateTime(diff.from)}</span>
+                  {' → '}
+                  <span className="font-mono text-gray-400 text-xs">{diff.to ? fmtDateTime(diff.to) : 'now'}</span>
+                </p>
+                <button
+                  onClick={() => { setDiff(null); setSelectedScan(null) }}
+                  className="text-gray-500 hover:text-white transition-colors text-sm font-bold px-2 py-0.5 rounded hover:bg-white/10"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Check if everything is empty */}
+              {(!diff.newSubdomains?.length && !diff.removedSubdomains?.length &&
+                !diff.riskChanges?.length && !diff.portChanges?.length) ? (
+                <p className="text-sm text-gray-500 py-4 text-center">No changes detected between these scans.</p>
+              ) : (
+                <div className="space-y-5">
+                  {/* New Subdomains */}
+                  {diff.newSubdomains?.length > 0 && (
+                    <div>
+                      <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">New Subdomains</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {diff.newSubdomains.map(sub => (
+                          <span key={sub} className="bg-green-500/10 text-green-400 border-green-500/30 text-xs font-mono px-2 py-0.5 rounded border">
+                            + {sub}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Removed Subdomains */}
+                  {diff.removedSubdomains?.length > 0 && (
+                    <div>
+                      <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Removed Subdomains</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {diff.removedSubdomains.map(sub => (
+                          <span key={sub} className="bg-red-500/10 text-red-400 border-red-500/30 text-xs font-mono px-2 py-0.5 rounded border">
+                            − {sub}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Risk Level Changes */}
+                  {diff.riskChanges?.length > 0 && (
+                    <div>
+                      <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Risk Level Changes</p>
+                      <div className="bg-white/3 border border-white/10 rounded-xl overflow-hidden">
+                        <div className="grid grid-cols-3 px-4 py-2 border-b border-white/10 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+                          <span>Subdomain</span>
+                          <span>From</span>
+                          <span>To</span>
+                        </div>
+                        <div className="divide-y divide-white/5">
+                          {diff.riskChanges.map((rc, i) => (
+                            <div key={i} className="grid grid-cols-3 px-4 py-2.5 items-center">
+                              <span className="text-xs font-mono text-gray-300 truncate">{rc.subdomain}</span>
+                              <span><RiskBadge risk={rc.from} /></span>
+                              <span><RiskBadge risk={rc.to} /></span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Port Changes */}
+                  {diff.portChanges?.length > 0 && (
+                    <div>
+                      <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Port Changes</p>
+                      <div className="bg-white/3 border border-white/10 rounded-xl overflow-hidden">
+                        <div className="grid grid-cols-3 px-4 py-2 border-b border-white/10 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+                          <span>Host</span>
+                          <span>Opened</span>
+                          <span>Closed</span>
+                        </div>
+                        <div className="divide-y divide-white/5">
+                          {diff.portChanges.map((pc, i) => (
+                            <div key={i} className="grid grid-cols-3 px-4 py-2.5 items-center gap-2">
+                              <span className="text-xs font-mono text-gray-300 truncate">{pc.host}</span>
+                              <div className="flex flex-wrap gap-1">
+                                {(pc.opened ?? []).map(p => (
+                                  <span key={p} className="bg-green-500/10 text-green-400 border-green-500/30 text-xs font-mono px-2 py-0.5 rounded border">{p}</span>
+                                ))}
+                                {!pc.opened?.length && <span className="text-[10px] text-gray-600">—</span>}
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {(pc.closed ?? []).map(p => (
+                                  <span key={p} className="bg-red-500/10 text-red-400 border-red-500/30 text-xs font-mono px-2 py-0.5 rounded border">{p}</span>
+                                ))}
+                                {!pc.closed?.length && <span className="text-[10px] text-gray-600">—</span>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 const TABS = [
   { id: 'subdomains', label: 'Subdomains'       },
   { id: 'certs',      label: 'Certificates'     },
   { id: 'services',   label: 'Exposed Services' },
   { id: 'dns',        label: 'DNS Security'     },
+  { id: 'history',    label: 'History'          },
 ]
 
 export default function EasmPage() {
@@ -606,6 +877,7 @@ export default function EasmPage() {
               {tab === 'certs'      && <CertificatesTab certificates={certs} />}
               {tab === 'services'   && <ExposedServicesTab services={services} />}
               {tab === 'dns'        && <DnsSecurityTab checks={dnsChecks} />}
+              {tab === 'history'    && <HistoryTab domain={scannedDomain} />}
             </>
           )}
 

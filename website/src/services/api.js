@@ -409,12 +409,16 @@ export const getBehavioralSummary  = ()        => request('/api/edr/behavioral/s
 export const deepScanCompliance = (frameworkId, agentId) =>
   request(`/api/compliance/deep-scan/${frameworkId}?agentId=${agentId}`, { method: 'POST' })
 
-// Compliance evidence export (blob)
-export const downloadComplianceEvidence = (scanId, frameworkId) =>
-  blobRequest(`/api/compliance/${scanId}/${frameworkId}/evidence`)
+// Compliance evidence — returns JSON artifacts per control
+export const fetchComplianceEvidence = (assessmentId) =>
+  request(`/api/compliance/assess/${assessmentId}/evidence`, { method: 'POST' })
 
-// Kubernetes scan
-export const scanKubernetes = (payload) => request('/api/k8s/scan', { method: 'POST', body: JSON.stringify(payload) })
+// Kubernetes audit scan
+export const scanKubernetes = (payload) => request('/api/kubernetes/audit', { method: 'POST', body: JSON.stringify(payload) })
+
+// Package CVE Scanner (agent-based)
+export const scanAgentPackages  = (agentId) => request(`/api/agent/${agentId}/packages/scan`, { method: 'POST' })
+export const getAgentPackageCves = (agentId) => request(`/api/agent/${agentId}/package-cves`)
 
 // VMDR host vulnerabilities
 export const getAgentVulnerabilities = (agentId) => request(`/api/agent/scans/${agentId}/vulnerabilities`)

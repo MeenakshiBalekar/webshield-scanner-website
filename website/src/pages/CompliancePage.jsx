@@ -8,7 +8,7 @@ import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import {
   getFrameworkControls, assessCompliance, exportComplianceReport,
-  deepScanCompliance, getAgents,
+  deepScanCompliance, getAgents, fetchComplianceEvidence,
 } from '../services/api'
 
 const field = (obj, ...keys) => { for (const k of keys) if (obj?.[k] != null) return obj[k]; return null }
@@ -211,10 +211,12 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
   const [assessing, setAssessing]           = useState(false)
   const [deepScanning, setDeepSc]           = useState(false)
   const [exporting, setExporting]           = useState(false)
-  const [exportingEvidence, setExportingEvidence] = useState(false)
+  const [fetchingEvidence, setFetchingEvidence] = useState(false)
+  const [evidenceArtifacts, setEvidenceArtifacts] = useState(null)
+  const [evidenceOpen, setEvidenceOpen]     = useState(false)
   const [error, setError]                   = useState(null)
   const [assessed, setAssessed]             = useState(false)
-  const [scanId, setScanId]                 = useState('latest')
+  const [scanId, setScanId]                 = useState(null)
 
   const loadControls = useCallback(async () => {
     setLoading(true); setError(null)
@@ -256,22 +258,15 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
     setAssessing(false)
   }
 
-  const handleExportEvidence = async () => {
-    setExportingEvidence(true)
+  const handleFetchEvidence = async () => {
+    setFetchingEvidence(true)
     try {
-      const BASE = import.meta.env.VITE_API_URL || 'https://webshield-backend-api.onrender.com'
-      const token = localStorage.getItem('ws_token')
-      const res = await fetch(`${BASE}/api/compliance/${scanId}/${fw.id}/evidence`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-      })
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a'); a.href = url
-      a.download = `evidence-${fw.id}-${scanId}.zip`
-      document.body.appendChild(a); a.click(); a.remove()
-      URL.revokeObjectURL(url)
-    } catch (e) { alert(e.message || 'Evidence export failed') }
-    setExportingEvidence(false)
+      const assessId = scanId || fw.id
+      const data = await fetchComplianceEvidence(assessId)
+      setEvidenceArtifacts(data)
+      setEvidenceOpen(true)
+    } catch (e) { setError(e.message || 'Evidence fetch failed') }
+    setFetchingEvidence(false)
   }
 
   const handleExport = async () => {
@@ -330,10 +325,10 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
             {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
             Export CSV
           </button>
-          <button onClick={handleExportEvidence} disabled={exportingEvidence || controls.length === 0}
+          <button onClick={handleFetchEvidence} disabled={fetchingEvidence || !assessed}
             className="flex items-center gap-1.5 bg-white/5 border border-white/15 hover:bg-white/10 text-gray-300 hover:text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40">
-            {exportingEvidence ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-            Download Evidence Package
+            {fetchingEvidence ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+            {evidenceArtifacts ? 'Refresh Evidence' : 'Fetch Evidence Artifacts'}
           </button>
         </div>
       </div>
@@ -372,6 +367,62 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
       {error && (
         <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
           <AlertCircle className="w-4 h-4 shrink-0" />{error}
+        </div>
+      )}
+
+      {/* Evidence artifacts panel */}
+      {evidenceArtifacts && (
+        <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden">
+          <button
+            onClick={() => setEvidenceOpen(v => !v)}
+            className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/3 transition-colors"
+          >
+            <Download className="w-4 h-4 text-sky-400 shrink-0" />
+            <span className="flex-1 text-sm font-semibold text-white">Evidence Artifacts</span>
+            {Array.isArray(evidenceArtifacts)
+              ? <span className="text-xs text-gray-500">{evidenceArtifacts.length} control{evidenceArtifacts.length !== 1 ? 's' : ''}</span>
+              : null}
+            {evidenceOpen
+              ? <ChevronUp className="w-4 h-4 text-gray-500 shrink-0" />
+              : <ChevronDown className="w-4 h-4 text-gray-500 shrink-0" />}
+          </button>
+          {evidenceOpen && (
+            <div className="border-t border-white/10 divide-y divide-white/5 max-h-96 overflow-y-auto">
+              {Array.isArray(evidenceArtifacts) ? evidenceArtifacts.map((item, i) => {
+                const ctrlId   = field(item, 'controlId', 'ControlId', 'id', 'Id') ?? `#${i + 1}`
+                const ctrlName = field(item, 'name', 'Name', 'controlName', 'ControlName') ?? ''
+                const evidence = field(item, 'evidence', 'Evidence') ?? item
+                const evSource = evidence ? field(evidence, 'source', 'Source') : null
+                const evValue  = evidence ? field(evidence, 'capturedValue', 'CapturedValue') : null
+                const evExpect = evidence ? field(evidence, 'expectedValue', 'ExpectedValue') : null
+                const evTs     = evidence ? field(evidence, 'capturedAt', 'CapturedAt') : null
+                return (
+                  <div key={i} className="px-4 py-3 space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono text-gray-500 shrink-0">{ctrlId}</span>
+                      {ctrlName && <span className="text-xs text-white truncate">{ctrlName}</span>}
+                    </div>
+                    <div className="grid grid-cols-[auto_1fr_auto_auto] gap-x-4 gap-y-0.5 text-[10px] pl-2">
+                      <span className="text-gray-600">Source</span>
+                      <span className="text-gray-600">Captured Value</span>
+                      <span className="text-gray-600">Expected</span>
+                      <span className="text-gray-600">Captured At</span>
+                      <span className="text-gray-300">{evSource ?? '—'}</span>
+                      <span className="font-mono text-gray-300 truncate max-w-[180px]">{evValue != null ? String(evValue) : '—'}</span>
+                      <span className="text-gray-300">{evExpect != null ? String(evExpect) : '—'}</span>
+                      <span className="text-gray-400">{evTs ? new Date(evTs).toLocaleString() : '—'}</span>
+                    </div>
+                  </div>
+                )
+              }) : (
+                <div className="px-4 py-4">
+                  <pre className="text-[10px] font-mono text-gray-400 whitespace-pre-wrap overflow-auto max-h-60">
+                    {JSON.stringify(evidenceArtifacts, null, 2)}
+                  </pre>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 

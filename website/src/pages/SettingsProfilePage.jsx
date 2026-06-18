@@ -1,14 +1,41 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link, useLocation } from 'react-router-dom'
 import {
   User, Mail, Lock, Trash2, Loader2, CheckCircle2, AlertCircle,
-  Camera, Github, ExternalLink, Shield, CreditCard, ChevronRight,
+  Camera, Github, ExternalLink, Shield, CreditCard, ChevronRight, Plug,
 } from 'lucide-react'
 import axios from 'axios'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
 import { getMe, updateProfile, changePassword, deleteAccount, uploadProfilePicture } from '../services/api'
+
+const SETTINGS_TABS = [
+  { label: 'Profile & Settings', href: '/settings/profile' },
+  { label: 'Integrations',       href: '/settings/integrations' },
+]
+
+function SettingsTabBar() {
+  const location = useLocation()
+  return (
+    <div className="flex rounded-xl overflow-hidden border border-white/10 mb-8 self-start">
+      {SETTINGS_TABS.map(({ label, href }) => {
+        const active = location.pathname === href
+        return (
+          <Link
+            key={href}
+            to={href}
+            className={`px-5 py-2.5 text-sm font-semibold transition-colors ${
+              active ? 'bg-crimson-500 text-white' : 'text-gray-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            {label}
+          </Link>
+        )
+      })}
+    </div>
+  )
+}
 
 /* ── Avatar helpers (duplicated from Navbar so page is self-contained) ── */
 const AVATAR_COLORS = [
@@ -291,6 +318,8 @@ export default function SettingsProfilePage() {
             <p className="text-xs text-crimson-500 font-semibold uppercase tracking-widest mb-2">Settings</p>
             <h1 className="text-3xl font-extrabold text-white">Profile &amp; Settings</h1>
           </div>
+
+          <SettingsTabBar />
 
           {/* ── Section 1: Profile ── */}
           <Section title="Profile" icon={User}>

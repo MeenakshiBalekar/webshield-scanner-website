@@ -250,6 +250,70 @@ function FindingGroupCard({ group }) {
   )
 }
 
+function JiraTicketButton({ findingId, checkName, severity, recommendation }) {
+  const [state, setState] = useState('idle') // idle | loading | success | error
+  const [ticketUrl, setTicketUrl] = useState(null)
+  const [errMsg, setErrMsg] = useState(null)
+
+  const handleCreate = async (e) => {
+    e.stopPropagation()
+    setState('loading')
+    setErrMsg(null)
+    try {
+      const token = localStorage.getItem('ws_token')
+      const res = await fetch(`${BACKEND}/api/integrations/jira/ticket`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ findingId, checkName, severity, recommendation }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      setTicketUrl(data?.url ?? data?.Url ?? data?.ticketUrl ?? data?.TicketUrl ?? null)
+      setState('success')
+      setTimeout(() => setState('idle'), 5000)
+    } catch (err) {
+      setErrMsg(err.message || 'Failed to create ticket')
+      setState('error')
+      setTimeout(() => setState('idle'), 4000)
+    }
+  }
+
+  if (state === 'success') {
+    return (
+      <div className="flex items-center gap-2 text-xs text-green-400">
+        <CheckCircle className="w-3.5 h-3.5 shrink-0" />
+        Jira ticket created
+        {ticketUrl && (
+          <a href={ticketUrl} target="_blank" rel="noopener noreferrer"
+            className="underline text-green-300 hover:text-green-200 ml-1" onClick={(e) => e.stopPropagation()}>
+            View ticket
+          </a>
+        )}
+      </div>
+    )
+  }
+  if (state === 'error') {
+    return (
+      <div className="flex items-center gap-2 text-xs text-red-400">
+        <XCircle className="w-3.5 h-3.5 shrink-0" />
+        {errMsg}
+      </div>
+    )
+  }
+
+  return (
+    <button
+      onClick={handleCreate}
+      disabled={state === 'loading'}
+      className="flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1.5 rounded-lg border border-blue-500/30 bg-blue-500/8 text-blue-400 hover:bg-blue-500/15 disabled:opacity-50 transition-colors whitespace-nowrap"
+    >
+      {state === 'loading'
+        ? <><span className="w-3 h-3 border border-blue-400/30 border-t-blue-400 rounded-full animate-spin" /> Creating…</>
+        : <><span className="font-bold text-blue-300">J</span> Create Jira Ticket</>}
+    </button>
+  )
+}
+
 function FindingCard({ item }) {
   const [open, setOpen] = useState(false)
 
@@ -258,6 +322,7 @@ function FindingCard({ item }) {
   const severity        = item.severity        || item.Severity       || ''
   const findingType     = item.findingType     || item.FindingType    || null
   const remediationId   = item.remediationId   || item.RemediationId  || ''
+  const findingId       = item.findingId       || item.FindingId      || item.id             || item.Id || null
   const evidence        = item.evidence        || item.Evidence       || null
   const technicalDetails = item.technicalDetails || item.TechnicalDetails || item.details     || null
   const whyItMatters    = item.whyItMatters     || item.WhyItMatters  || item.impact          || item.riskDescription || null
@@ -422,6 +487,17 @@ function FindingCard({ item }) {
 
           {!passed && evidence && <EvidencePanel evidence={evidence} />}
           {!passed && evidenceDetail && <EvidenceDetailBlock evidenceDetail={evidenceDetail} />}
+
+          {!passed && (
+            <div className="pt-2 border-t border-white/10">
+              <JiraTicketButton
+                findingId={findingId}
+                checkName={checkName}
+                severity={severity}
+                recommendation={Array.isArray(fixSteps) ? fixSteps.join(' ') : (fixSteps ?? '')}
+              />
+            </div>
+          )}
 
         </div>
       )}

@@ -91,13 +91,15 @@ function ScanRow({ scan, findingTab }) {
   const [loading, setLoading] = useState(false)
   const [err, setErr]         = useState(null)
 
-  const id       = scan.id        ?? scan.Id
-  const url      = scan.targetUrl ?? scan.TargetUrl ?? scan.url ?? scan.Url ?? '—'
-  const date     = scan.scanDate  ?? scan.ScanDate  ?? scan.createdAt ?? scan.CreatedAt
-  const score    = scan.securityScore ?? scan.SecurityScore ?? 0
-  const grade    = scan.securityGrade ?? scan.SecurityGrade ?? '?'
-  const total    = scan.totalChecks   ?? scan.TotalChecks   ?? 0
-  const failed   = scan.failedChecks  ?? scan.FailedChecks  ?? 0
+  const id            = scan.id            ?? scan.Id
+  const url           = scan.targetUrl     ?? scan.TargetUrl ?? scan.url ?? scan.Url ?? '—'
+  const date          = scan.scanDate      ?? scan.ScanDate  ?? scan.createdAt ?? scan.CreatedAt
+  const score         = scan.securityScore ?? scan.SecurityScore ?? 0
+  const grade         = scan.securityGrade ?? scan.SecurityGrade ?? '?'
+  const total         = scan.totalChecks   ?? scan.TotalChecks   ?? 0
+  const failed        = scan.failedChecks  ?? scan.FailedChecks  ?? 0
+  const triggerSource = scan.triggerSource ?? scan.TriggerSource ?? null
+  const prNumber      = scan.prNumber      ?? scan.PrNumber      ?? scan.pullRequestNumber ?? null
 
   const handleToggle = useCallback(async () => {
     if (!open && !detail) {
@@ -137,7 +139,24 @@ function ScanRow({ scan, findingTab }) {
         <ScoreRing score={score} />
         <div className="flex-1 min-w-0">
           <p className="text-sm text-white font-medium truncate">{url}</p>
-          <p className="text-xs text-gray-500 mt-0.5">{formatDate(date)}</p>
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+            <p className="text-xs text-gray-500">{formatDate(date)}</p>
+            {triggerSource && (
+              <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                triggerSource === 'GitHub PR'
+                  ? 'bg-purple-500/10 text-purple-400 border-purple-500/25'
+                  : triggerSource === 'Scheduled'
+                    ? 'bg-sky-500/10 text-sky-400 border-sky-500/25'
+                    : 'bg-white/5 text-gray-400 border-white/15'
+              }`}>
+                {triggerSource === 'GitHub PR'
+                  ? `📌 GitHub PR${prNumber ? ` #${prNumber}` : ''}`
+                  : triggerSource === 'Scheduled'
+                    ? '🕐 Scheduled'
+                    : '👤 Manual'}
+              </span>
+            )}
+          </div>
         </div>
         <div className="hidden sm:flex items-center gap-3">
           <GradeBadge grade={grade} />

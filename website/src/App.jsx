@@ -49,6 +49,7 @@ import ApiScanPage from './pages/ApiScanPage'
 import DiscoverPage from './pages/DiscoverPage'
 import AuthCallbackPage from './pages/AuthCallbackPage'
 import SettingsProfilePage from './pages/SettingsProfilePage'
+import SettingsIntegrationsPage from './pages/SettingsIntegrationsPage'
 import ContainerScanPage from './pages/ContainerScanPage'
 import CrawlScanPage from './pages/CrawlScanPage'
 import DnsScanPage from './pages/DnsScanPage'
@@ -104,7 +105,8 @@ export default function App() {
           <Route path="/auth/callback"     element={<AuthCallbackPage />} />
 
           {/* App */}
-          <Route path="/settings/profile"  element={<PrivateRoute><SettingsProfilePage /></PrivateRoute>} />
+          <Route path="/settings/profile"        element={<PrivateRoute><SettingsProfilePage /></PrivateRoute>} />
+          <Route path="/settings/integrations"  element={<PrivateRoute><SettingsIntegrationsPage /></PrivateRoute>} />
           <Route path="/dashboard"         element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
           <Route path="/products/:type"    element={<PrivateRoute><ProductPage /></PrivateRoute>} />
           <Route path="/scanner/history"   element={<PrivateRoute><HistoryPage /></PrivateRoute>} />

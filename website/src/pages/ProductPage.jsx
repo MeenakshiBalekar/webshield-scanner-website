@@ -549,6 +549,128 @@ function EvidenceDetailBlock({ evidenceDetail }) {
   )
 }
 
+function RemediationPlanPanel({ scanUrl, result }) {
+  const [planData, setPlanData] = useState(null)
+  const [planLoading, setPlanLoading] = useState(false)
+  const [planOpen, setPlanOpen] = useState(false)
+  const [planError, setPlanError] = useState(null)
+
+  const handleGetPlan = async () => {
+    setPlanLoading(true)
+    setPlanError(null)
+    try {
+      const res = await fetch(`${BACKEND}/api/scan/remediation-plan`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ url: scanUrl }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const json = await res.json()
+      setPlanData(json)
+      setPlanOpen(true)
+    } catch (err) {
+      setPlanError(err.message || 'Failed to fetch remediation plan')
+    }
+    setPlanLoading(false)
+  }
+
+  const getEffortLabel = (finding) => {
+    if (finding.effort) return finding.effort
+    const score = finding.priorityScore ?? 0
+    if (score >= 8) return 'Fix Now'
+    if (score >= 5) return 'Fix Soon'
+    return 'Fix Later'
+  }
+
+  const effortStyle = (label) => {
+    if (label === 'Fix Now')  return 'bg-red-600/20 text-red-300 border-red-500/40'
+    if (label === 'Fix Soon') return 'bg-orange-500/20 text-orange-300 border-orange-500/40'
+    return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40'
+  }
+
+  const rawFindings = Array.isArray(planData)
+    ? planData
+    : (planData?.findings ?? planData?.items ?? planData?.plan ?? [])
+
+  const findings = [...(Array.isArray(rawFindings) ? rawFindings : [])]
+    .sort((a, b) => (b.priorityScore ?? 0) - (a.priorityScore ?? 0))
+
+  return (
+    <div className="mt-4">
+      <button
+        onClick={handleGetPlan}
+        disabled={planLoading}
+        className="flex items-center gap-2 bg-white/5 hover:bg-white/10 disabled:opacity-50 border border-white/15 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
+      >
+        {planLoading
+          ? <><span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> Generating Plan…</>
+          : <>📋 Get Remediation Plan</>}
+      </button>
+
+      {planError && (
+        <div className="flex items-start gap-2 mt-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-3 py-2.5 text-xs">
+          <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+          <span>{planError}</span>
+        </div>
+      )}
+
+      {planData && planOpen && (
+        <div className="mt-3 bg-white/3 border border-white/10 rounded-2xl overflow-hidden">
+          {/* Panel header */}
+          <div className="flex items-center justify-between px-5 py-3 border-b border-white/10">
+            <p className="text-sm font-semibold text-white">Remediation Plan</p>
+            <button
+              onClick={() => setPlanOpen(false)}
+              className="text-gray-500 hover:text-white text-xs font-bold px-1.5 py-0.5 rounded hover:bg-white/10 transition-colors"
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
+
+          {/* Findings list */}
+          <div className="divide-y divide-white/5">
+            {findings.length === 0 && (
+              <p className="text-gray-500 text-sm py-8 text-center">No findings to remediate.</p>
+            )}
+            {findings.map((finding, i) => {
+              const effortLabel = getEffortLabel(finding)
+              const c = sevTheme(finding.severity ?? '')
+              return (
+                <div key={i} className="px-5 py-4">
+                  <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                    {/* Effort badge */}
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${effortStyle(effortLabel)}`}>
+                      {effortLabel}
+                    </span>
+                    {/* Severity badge */}
+                    {finding.severity && (
+                      <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded text-white ${c.badge}`}>
+                        {finding.severity}
+                      </span>
+                    )}
+                    {/* Check name */}
+                    <span className="text-sm font-semibold text-white flex-1 min-w-0 truncate">
+                      {finding.checkName ?? 'Unknown'}
+                    </span>
+                    {/* Priority score */}
+                    <span className={`text-xs font-bold shrink-0 ${c.text}`}>
+                      {finding.priorityScore ?? '—'}/10
+                    </span>
+                  </div>
+                  {finding.recommendation && (
+                    <p className="text-xs text-gray-400 leading-relaxed mt-1">{finding.recommendation}</p>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function ReportPanel({ scanUrl, scanResult }) {
   const [reportEmail, setReportEmail] = useState('')
   const [downloading, setDownloading] = useState(false)
@@ -1368,6 +1490,9 @@ export default function ProductPage() {
                 </div>
               </div>
             )}
+
+            {/* Remediation plan panel */}
+            <RemediationPlanPanel scanUrl={url} result={result} />
 
             {/* Report panel */}
             <ReportPanel scanUrl={url} scanResult={result} />

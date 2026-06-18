@@ -178,13 +178,13 @@ export const testCicdGate = (payload) =>
   request('/api/cicd/gate', { method: 'POST', body: JSON.stringify(payload) })
 
 // Schedules
-export const getSchedules = () => request('/api/schedule')
+export const getSchedules = () => request('/api/schedules')
 export const createSchedule = (data) =>
-  request('/api/schedule', { method: 'POST', body: JSON.stringify(data) })
+  request('/api/schedules', { method: 'POST', body: JSON.stringify(data) })
 export const deleteSchedule = (id) =>
-  request(`/api/schedule/${id}`, { method: 'DELETE' })
+  request(`/api/schedules/${id}`, { method: 'DELETE' })
 export const toggleSchedule = (id) =>
-  request(`/api/schedule/toggle/${id}`, { method: 'PATCH' })
+  request(`/api/schedules/${id}/toggle`, { method: 'PATCH' })
 
 // AI Insight
 export const getAiTriage = () => request('/api/aiinsight/triage')

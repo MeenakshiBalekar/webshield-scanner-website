@@ -1,15 +1,44 @@
 import React, { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { Shield, Plus, AlertCircle, Trash2, ToggleLeft, ToggleRight, Loader2, Calendar, LayoutDashboard } from 'lucide-react'
+import {
+  Calendar,
+  Plus,
+  AlertCircle,
+  Trash2,
+  ToggleLeft,
+  ToggleRight,
+  Loader2,
+  Bell,
+  BellOff,
+} from 'lucide-react'
 import { getSchedules, createSchedule, deleteSchedule, toggleSchedule } from '../services/api'
 import Navbar from '../components/Navbar'
+
+const FREQUENCIES = [
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'monthly', label: 'Monthly' },
+]
+
+function frequencyLabel(freq) {
+  switch (freq) {
+    case 'daily':   return 'Daily'
+    case 'weekly':  return 'Weekly'
+    case 'monthly': return 'Monthly'
+    default:        return freq ?? '—'
+  }
+}
 
 export default function SchedulePage() {
   const [schedules, setSchedules] = useState(null)
   const [error, setError] = useState(null)
+
+  // Form state
   const [newUrl, setNewUrl] = useState('')
-  const [interval, setInterval] = useState(60)
+  const [frequency, setFrequency] = useState('daily')
+  const [alertOnNewFinding, setAlertOnNewFinding] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+
+  // Per-row action spinner
   const [actionId, setActionId] = useState(null)
 
   const load = () =>
@@ -23,10 +52,12 @@ export default function SchedulePage() {
     e.preventDefault()
     if (!newUrl.trim()) return
     setSubmitting(true)
+    setError(null)
     try {
-      await createSchedule({ targetUrl: newUrl.trim(), intervalMinutes: Number(interval), enabled: true })
+      await createSchedule({ targetUrl: newUrl.trim(), frequency, alertOnNewFinding })
       setNewUrl('')
-      setInterval(60)
+      setFrequency('daily')
+      setAlertOnNewFinding(false)
       await load()
     } catch (e) {
       setError(e.message)
@@ -63,41 +94,78 @@ export default function SchedulePage() {
           </div>
         )}
 
-        {/* Create new schedule */}
+        {/* ── Create new schedule ─────────────────────────────────────────── */}
         <div className="bg-white/3 border border-white/10 rounded-2xl p-5 mb-8">
           <h2 className="text-sm font-semibold text-white mb-4">Add New Schedule</h2>
-          <form onSubmit={handleCreate} className="flex flex-col sm:flex-row gap-3">
+          <form onSubmit={handleCreate} className="flex flex-col gap-4">
+
+            {/* URL input */}
             <input
-              type="text"
+              type="url"
               value={newUrl}
               onChange={(e) => setNewUrl(e.target.value)}
               placeholder="https://your-app.com"
               required
-              className="flex-1 bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-500 px-4 py-2.5 rounded-xl text-sm outline-none transition-colors"
+              className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-500 px-4 py-2.5 rounded-xl text-sm outline-none transition-colors"
             />
-            <select
-              value={interval}
-              onChange={(e) => setInterval(e.target.value)}
-              className="bg-white/5 border border-white/15 text-white px-3 py-2.5 rounded-xl text-sm outline-none"
-            >
-              <option value={30}>Every 30 min</option>
-              <option value={60}>Every 1 hour</option>
-              <option value={360}>Every 6 hours</option>
-              <option value={720}>Every 12 hours</option>
-              <option value={1440}>Every day</option>
-            </select>
-            <button
-              type="submit"
-              disabled={submitting || !newUrl.trim()}
-              className="flex items-center gap-2 bg-crimson-500 hover:bg-crimson-600 disabled:bg-crimson-500/40 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors shrink-0"
-            >
-              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              Add
-            </button>
+
+            {/* Frequency picker */}
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Frequency</span>
+              <div className="flex gap-2 flex-wrap">
+                {FREQUENCIES.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setFrequency(value)}
+                    className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                      frequency === value
+                        ? 'bg-crimson-500 text-white border-crimson-500'
+                        : 'bg-transparent text-gray-400 border border-white/15 hover:text-white hover:border-white/30'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Alert on new finding toggle */}
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setAlertOnNewFinding((v) => !v)}
+                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${
+                  alertOnNewFinding ? 'bg-crimson-500' : 'bg-white/15'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                    alertOnNewFinding ? 'translate-x-4' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+              <span className="text-sm text-gray-300">Alert on new finding</span>
+              {alertOnNewFinding && (
+                <span className="text-[11px] text-crimson-400 font-semibold">— you will be notified when new issues are found</span>
+              )}
+            </div>
+
+            {/* Submit */}
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={submitting || !newUrl.trim()}
+                className="flex items-center gap-2 bg-crimson-500 hover:bg-crimson-600 disabled:bg-crimson-500/40 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors shrink-0"
+              >
+                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                Add Schedule
+              </button>
+            </div>
           </form>
         </div>
 
-        {/* Schedule list */}
+        {/* ── Schedule list ───────────────────────────────────────────────── */}
         {!schedules && !error && (
           <div className="flex justify-center py-16">
             <span className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
@@ -114,40 +182,74 @@ export default function SchedulePage() {
 
         {schedules?.length > 0 && (
           <div className="border border-white/10 rounded-2xl overflow-hidden">
-            <div className="hidden sm:grid grid-cols-[1fr_120px_80px_80px] gap-4 px-4 py-3 bg-white/3 border-b border-white/10 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            {/* Header row */}
+            <div className="hidden sm:grid grid-cols-[1fr_100px_90px_110px_80px] gap-4 px-4 py-3 bg-white/3 border-b border-white/10 text-xs font-semibold text-gray-400 uppercase tracking-wider">
               <span>Target URL</span>
-              <span>Interval</span>
+              <span>Frequency</span>
               <span>Status</span>
+              <span>Alerts</span>
               <span>Actions</span>
             </div>
+
             {schedules.map((s) => (
-              <div key={s.id} className="grid sm:grid-cols-[1fr_120px_80px_80px] gap-4 items-center px-4 py-3.5 border-b border-white/5 last:border-b-0">
-                <p className="text-sm text-white font-medium truncate">{s.targetUrl}</p>
-                <p className="text-xs text-gray-400">{s.intervalMinutes} min</p>
-                <span className={`inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-full ${
-                  s.enabled ? 'text-green-400 bg-green-500/10 border border-green-500/20' : 'text-gray-400 bg-white/5 border border-white/10'
-                }`}>
+              <div
+                key={s.id}
+                className="grid sm:grid-cols-[1fr_100px_90px_110px_80px] gap-4 items-center px-4 py-3.5 border-b border-white/5 last:border-b-0"
+              >
+                {/* URL */}
+                <p className="text-sm text-white font-medium truncate" title={s.targetUrl}>
+                  {s.targetUrl}
+                </p>
+
+                {/* Frequency */}
+                <p className="text-xs text-gray-400">{frequencyLabel(s.frequency)}</p>
+
+                {/* Active / Paused badge */}
+                <span
+                  className={`inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-full w-fit ${
+                    s.enabled
+                      ? 'text-green-400 bg-green-500/10 border border-green-500/20'
+                      : 'text-gray-400 bg-white/5 border border-white/10'
+                  }`}
+                >
                   {s.enabled ? 'Active' : 'Paused'}
                 </span>
+
+                {/* Alert chip */}
+                <span
+                  className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full w-fit ${
+                    s.alertOnNewFinding
+                      ? 'text-crimson-400 bg-crimson-500/10 border border-crimson-500/20'
+                      : 'text-gray-500 bg-white/5 border border-white/10'
+                  }`}
+                >
+                  {s.alertOnNewFinding
+                    ? <><Bell className="w-3 h-3" /> Alerts on</>
+                    : <><BellOff className="w-3 h-3" /> No alerts</>
+                  }
+                </span>
+
+                {/* Actions */}
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleToggle(s.id)}
                     disabled={actionId === s.id}
                     className="text-gray-400 hover:text-white transition-colors"
-                    title={s.enabled ? 'Pause' : 'Resume'}
+                    title={s.enabled ? 'Pause schedule' : 'Resume schedule'}
                   >
-                    {actionId === s.id
-                      ? <Loader2 className="w-4 h-4 animate-spin" />
-                      : s.enabled
-                        ? <ToggleRight className="w-4 h-4 text-green-400" />
-                        : <ToggleLeft className="w-4 h-4" />
-                    }
+                    {actionId === s.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : s.enabled ? (
+                      <ToggleRight className="w-4 h-4 text-green-400" />
+                    ) : (
+                      <ToggleLeft className="w-4 h-4" />
+                    )}
                   </button>
                   <button
                     onClick={() => handleDelete(s.id)}
                     disabled={actionId === s.id}
                     className="text-gray-400 hover:text-red-400 transition-colors"
-                    title="Delete"
+                    title="Delete schedule"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>

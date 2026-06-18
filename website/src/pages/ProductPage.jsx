@@ -5,7 +5,7 @@ import {
   CheckCircle, XCircle, ChevronDown, ChevronUp,
   LayoutDashboard, FileText, Download, Mail, Send, ArrowRight,
   TrendingUp, TrendingDown, Clock, Wifi, Cpu, Globe, Lock,
-  PlusCircle, MinusCircle, Zap,
+  PlusCircle, MinusCircle, Zap, Sparkles, AlertTriangle,
 } from 'lucide-react'
 import axios from 'axios'
 import { useAuth } from '../context/AuthContext'
@@ -250,6 +250,237 @@ function FindingGroupCard({ group }) {
   )
 }
 
+function ConfidenceChip({ score }) {
+  if (score == null) return null
+  const pct = Math.round(score)
+  const style = pct >= 80
+    ? 'bg-green-500/10 text-green-400 border-green-500/25'
+    : pct >= 50
+      ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/25'
+      : 'bg-gray-500/10 text-gray-400 border-gray-500/25'
+  return (
+    <span className={`inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full border shrink-0 whitespace-nowrap ${style}`}>
+      {pct}% confident
+    </span>
+  )
+}
+
+function SlaBadge({ severity, slaDueDate, slaStatus, slaDaysLeft }) {
+  const sev = (severity ?? '').toLowerCase()
+  if (sev !== 'critical' && sev !== 'high') return null
+
+  let daysLeft = slaDaysLeft ?? null
+  if (daysLeft == null && slaDueDate) {
+    daysLeft = Math.ceil((new Date(slaDueDate) - Date.now()) / 86400000)
+  }
+
+  const overdue = slaStatus?.toLowerCase() === 'overdue' || (daysLeft != null && daysLeft < 0)
+  const dueSoon = !overdue && daysLeft != null && daysLeft <= 3
+
+  if (daysLeft == null && !slaStatus) return null
+
+  if (overdue) {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded border bg-red-600/20 text-red-300 border-red-500/50 shrink-0 whitespace-nowrap animate-pulse">
+        <AlertTriangle className="w-2.5 h-2.5" /> OVERDUE
+      </span>
+    )
+  }
+  return (
+    <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded border shrink-0 whitespace-nowrap ${
+      dueSoon
+        ? 'bg-orange-500/10 text-orange-400 border-orange-500/30'
+        : 'bg-sky-500/10 text-sky-400 border-sky-500/30'
+    }`}>
+      <Clock className="w-2.5 h-2.5" />
+      {daysLeft != null ? `Due in ${daysLeft}d` : 'SLA Active'}
+    </span>
+  )
+}
+
+const FINDING_STATUSES = [
+  { value: 'Confirmed',     label: 'Confirmed Issue',      style: 'text-red-400' },
+  { value: 'FalsePositive', label: 'Mark False Positive',  style: 'text-gray-400' },
+  { value: 'AcceptedRisk',  label: 'Accept Risk',          style: 'text-yellow-400' },
+  { value: 'Fixed',         label: 'Mark Fixed',           style: 'text-green-400' },
+]
+
+function FindingStatusDropdown({ findingId, currentStatus }) {
+  const [open, setOpen] = useState(false)
+  const [status, setStatus] = useState(currentStatus ?? null)
+  const [saving, setSaving] = useState(false)
+
+  if (!findingId) return null
+
+  const current = FINDING_STATUSES.find(s => s.value === status)
+
+  const handleSelect = async (e, value) => {
+    e.stopPropagation()
+    setOpen(false)
+    if (value === status) return
+    setSaving(true)
+    try {
+      const token = localStorage.getItem('ws_token')
+      const res = await fetch(`${BACKEND}/api/findings/${findingId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ status: value }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      setStatus(value)
+    } catch {
+      // silently ignore — status is optimistic
+    }
+    setSaving(false)
+  }
+
+  return (
+    <div className="relative" onClick={e => e.stopPropagation()}>
+      <button
+        onClick={e => { e.stopPropagation(); setOpen(v => !v) }}
+        disabled={saving}
+        className="flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1.5 rounded-lg border border-white/15 bg-white/5 text-gray-400 hover:text-white hover:border-white/30 disabled:opacity-50 transition-colors whitespace-nowrap"
+      >
+        {saving
+          ? <><span className="w-3 h-3 border border-gray-400/30 border-t-gray-400 rounded-full animate-spin" /> Saving…</>
+          : <>{current ? <span className={current.style}>{current.label}</span> : 'Set Status'} <ChevronDown className="w-3 h-3" /></>
+        }
+      </button>
+      {open && (
+        <div className="absolute bottom-full left-0 mb-1 z-20 bg-[#0d1f3c] border border-white/15 rounded-xl shadow-2xl overflow-hidden min-w-[170px]">
+          {FINDING_STATUSES.map(({ value, label, style }) => (
+            <button
+              key={value}
+              onClick={e => handleSelect(e, value)}
+              className={`w-full text-left px-4 py-2.5 text-xs hover:bg-white/8 transition-colors ${style} ${status === value ? 'bg-white/5 font-bold' : ''}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AiFixButton({ findingId, checkName, severity, technicalDetails }) {
+  const [state, setState] = useState('idle') // idle | loading | open
+  const [guidance, setGuidance] = useState(null)
+  const [error, setError] = useState(null)
+
+  const handleClick = async (e) => {
+    e.stopPropagation()
+    if (state === 'open') { setState('idle'); return }
+    setState('loading')
+    setError(null)
+    try {
+      const token = localStorage.getItem('ws_token')
+      const res = await fetch(`${BACKEND}/api/remediation/ai-guidance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ findingId, checkName, severity, technicalDetails }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      setGuidance(data)
+      setState('open')
+    } catch (err) {
+      setError(err.message || 'AI guidance unavailable')
+      setState('idle')
+    }
+  }
+
+  const steps = guidance?.steps ?? guidance?.Steps ?? guidance?.remediationSteps ?? []
+  const explanation = guidance?.explanation ?? guidance?.Explanation ?? null
+  const estimatedTime = guidance?.estimatedTime ?? guidance?.EstimatedTime ?? null
+  const difficulty = guidance?.difficulty ?? guidance?.Difficulty ?? null
+
+  const DIFF_STYLE = { Easy: 'text-green-400', Medium: 'text-yellow-400', Hard: 'text-red-400' }
+
+  return (
+    <>
+      <button
+        onClick={handleClick}
+        disabled={state === 'loading'}
+        className="flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1.5 rounded-lg border border-violet-500/30 bg-violet-500/8 text-violet-400 hover:bg-violet-500/15 disabled:opacity-50 transition-colors whitespace-nowrap"
+      >
+        {state === 'loading'
+          ? <><span className="w-3 h-3 border border-violet-400/30 border-t-violet-400 rounded-full animate-spin" /> Thinking…</>
+          : <><Sparkles className="w-3 h-3" /> Get AI Fix</>}
+      </button>
+
+      {error && (
+        <span className="text-[10px] text-red-400">{error}</span>
+      )}
+
+      {state === 'open' && guidance && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" onClick={() => setState('idle')}>
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+          <div
+            className="relative bg-[#0a0f1e] border border-violet-500/30 rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[80vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <Sparkles className="w-4 h-4 text-violet-400" />
+                  <h3 className="text-white font-bold text-base">AI Remediation Guidance</h3>
+                </div>
+                <p className="text-xs text-gray-400 truncate max-w-xs">{checkName}</p>
+              </div>
+              <button
+                onClick={() => setState('idle')}
+                className="text-gray-500 hover:text-white transition-colors ml-4 shrink-0"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            {(estimatedTime || difficulty) && (
+              <div className="flex items-center gap-3 mb-4 text-xs">
+                {estimatedTime && (
+                  <span className="flex items-center gap-1 text-gray-400">
+                    <Clock className="w-3.5 h-3.5" /> ~{estimatedTime}
+                  </span>
+                )}
+                {difficulty && (
+                  <span className={`font-semibold ${DIFF_STYLE[difficulty] ?? 'text-gray-400'}`}>
+                    {difficulty} difficulty
+                  </span>
+                )}
+              </div>
+            )}
+
+            {explanation && (
+              <p className="text-sm text-gray-300 leading-relaxed mb-4 bg-white/3 rounded-xl px-4 py-3 border border-white/10">
+                {explanation}
+              </p>
+            )}
+
+            {steps.length > 0 && (
+              <div>
+                <p className="text-[10px] font-bold text-violet-400 uppercase tracking-wider mb-3">Step-by-step fix</p>
+                <ol className="space-y-3">
+                  {steps.map((step, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <span className="shrink-0 w-5 h-5 rounded-full bg-violet-500/20 text-violet-400 text-[10px] font-bold flex items-center justify-center mt-0.5">{i + 1}</span>
+                      <p className="text-sm text-gray-200 leading-relaxed">{typeof step === 'string' ? step : step.description ?? JSON.stringify(step)}</p>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+
+            {steps.length === 0 && !explanation && (
+              <p className="text-sm text-gray-500 text-center py-4">No guidance returned.</p>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
 function JiraTicketButton({ findingId, checkName, severity, recommendation }) {
   const [state, setState] = useState('idle') // idle | loading | success | error
   const [ticketUrl, setTicketUrl] = useState(null)
@@ -335,6 +566,11 @@ function FindingCard({ item }) {
   const isKev           = item.isKev            ?? item.IsKev         ?? false
   const epssScore       = item.epssScore        ?? item.EpssScore     ?? null
   const kevDueDate      = item.kevDueDate       ?? item.KevDueDate    ?? null
+  const confidenceScore = item.confidenceScore ?? item.ConfidenceScore ?? null
+  const slaDueDate      = item.slaDueDate      ?? item.SlaDueDate      ?? null
+  const slaStatus       = item.slaStatus       ?? item.SlaStatus       ?? null
+  const slaDaysLeft     = item.slaDaysLeft     ?? item.SlaDaysLeft     ?? null
+  const findingStatus   = item.findingStatus   ?? item.FindingStatus   ?? null
 
   const c = sevTheme(severity)
   const hasDetail = technicalDetails || whyItMatters || whatCanGoWrong || businessImpact || attackScenario || fixSteps || evidenceDetail || isKev
@@ -387,6 +623,8 @@ function FindingCard({ item }) {
           {riskScore != null && (
             <span className={`text-xs font-bold ${c.text}`}>{riskScore}/10</span>
           )}
+          <ConfidenceChip score={confidenceScore} />
+          <SlaBadge severity={severity} slaDueDate={slaDueDate} slaStatus={slaStatus} slaDaysLeft={slaDaysLeft} />
           {!passed && remediationId && (
             <Link
               to={`/remediation?check=${encodeURIComponent(remediationId)}`}
@@ -489,7 +727,9 @@ function FindingCard({ item }) {
           {!passed && evidenceDetail && <EvidenceDetailBlock evidenceDetail={evidenceDetail} />}
 
           {!passed && (
-            <div className="pt-2 border-t border-white/10">
+            <div className="pt-2 border-t border-white/10 flex flex-wrap items-center gap-2">
+              <FindingStatusDropdown findingId={findingId} currentStatus={findingStatus} />
+              <AiFixButton findingId={findingId} checkName={checkName} severity={severity} technicalDetails={technicalDetails} />
               <JiraTicketButton
                 findingId={findingId}
                 checkName={checkName}

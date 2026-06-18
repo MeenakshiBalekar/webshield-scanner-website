@@ -88,7 +88,7 @@ export const getRemediationsByCategory = (cat) =>
 // Dashboard
 export const getDashboard = () => request('/api/dashboard')
 export const getDashboardStats = () => request('/api/dashboard/stats')
-export const getExecutiveDashboard = () => request('/api/dashboard/executive')
+export const getExecutiveDashboard = () => request('/api/reports/executive-summary')
 export const getDashboardTrends = () => request('/api/dashboard/trends')
 
 // CVE

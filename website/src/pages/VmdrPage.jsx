@@ -88,16 +88,18 @@ function FindingRow({ finding, onStatusChange }) {
   const [expanded, setExpanded] = useState(false)
   const [updating, setUpdating] = useState(false)
 
-  const id     = field(finding, 'id')
-  const cveId  = field(finding, 'cveId', 'CveId')
-  const pkg    = field(finding, 'packageName', 'PackageName')
-  const inst   = field(finding, 'installedVersion', 'InstalledVersion')
-  const fixed  = field(finding, 'fixedVersion', 'FixedVersion')
-  const cvss   = field(finding, 'cvssScore', 'CvssScore')
-  const sev    = field(finding, 'severity', 'Severity') || 'Low'
-  const epss   = field(finding, 'epssScore', 'EpssScore')
-  const desc   = field(finding, 'description', 'Description')
-  const status = field(finding, 'status', 'Status') || 'Open'
+  const id         = field(finding, 'id')
+  const cveId      = field(finding, 'cveId', 'CveId')
+  const pkg        = field(finding, 'packageName', 'PackageName')
+  const inst       = field(finding, 'installedVersion', 'InstalledVersion')
+  const fixed      = field(finding, 'fixedVersion', 'FixedVersion')
+  const cvss       = field(finding, 'cvssScore', 'CvssScore')
+  const sev        = field(finding, 'severity', 'Severity') || 'Low'
+  const epss       = field(finding, 'epssScore', 'EpssScore')
+  const isKev      = field(finding, 'isKev', 'IsKev') ?? false
+  const kevDueDate = field(finding, 'kevDueDate', 'KevDueDate') ?? null
+  const desc       = field(finding, 'description', 'Description')
+  const status     = field(finding, 'status', 'Status') || 'Open'
 
   const handleStatusChange = async (e) => {
     const newStatus = e.target.value
@@ -118,6 +120,11 @@ function FindingRow({ finding, onStatusChange }) {
             : <ChevronRight className="w-3.5 h-3.5 text-gray-500" />}
         </td>
         <td className="px-4 py-3 text-xs font-mono text-sky-400 whitespace-nowrap">
+          {isKev && (
+            <span className="mr-1.5 inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded border bg-red-600/25 text-red-300 border-red-500/50 animate-pulse whitespace-nowrap">
+              ⚠ KEV
+            </span>
+          )}
           <a
             href={`https://nvd.nist.gov/vuln/detail/${cveId}`}
             target="_blank"
@@ -156,7 +163,16 @@ function FindingRow({ finding, onStatusChange }) {
       </tr>
       {expanded && (
         <tr className="border-b border-white/5 bg-white/2">
-          <td colSpan={9} className="px-6 py-4">
+          <td colSpan={9} className="px-6 py-4 space-y-2">
+            {isKev && (
+              <div className="bg-red-950/60 border border-red-700/50 rounded-lg px-3 py-2">
+                <p className="text-[10px] font-bold text-red-400 uppercase tracking-wide mb-0.5">🚨 CISA Known Exploited Vulnerability</p>
+                <p className="text-xs text-gray-300">Actively exploited in the wild.</p>
+                {kevDueDate && (
+                  <p className="text-xs text-red-300 font-bold mt-1">Patch due: {new Date(kevDueDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                )}
+              </div>
+            )}
             <p className="text-sm text-gray-300 leading-relaxed">{desc || 'No description available.'}</p>
           </td>
         </tr>
@@ -176,13 +192,16 @@ const SEV_ORDER = ['Critical', 'High', 'Medium', 'Low']
 function HostVulnRow({ vuln }) {
   const [expanded, setExpanded] = useState(false)
 
-  const cveId   = field(vuln, 'cveId', 'CveId')
-  const cvss    = field(vuln, 'cvssScore', 'CvssScore')
-  const pkg     = field(vuln, 'affectedPackage', 'AffectedPackage')
-  const ver     = field(vuln, 'packageVersion', 'PackageVersion')
-  const fixVer  = field(vuln, 'fixVersion', 'FixVersion')
-  const sev     = field(vuln, 'severity', 'Severity') || 'Low'
-  const desc    = field(vuln, 'description', 'Description')
+  const cveId      = field(vuln, 'cveId', 'CveId')
+  const cvss       = field(vuln, 'cvssScore', 'CvssScore')
+  const pkg        = field(vuln, 'affectedPackage', 'AffectedPackage')
+  const ver        = field(vuln, 'packageVersion', 'PackageVersion')
+  const fixVer     = field(vuln, 'fixVersion', 'FixVersion')
+  const sev        = field(vuln, 'severity', 'Severity') || 'Low'
+  const epss       = field(vuln, 'epssScore', 'EpssScore')
+  const isKev      = field(vuln, 'isKev', 'IsKev') ?? false
+  const kevDueDate = field(vuln, 'kevDueDate', 'KevDueDate') ?? null
+  const desc       = field(vuln, 'description', 'Description')
 
   return (
     <>
@@ -196,6 +215,11 @@ function HostVulnRow({ vuln }) {
             : <ChevronRight className="w-3.5 h-3.5 text-gray-500" />}
         </td>
         <td className="px-4 py-3 text-xs font-mono text-red-400 whitespace-nowrap">
+          {isKev && (
+            <span className="mr-1.5 inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded border bg-red-600/25 text-red-300 border-red-500/50 animate-pulse">
+              ⚠ KEV
+            </span>
+          )}
           {cveId ? (
             <a
               href={`https://nvd.nist.gov/vuln/detail/${cveId}`}
@@ -208,8 +232,17 @@ function HostVulnRow({ vuln }) {
             </a>
           ) : '—'}
         </td>
-        <td className="px-4 py-3 text-sm font-bold text-white whitespace-nowrap">
-          {cvss != null ? Number(cvss).toFixed(1) : '—'}
+        <td className="px-4 py-3 whitespace-nowrap">
+          <span className="text-sm font-bold text-white">{cvss != null ? Number(cvss).toFixed(1) : '—'}</span>
+          {epss != null && (
+            <span className={`ml-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded border ${
+              epss >= 0.5 ? 'bg-red-500/15 text-red-400 border-red-500/30'
+              : epss >= 0.1 ? 'bg-orange-500/15 text-orange-400 border-orange-500/30'
+              : 'bg-gray-500/15 text-gray-400 border-gray-500/30'
+            }`}>
+              {(epss * 100).toFixed(1)}% EPSS
+            </span>
+          )}
         </td>
         <td className="px-4 py-3 text-sm text-white font-medium">{pkg || '—'}</td>
         <td className="px-4 py-3 text-xs font-mono text-gray-400">{ver || '—'}</td>
@@ -221,7 +254,16 @@ function HostVulnRow({ vuln }) {
       </tr>
       {expanded && (
         <tr className="border-b border-white/5 bg-white/2">
-          <td colSpan={8} className="px-6 py-4">
+          <td colSpan={8} className="px-6 py-4 space-y-2">
+            {isKev && (
+              <div className="bg-red-950/60 border border-red-700/50 rounded-lg px-3 py-2">
+                <p className="text-[10px] font-bold text-red-400 uppercase tracking-wide mb-0.5">🚨 CISA Known Exploited Vulnerability</p>
+                <p className="text-xs text-gray-300">Actively exploited in the wild.</p>
+                {kevDueDate && (
+                  <p className="text-xs text-red-300 font-bold mt-1">Patch due: {new Date(kevDueDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                )}
+              </div>
+            )}
             <p className="text-sm text-gray-300 leading-relaxed">{desc || 'No description available.'}</p>
           </td>
         </tr>

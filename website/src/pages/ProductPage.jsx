@@ -267,9 +267,12 @@ function FindingCard({ item }) {
   const fixSteps        = item.fixSteps         || item.FixSteps      || item.recommendation  || item.remediation     || null
   const riskScore       = item.riskScore        || item.RiskScore     || null
   const evidenceDetail  = item.evidenceDetail   || item.EvidenceDetail || null
+  const isKev           = item.isKev            ?? item.IsKev         ?? false
+  const epssScore       = item.epssScore        ?? item.EpssScore     ?? null
+  const kevDueDate      = item.kevDueDate       ?? item.KevDueDate    ?? null
 
   const c = sevTheme(severity)
-  const hasDetail = technicalDetails || whyItMatters || whatCanGoWrong || businessImpact || attackScenario || fixSteps || evidenceDetail
+  const hasDetail = technicalDetails || whyItMatters || whatCanGoWrong || businessImpact || attackScenario || fixSteps || evidenceDetail || isKev
 
   return (
     <div className={`rounded-xl border ${c.border} ${c.bg} mb-2 overflow-hidden transition-all`}>
@@ -286,7 +289,12 @@ function FindingCard({ item }) {
         <div className="flex-1 min-w-0">
           <span className="text-sm font-semibold text-white">{checkName}</span>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+          {isKev && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded border bg-red-600/25 text-red-300 border-red-500/60 shrink-0 whitespace-nowrap animate-pulse">
+              ⚠ ACTIVELY EXPLOITED
+            </span>
+          )}
           {findingType === 'Confirmed' && (
             <span className="text-[10px] font-bold px-2 py-0.5 rounded border bg-red-500/15 text-red-400 border-red-500/30 shrink-0">
               Confirmed Issue
@@ -300,6 +308,15 @@ function FindingCard({ item }) {
           {severity && (
             <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded text-white ${c.badge}`}>
               {severity}
+            </span>
+          )}
+          {epssScore != null && (
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border shrink-0 whitespace-nowrap ${
+              epssScore >= 0.5 ? 'bg-red-500/15 text-red-400 border-red-500/30'
+              : epssScore >= 0.1 ? 'bg-orange-500/15 text-orange-400 border-orange-500/30'
+              : 'bg-gray-500/15 text-gray-400 border-gray-500/30'
+            }`}>
+              EPSS {(epssScore * 100).toFixed(1)}%
             </span>
           )}
           {riskScore != null && (
@@ -323,6 +340,20 @@ function FindingCard({ item }) {
       {/* Expanded detail panel */}
       {open && hasDetail && (
         <div className="px-4 pb-4 pt-3 border-t border-white/10 space-y-3">
+
+          {isKev && (
+            <div className="bg-red-950/60 border border-red-700/50 rounded-lg px-3 py-2.5">
+              <p className="text-[10px] font-bold text-red-400 uppercase tracking-wide mb-1">🚨 CISA Known Exploited Vulnerability (KEV)</p>
+              <p className="text-xs text-gray-300 leading-relaxed">
+                This vulnerability is actively exploited in the wild and listed on the CISA KEV catalog.
+              </p>
+              {kevDueDate && (
+                <p className="text-xs text-red-300 font-bold mt-1.5">
+                  Patch due: {new Date(kevDueDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                </p>
+              )}
+            </div>
+          )}
 
           {technicalDetails && (
             <div className="bg-black/30 rounded-lg px-3 py-2.5">
@@ -662,7 +693,12 @@ export default function ProductPage() {
         const authConfig = authType !== 'none' ? { authType, ...authForm } : undefined
         data = await startCrawlScan({ url: url.trim(), depth: Number(crawlDepth), maxPages: Number(maxPages), ...(authConfig ? { authConfig } : {}) })
       } else if (type === 'web' && authType === 'formlogin') {
-        data = await startAuthenticatedScan({ targetUrl: url.trim(), mode: scanMode, ...authForm })
+        data = await startAuthenticatedScan({
+          url: url.trim(),
+          loginUrl: authForm.loginUrl.trim() || undefined,
+          username: authForm.username,
+          password: authForm.password,
+        })
       } else if (type === 'web' && authType === 'bearer') {
         const res = await axios.post(`${API}/api${product.endpoint}`, { ...base, authType: 'bearer', bearerToken: authForm.bearerToken })
         data = res.data
@@ -710,6 +746,8 @@ export default function ProductPage() {
   const serverHdr  = result?.rawServerHeader   ?? result?.RawServerHeader   ?? null
 
   const infraProfile = result?.infrastructureProfile ?? result?.InfrastructureProfile ?? null
+  const wafDetected  = result?.wafDetected ?? result?.WafDetected ?? null
+  const wafVendor    = result?.wafVendor   ?? result?.WafVendor   ?? null
 
   const scoreDelta = result?.scoreDelta ?? result?.ScoreDelta
     ?? (result?.previousScore != null && result?.securityScore != null
@@ -977,8 +1015,8 @@ export default function ProductPage() {
             {/* Infrastructure card — first thing above results */}
             <InfrastructureCard profile={infraProfile} />
 
-            {/* Hosting / edge banner */}
-            {(hosting || edge || serverHdr) && (
+            {/* Hosting / edge / WAF banner */}
+            {(hosting || edge || serverHdr || wafDetected != null || wafVendor) && (
               <div className="flex flex-wrap items-center gap-x-5 gap-y-2 bg-white/3 border border-white/10 rounded-2xl px-4 py-3 mb-4 text-sm">
                 {hosting && (
                   <span className="flex items-center gap-1.5 text-gray-300">
@@ -991,6 +1029,16 @@ export default function ProductPage() {
                   <span className="flex items-center gap-1.5 text-gray-300">
                     <span className="text-gray-500">🛡 Edge:</span>
                     <span className="font-semibold text-white">{edge}</span>
+                  </span>
+                )}
+                {(wafDetected != null || wafVendor) && (
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-gray-500">🔰 WAF:</span>
+                    {wafVendor
+                      ? <span className="font-semibold text-green-400">{wafVendor}</span>
+                      : wafDetected
+                        ? <span className="font-semibold text-green-400">Detected</span>
+                        : <span className="font-semibold text-red-400">Not detected</span>}
                   </span>
                 )}
                 {serverHdr && (

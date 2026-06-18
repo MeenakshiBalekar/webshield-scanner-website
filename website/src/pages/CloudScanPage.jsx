@@ -397,7 +397,7 @@ function AzureForm({ onSubmit, scanning }) {
 }
 
 function GcpForm({ onSubmit, scanning }) {
-  const [form, setForm] = useState({ projectId: '', serviceAccountKey: '' })
+  const [form, setForm] = useState({ projectId: '', serviceAccountJson: '' })
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }))
   return (
     <form onSubmit={e => { e.preventDefault(); onSubmit(form) }} className="bg-white/3 border border-white/10 rounded-2xl p-6 space-y-5">
@@ -413,8 +413,8 @@ function GcpForm({ onSubmit, scanning }) {
         <textarea
           required
           rows={10}
-          value={form.serviceAccountKey}
-          onChange={set('serviceAccountKey')}
+          value={form.serviceAccountJson}
+          onChange={set('serviceAccountJson')}
           placeholder={'{\n  "type": "service_account",\n  "project_id": "...",\n  "private_key_id": "...",\n  ...\n}'}
           className={textareaCls}
         />

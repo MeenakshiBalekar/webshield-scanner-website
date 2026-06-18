@@ -5,7 +5,7 @@ import {
   CheckCircle, XCircle, ChevronDown, ChevronUp,
   LayoutDashboard, FileText, Download, Mail, Send, ArrowRight,
   TrendingUp, TrendingDown, Clock, Wifi, Cpu, Globe, Lock,
-  PlusCircle, MinusCircle, Zap,
+  PlusCircle, MinusCircle, Zap, Sparkles, AlertTriangle,
 } from 'lucide-react'
 import axios from 'axios'
 import { useAuth } from '../context/AuthContext'
@@ -250,6 +250,301 @@ function FindingGroupCard({ group }) {
   )
 }
 
+function ConfidenceChip({ score }) {
+  if (score == null) return null
+  const pct = Math.round(score)
+  const style = pct >= 80
+    ? 'bg-green-500/10 text-green-400 border-green-500/25'
+    : pct >= 50
+      ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/25'
+      : 'bg-gray-500/10 text-gray-400 border-gray-500/25'
+  return (
+    <span className={`inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full border shrink-0 whitespace-nowrap ${style}`}>
+      {pct}% confident
+    </span>
+  )
+}
+
+function SlaBadge({ severity, slaDueDate, slaStatus, slaDaysLeft }) {
+  const sev = (severity ?? '').toLowerCase()
+  if (sev !== 'critical' && sev !== 'high') return null
+
+  let daysLeft = slaDaysLeft ?? null
+  if (daysLeft == null && slaDueDate) {
+    daysLeft = Math.ceil((new Date(slaDueDate) - Date.now()) / 86400000)
+  }
+
+  const overdue = slaStatus?.toLowerCase() === 'overdue' || (daysLeft != null && daysLeft < 0)
+  const dueSoon = !overdue && daysLeft != null && daysLeft <= 3
+
+  if (daysLeft == null && !slaStatus) return null
+
+  if (overdue) {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded border bg-red-600/20 text-red-300 border-red-500/50 shrink-0 whitespace-nowrap animate-pulse">
+        <AlertTriangle className="w-2.5 h-2.5" /> OVERDUE
+      </span>
+    )
+  }
+  return (
+    <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded border shrink-0 whitespace-nowrap ${
+      dueSoon
+        ? 'bg-orange-500/10 text-orange-400 border-orange-500/30'
+        : 'bg-sky-500/10 text-sky-400 border-sky-500/30'
+    }`}>
+      <Clock className="w-2.5 h-2.5" />
+      {daysLeft != null ? `Due in ${daysLeft}d` : 'SLA Active'}
+    </span>
+  )
+}
+
+const FINDING_STATUSES = [
+  { value: 'Confirmed',     label: 'Confirmed Issue',      style: 'text-red-400' },
+  { value: 'FalsePositive', label: 'Mark False Positive',  style: 'text-gray-400' },
+  { value: 'AcceptedRisk',  label: 'Accept Risk',          style: 'text-yellow-400' },
+  { value: 'Fixed',         label: 'Mark Fixed',           style: 'text-green-400' },
+]
+
+function FindingStatusDropdown({ findingId, currentStatus }) {
+  const [open, setOpen] = useState(false)
+  const [status, setStatus] = useState(currentStatus ?? null)
+  const [saving, setSaving] = useState(false)
+
+  if (!findingId) return null
+
+  const current = FINDING_STATUSES.find(s => s.value === status)
+
+  const handleSelect = async (e, value) => {
+    e.stopPropagation()
+    setOpen(false)
+    if (value === status) return
+    setSaving(true)
+    try {
+      const token = localStorage.getItem('ws_token')
+      const res = await fetch(`${BACKEND}/api/findings/${findingId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ status: value }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      setStatus(value)
+    } catch {
+      // silently ignore — status is optimistic
+    }
+    setSaving(false)
+  }
+
+  return (
+    <div className="relative" onClick={e => e.stopPropagation()}>
+      <button
+        onClick={e => { e.stopPropagation(); setOpen(v => !v) }}
+        disabled={saving}
+        className="flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1.5 rounded-lg border border-white/15 bg-white/5 text-gray-400 hover:text-white hover:border-white/30 disabled:opacity-50 transition-colors whitespace-nowrap"
+      >
+        {saving
+          ? <><span className="w-3 h-3 border border-gray-400/30 border-t-gray-400 rounded-full animate-spin" /> Saving…</>
+          : <>{current ? <span className={current.style}>{current.label}</span> : 'Set Status'} <ChevronDown className="w-3 h-3" /></>
+        }
+      </button>
+      {open && (
+        <div className="absolute bottom-full left-0 mb-1 z-20 bg-[#0d1f3c] border border-white/15 rounded-xl shadow-2xl overflow-hidden min-w-[170px]">
+          {FINDING_STATUSES.map(({ value, label, style }) => (
+            <button
+              key={value}
+              onClick={e => handleSelect(e, value)}
+              className={`w-full text-left px-4 py-2.5 text-xs hover:bg-white/8 transition-colors ${style} ${status === value ? 'bg-white/5 font-bold' : ''}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AiFixButton({ findingId, checkName, severity, technicalDetails }) {
+  const [state, setState] = useState('idle') // idle | loading | open
+  const [guidance, setGuidance] = useState(null)
+  const [error, setError] = useState(null)
+
+  const handleClick = async (e) => {
+    e.stopPropagation()
+    if (state === 'open') { setState('idle'); return }
+    setState('loading')
+    setError(null)
+    try {
+      const token = localStorage.getItem('ws_token')
+      const res = await fetch(`${BACKEND}/api/remediation/ai-guidance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ findingId, checkName, severity, technicalDetails }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      setGuidance(data)
+      setState('open')
+    } catch (err) {
+      setError(err.message || 'AI guidance unavailable')
+      setState('idle')
+    }
+  }
+
+  const steps = guidance?.steps ?? guidance?.Steps ?? guidance?.remediationSteps ?? []
+  const explanation = guidance?.explanation ?? guidance?.Explanation ?? null
+  const estimatedTime = guidance?.estimatedTime ?? guidance?.EstimatedTime ?? null
+  const difficulty = guidance?.difficulty ?? guidance?.Difficulty ?? null
+
+  const DIFF_STYLE = { Easy: 'text-green-400', Medium: 'text-yellow-400', Hard: 'text-red-400' }
+
+  return (
+    <>
+      <button
+        onClick={handleClick}
+        disabled={state === 'loading'}
+        className="flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1.5 rounded-lg border border-violet-500/30 bg-violet-500/8 text-violet-400 hover:bg-violet-500/15 disabled:opacity-50 transition-colors whitespace-nowrap"
+      >
+        {state === 'loading'
+          ? <><span className="w-3 h-3 border border-violet-400/30 border-t-violet-400 rounded-full animate-spin" /> Thinking…</>
+          : <><Sparkles className="w-3 h-3" /> Get AI Fix</>}
+      </button>
+
+      {error && (
+        <span className="text-[10px] text-red-400">{error}</span>
+      )}
+
+      {state === 'open' && guidance && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" onClick={() => setState('idle')}>
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+          <div
+            className="relative bg-[#0a0f1e] border border-violet-500/30 rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[80vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <Sparkles className="w-4 h-4 text-violet-400" />
+                  <h3 className="text-white font-bold text-base">AI Remediation Guidance</h3>
+                </div>
+                <p className="text-xs text-gray-400 truncate max-w-xs">{checkName}</p>
+              </div>
+              <button
+                onClick={() => setState('idle')}
+                className="text-gray-500 hover:text-white transition-colors ml-4 shrink-0"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            {(estimatedTime || difficulty) && (
+              <div className="flex items-center gap-3 mb-4 text-xs">
+                {estimatedTime && (
+                  <span className="flex items-center gap-1 text-gray-400">
+                    <Clock className="w-3.5 h-3.5" /> ~{estimatedTime}
+                  </span>
+                )}
+                {difficulty && (
+                  <span className={`font-semibold ${DIFF_STYLE[difficulty] ?? 'text-gray-400'}`}>
+                    {difficulty} difficulty
+                  </span>
+                )}
+              </div>
+            )}
+
+            {explanation && (
+              <p className="text-sm text-gray-300 leading-relaxed mb-4 bg-white/3 rounded-xl px-4 py-3 border border-white/10">
+                {explanation}
+              </p>
+            )}
+
+            {steps.length > 0 && (
+              <div>
+                <p className="text-[10px] font-bold text-violet-400 uppercase tracking-wider mb-3">Step-by-step fix</p>
+                <ol className="space-y-3">
+                  {steps.map((step, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <span className="shrink-0 w-5 h-5 rounded-full bg-violet-500/20 text-violet-400 text-[10px] font-bold flex items-center justify-center mt-0.5">{i + 1}</span>
+                      <p className="text-sm text-gray-200 leading-relaxed">{typeof step === 'string' ? step : step.description ?? JSON.stringify(step)}</p>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+
+            {steps.length === 0 && !explanation && (
+              <p className="text-sm text-gray-500 text-center py-4">No guidance returned.</p>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+function JiraTicketButton({ findingId, checkName, severity, recommendation }) {
+  const [state, setState] = useState('idle') // idle | loading | success | error
+  const [ticketUrl, setTicketUrl] = useState(null)
+  const [errMsg, setErrMsg] = useState(null)
+
+  const handleCreate = async (e) => {
+    e.stopPropagation()
+    setState('loading')
+    setErrMsg(null)
+    try {
+      const token = localStorage.getItem('ws_token')
+      const res = await fetch(`${BACKEND}/api/integrations/jira/ticket`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ findingId, checkName, severity, recommendation }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      setTicketUrl(data?.url ?? data?.Url ?? data?.ticketUrl ?? data?.TicketUrl ?? null)
+      setState('success')
+      setTimeout(() => setState('idle'), 5000)
+    } catch (err) {
+      setErrMsg(err.message || 'Failed to create ticket')
+      setState('error')
+      setTimeout(() => setState('idle'), 4000)
+    }
+  }
+
+  if (state === 'success') {
+    return (
+      <div className="flex items-center gap-2 text-xs text-green-400">
+        <CheckCircle className="w-3.5 h-3.5 shrink-0" />
+        Jira ticket created
+        {ticketUrl && (
+          <a href={ticketUrl} target="_blank" rel="noopener noreferrer"
+            className="underline text-green-300 hover:text-green-200 ml-1" onClick={(e) => e.stopPropagation()}>
+            View ticket
+          </a>
+        )}
+      </div>
+    )
+  }
+  if (state === 'error') {
+    return (
+      <div className="flex items-center gap-2 text-xs text-red-400">
+        <XCircle className="w-3.5 h-3.5 shrink-0" />
+        {errMsg}
+      </div>
+    )
+  }
+
+  return (
+    <button
+      onClick={handleCreate}
+      disabled={state === 'loading'}
+      className="flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1.5 rounded-lg border border-blue-500/30 bg-blue-500/8 text-blue-400 hover:bg-blue-500/15 disabled:opacity-50 transition-colors whitespace-nowrap"
+    >
+      {state === 'loading'
+        ? <><span className="w-3 h-3 border border-blue-400/30 border-t-blue-400 rounded-full animate-spin" /> Creating…</>
+        : <><span className="font-bold text-blue-300">J</span> Create Jira Ticket</>}
+    </button>
+  )
+}
+
 function FindingCard({ item }) {
   const [open, setOpen] = useState(false)
 
@@ -258,6 +553,7 @@ function FindingCard({ item }) {
   const severity        = item.severity        || item.Severity       || ''
   const findingType     = item.findingType     || item.FindingType    || null
   const remediationId   = item.remediationId   || item.RemediationId  || ''
+  const findingId       = item.findingId       || item.FindingId      || item.id             || item.Id || null
   const evidence        = item.evidence        || item.Evidence       || null
   const technicalDetails = item.technicalDetails || item.TechnicalDetails || item.details     || null
   const whyItMatters    = item.whyItMatters     || item.WhyItMatters  || item.impact          || item.riskDescription || null
@@ -267,9 +563,17 @@ function FindingCard({ item }) {
   const fixSteps        = item.fixSteps         || item.FixSteps      || item.recommendation  || item.remediation     || null
   const riskScore       = item.riskScore        || item.RiskScore     || null
   const evidenceDetail  = item.evidenceDetail   || item.EvidenceDetail || null
+  const isKev           = item.isKev            ?? item.IsKev         ?? false
+  const epssScore       = item.epssScore        ?? item.EpssScore     ?? null
+  const kevDueDate      = item.kevDueDate       ?? item.KevDueDate    ?? null
+  const confidenceScore = item.confidenceScore ?? item.ConfidenceScore ?? null
+  const slaDueDate      = item.slaDueDate      ?? item.SlaDueDate      ?? null
+  const slaStatus       = item.slaStatus       ?? item.SlaStatus       ?? null
+  const slaDaysLeft     = item.slaDaysLeft     ?? item.SlaDaysLeft     ?? null
+  const findingStatus   = item.findingStatus   ?? item.FindingStatus   ?? null
 
   const c = sevTheme(severity)
-  const hasDetail = technicalDetails || whyItMatters || whatCanGoWrong || businessImpact || attackScenario || fixSteps || evidenceDetail
+  const hasDetail = technicalDetails || whyItMatters || whatCanGoWrong || businessImpact || attackScenario || fixSteps || evidenceDetail || isKev
 
   return (
     <div className={`rounded-xl border ${c.border} ${c.bg} mb-2 overflow-hidden transition-all`}>
@@ -286,7 +590,12 @@ function FindingCard({ item }) {
         <div className="flex-1 min-w-0">
           <span className="text-sm font-semibold text-white">{checkName}</span>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+          {isKev && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded border bg-red-600/25 text-red-300 border-red-500/60 shrink-0 whitespace-nowrap animate-pulse">
+              ⚠ ACTIVELY EXPLOITED
+            </span>
+          )}
           {findingType === 'Confirmed' && (
             <span className="text-[10px] font-bold px-2 py-0.5 rounded border bg-red-500/15 text-red-400 border-red-500/30 shrink-0">
               Confirmed Issue
@@ -302,9 +611,20 @@ function FindingCard({ item }) {
               {severity}
             </span>
           )}
+          {epssScore != null && (
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border shrink-0 whitespace-nowrap ${
+              epssScore >= 0.5 ? 'bg-red-500/15 text-red-400 border-red-500/30'
+              : epssScore >= 0.1 ? 'bg-orange-500/15 text-orange-400 border-orange-500/30'
+              : 'bg-gray-500/15 text-gray-400 border-gray-500/30'
+            }`}>
+              EPSS {(epssScore * 100).toFixed(1)}%
+            </span>
+          )}
           {riskScore != null && (
             <span className={`text-xs font-bold ${c.text}`}>{riskScore}/10</span>
           )}
+          <ConfidenceChip score={confidenceScore} />
+          <SlaBadge severity={severity} slaDueDate={slaDueDate} slaStatus={slaStatus} slaDaysLeft={slaDaysLeft} />
           {!passed && remediationId && (
             <Link
               to={`/remediation?check=${encodeURIComponent(remediationId)}`}
@@ -323,6 +643,20 @@ function FindingCard({ item }) {
       {/* Expanded detail panel */}
       {open && hasDetail && (
         <div className="px-4 pb-4 pt-3 border-t border-white/10 space-y-3">
+
+          {isKev && (
+            <div className="bg-red-950/60 border border-red-700/50 rounded-lg px-3 py-2.5">
+              <p className="text-[10px] font-bold text-red-400 uppercase tracking-wide mb-1">🚨 CISA Known Exploited Vulnerability (KEV)</p>
+              <p className="text-xs text-gray-300 leading-relaxed">
+                This vulnerability is actively exploited in the wild and listed on the CISA KEV catalog.
+              </p>
+              {kevDueDate && (
+                <p className="text-xs text-red-300 font-bold mt-1.5">
+                  Patch due: {new Date(kevDueDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                </p>
+              )}
+            </div>
+          )}
 
           {technicalDetails && (
             <div className="bg-black/30 rounded-lg px-3 py-2.5">
@@ -392,6 +726,19 @@ function FindingCard({ item }) {
           {!passed && evidence && <EvidencePanel evidence={evidence} />}
           {!passed && evidenceDetail && <EvidenceDetailBlock evidenceDetail={evidenceDetail} />}
 
+          {!passed && (
+            <div className="pt-2 border-t border-white/10 flex flex-wrap items-center gap-2">
+              <FindingStatusDropdown findingId={findingId} currentStatus={findingStatus} />
+              <AiFixButton findingId={findingId} checkName={checkName} severity={severity} technicalDetails={technicalDetails} />
+              <JiraTicketButton
+                findingId={findingId}
+                checkName={checkName}
+                severity={severity}
+                recommendation={Array.isArray(fixSteps) ? fixSteps.join(' ') : (fixSteps ?? '')}
+              />
+            </div>
+          )}
+
         </div>
       )}
     </div>
@@ -435,6 +782,128 @@ function EvidenceDetailBlock({ evidenceDetail }) {
             {(resp.body ?? resp.Body) && (
               <pre className="mt-2 text-gray-300 bg-black/30 rounded px-2 py-1.5 overflow-x-auto whitespace-pre-wrap break-all">{resp.body ?? resp.Body}</pre>
             )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function RemediationPlanPanel({ scanUrl, result }) {
+  const [planData, setPlanData] = useState(null)
+  const [planLoading, setPlanLoading] = useState(false)
+  const [planOpen, setPlanOpen] = useState(false)
+  const [planError, setPlanError] = useState(null)
+
+  const handleGetPlan = async () => {
+    setPlanLoading(true)
+    setPlanError(null)
+    try {
+      const res = await fetch(`${BACKEND}/api/scan/remediation-plan`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ url: scanUrl }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const json = await res.json()
+      setPlanData(json)
+      setPlanOpen(true)
+    } catch (err) {
+      setPlanError(err.message || 'Failed to fetch remediation plan')
+    }
+    setPlanLoading(false)
+  }
+
+  const getEffortLabel = (finding) => {
+    if (finding.effort) return finding.effort
+    const score = finding.priorityScore ?? 0
+    if (score >= 8) return 'Fix Now'
+    if (score >= 5) return 'Fix Soon'
+    return 'Fix Later'
+  }
+
+  const effortStyle = (label) => {
+    if (label === 'Fix Now')  return 'bg-red-600/20 text-red-300 border-red-500/40'
+    if (label === 'Fix Soon') return 'bg-orange-500/20 text-orange-300 border-orange-500/40'
+    return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40'
+  }
+
+  const rawFindings = Array.isArray(planData)
+    ? planData
+    : (planData?.findings ?? planData?.items ?? planData?.plan ?? [])
+
+  const findings = [...(Array.isArray(rawFindings) ? rawFindings : [])]
+    .sort((a, b) => (b.priorityScore ?? 0) - (a.priorityScore ?? 0))
+
+  return (
+    <div className="mt-4">
+      <button
+        onClick={handleGetPlan}
+        disabled={planLoading}
+        className="flex items-center gap-2 bg-white/5 hover:bg-white/10 disabled:opacity-50 border border-white/15 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
+      >
+        {planLoading
+          ? <><span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> Generating Plan…</>
+          : <>📋 Get Remediation Plan</>}
+      </button>
+
+      {planError && (
+        <div className="flex items-start gap-2 mt-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-3 py-2.5 text-xs">
+          <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+          <span>{planError}</span>
+        </div>
+      )}
+
+      {planData && planOpen && (
+        <div className="mt-3 bg-white/3 border border-white/10 rounded-2xl overflow-hidden">
+          {/* Panel header */}
+          <div className="flex items-center justify-between px-5 py-3 border-b border-white/10">
+            <p className="text-sm font-semibold text-white">Remediation Plan</p>
+            <button
+              onClick={() => setPlanOpen(false)}
+              className="text-gray-500 hover:text-white text-xs font-bold px-1.5 py-0.5 rounded hover:bg-white/10 transition-colors"
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
+
+          {/* Findings list */}
+          <div className="divide-y divide-white/5">
+            {findings.length === 0 && (
+              <p className="text-gray-500 text-sm py-8 text-center">No findings to remediate.</p>
+            )}
+            {findings.map((finding, i) => {
+              const effortLabel = getEffortLabel(finding)
+              const c = sevTheme(finding.severity ?? '')
+              return (
+                <div key={i} className="px-5 py-4">
+                  <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                    {/* Effort badge */}
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${effortStyle(effortLabel)}`}>
+                      {effortLabel}
+                    </span>
+                    {/* Severity badge */}
+                    {finding.severity && (
+                      <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded text-white ${c.badge}`}>
+                        {finding.severity}
+                      </span>
+                    )}
+                    {/* Check name */}
+                    <span className="text-sm font-semibold text-white flex-1 min-w-0 truncate">
+                      {finding.checkName ?? 'Unknown'}
+                    </span>
+                    {/* Priority score */}
+                    <span className={`text-xs font-bold shrink-0 ${c.text}`}>
+                      {finding.priorityScore ?? '—'}/10
+                    </span>
+                  </div>
+                  {finding.recommendation && (
+                    <p className="text-xs text-gray-400 leading-relaxed mt-1">{finding.recommendation}</p>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
       )}
@@ -662,7 +1131,12 @@ export default function ProductPage() {
         const authConfig = authType !== 'none' ? { authType, ...authForm } : undefined
         data = await startCrawlScan({ url: url.trim(), depth: Number(crawlDepth), maxPages: Number(maxPages), ...(authConfig ? { authConfig } : {}) })
       } else if (type === 'web' && authType === 'formlogin') {
-        data = await startAuthenticatedScan({ targetUrl: url.trim(), mode: scanMode, ...authForm })
+        data = await startAuthenticatedScan({
+          url: url.trim(),
+          loginUrl: authForm.loginUrl.trim() || undefined,
+          username: authForm.username,
+          password: authForm.password,
+        })
       } else if (type === 'web' && authType === 'bearer') {
         const res = await axios.post(`${API}/api${product.endpoint}`, { ...base, authType: 'bearer', bearerToken: authForm.bearerToken })
         data = res.data
@@ -710,6 +1184,8 @@ export default function ProductPage() {
   const serverHdr  = result?.rawServerHeader   ?? result?.RawServerHeader   ?? null
 
   const infraProfile = result?.infrastructureProfile ?? result?.InfrastructureProfile ?? null
+  const wafDetected  = result?.wafDetected ?? result?.WafDetected ?? null
+  const wafVendor    = result?.wafVendor   ?? result?.WafVendor   ?? null
 
   const scoreDelta = result?.scoreDelta ?? result?.ScoreDelta
     ?? (result?.previousScore != null && result?.securityScore != null
@@ -977,8 +1453,8 @@ export default function ProductPage() {
             {/* Infrastructure card — first thing above results */}
             <InfrastructureCard profile={infraProfile} />
 
-            {/* Hosting / edge banner */}
-            {(hosting || edge || serverHdr) && (
+            {/* Hosting / edge / WAF banner */}
+            {(hosting || edge || serverHdr || wafDetected != null || wafVendor) && (
               <div className="flex flex-wrap items-center gap-x-5 gap-y-2 bg-white/3 border border-white/10 rounded-2xl px-4 py-3 mb-4 text-sm">
                 {hosting && (
                   <span className="flex items-center gap-1.5 text-gray-300">
@@ -991,6 +1467,16 @@ export default function ProductPage() {
                   <span className="flex items-center gap-1.5 text-gray-300">
                     <span className="text-gray-500">🛡 Edge:</span>
                     <span className="font-semibold text-white">{edge}</span>
+                  </span>
+                )}
+                {(wafDetected != null || wafVendor) && (
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-gray-500">🔰 WAF:</span>
+                    {wafVendor
+                      ? <span className="font-semibold text-green-400">{wafVendor}</span>
+                      : wafDetected
+                        ? <span className="font-semibold text-green-400">Detected</span>
+                        : <span className="font-semibold text-red-400">Not detected</span>}
                   </span>
                 )}
                 {serverHdr && (
@@ -1244,6 +1730,9 @@ export default function ProductPage() {
                 </div>
               </div>
             )}
+
+            {/* Remediation plan panel */}
+            <RemediationPlanPanel scanUrl={url} result={result} />
 
             {/* Report panel */}
             <ReportPanel scanUrl={url} scanResult={result} />

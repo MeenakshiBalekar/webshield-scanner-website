@@ -598,7 +598,7 @@ function KubernetesTab() {
     try {
       const BASE = import.meta.env.VITE_API_URL || 'https://webshield-backend-api.onrender.com'
       const token = localStorage.getItem('ws_token')
-      const res = await fetch(`${BASE}/api/k8s/scan`, {
+      const res = await fetch(`${BASE}/api/kubernetes/audit`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

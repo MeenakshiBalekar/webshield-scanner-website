@@ -88,7 +88,7 @@ export const getRemediationsByCategory = (cat) =>
 // Dashboard
 export const getDashboard = () => request('/api/dashboard')
 export const getDashboardStats = () => request('/api/dashboard/stats')
-export const getExecutiveDashboard = () => request('/api/dashboard/executive')
+export const getExecutiveDashboard = () => request('/api/reports/executive-summary')
 export const getDashboardTrends = () => request('/api/dashboard/trends')
 
 // CVE
@@ -178,13 +178,13 @@ export const testCicdGate = (payload) =>
   request('/api/cicd/gate', { method: 'POST', body: JSON.stringify(payload) })
 
 // Schedules
-export const getSchedules = () => request('/api/schedule')
+export const getSchedules = () => request('/api/schedules')
 export const createSchedule = (data) =>
-  request('/api/schedule', { method: 'POST', body: JSON.stringify(data) })
+  request('/api/schedules', { method: 'POST', body: JSON.stringify(data) })
 export const deleteSchedule = (id) =>
-  request(`/api/schedule/${id}`, { method: 'DELETE' })
+  request(`/api/schedules/${id}`, { method: 'DELETE' })
 export const toggleSchedule = (id) =>
-  request(`/api/schedule/toggle/${id}`, { method: 'PATCH' })
+  request(`/api/schedules/${id}/toggle`, { method: 'PATCH' })
 
 // AI Insight
 export const getAiTriage = () => request('/api/aiinsight/triage')
@@ -409,12 +409,16 @@ export const getBehavioralSummary  = ()        => request('/api/edr/behavioral/s
 export const deepScanCompliance = (frameworkId, agentId) =>
   request(`/api/compliance/deep-scan/${frameworkId}?agentId=${agentId}`, { method: 'POST' })
 
-// Compliance evidence export (blob)
-export const downloadComplianceEvidence = (scanId, frameworkId) =>
-  blobRequest(`/api/compliance/${scanId}/${frameworkId}/evidence`)
+// Compliance evidence — returns JSON artifacts per control
+export const fetchComplianceEvidence = (assessmentId) =>
+  request(`/api/compliance/assess/${assessmentId}/evidence`, { method: 'POST' })
 
-// Kubernetes scan
-export const scanKubernetes = (payload) => request('/api/k8s/scan', { method: 'POST', body: JSON.stringify(payload) })
+// Kubernetes audit scan
+export const scanKubernetes = (payload) => request('/api/kubernetes/audit', { method: 'POST', body: JSON.stringify(payload) })
+
+// Package CVE Scanner (agent-based)
+export const scanAgentPackages  = (agentId) => request(`/api/agent/${agentId}/packages/scan`, { method: 'POST' })
+export const getAgentPackageCves = (agentId) => request(`/api/agent/${agentId}/package-cves`)
 
 // VMDR host vulnerabilities
 export const getAgentVulnerabilities = (agentId) => request(`/api/agent/scans/${agentId}/vulnerabilities`)

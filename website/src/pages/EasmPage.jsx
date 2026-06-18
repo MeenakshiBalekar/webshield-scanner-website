@@ -85,12 +85,15 @@ function SubdomainsTab({ subdomains }) {
           const ports        = field(s, 'openPorts', 'OpenPorts', 'ports', 'Ports') ?? []
           const risk         = field(s, 'risk', 'Risk') ?? 'Info'
           const dns          = field(s, 'dnsRecords', 'DnsRecords', 'records', 'Records') ?? {}
-          const source       = field(s, 'source', 'Source') ?? null
-          const takeoverRisk = field(s, 'takeoverRisk', 'TakeoverRisk') ?? null
-          const tech         = field(s, 'tech', 'Tech') ?? null
+          const source        = field(s, 'source', 'Source') ?? null
+          const takeoverRisk  = field(s, 'takeoverRisk', 'TakeoverRisk') ?? null
+          const tech          = field(s, 'tech', 'Tech') ?? null
+          const asnInfo       = field(s, 'asnInfo', 'AsnInfo', 'asn', 'Asn') ?? null
+          const whoisOrg      = field(s, 'whoisOrg', 'WhoisOrg', 'organization', 'Organization') ?? null
+          const cloudProvider = field(s, 'cloudProvider', 'CloudProvider') ?? null
           const hasDns = Object.keys(dns).length > 0 || Object.keys(s).some(k => ['A','AAAA','MX','TXT','CNAME','NS'].includes(k.toUpperCase()))
           const isOpen = expanded[i]
-          const hasExpanded = hasDns || (tech && Object.values(tech).some(v => v != null))
+          const hasExpanded = hasDns || (tech && Object.values(tech).some(v => v != null)) || asnInfo || whoisOrg || cloudProvider
 
           const sourceBadgeCls = source === 'CT'
             ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
@@ -111,6 +114,13 @@ function SubdomainsTab({ subdomains }) {
                   <span className="text-xs font-mono text-green-300 truncate">{sub}</span>
                   {source && (
                     <span className={`inline-flex text-[10px] font-bold px-1.5 py-0.5 rounded border shrink-0 ${sourceBadgeCls}`}>{source}</span>
+                  )}
+                  {cloudProvider && (
+                    <span className={`inline-flex text-[10px] font-bold px-1.5 py-0.5 rounded border shrink-0 ${
+                      cloudProvider === 'AWS'   ? 'bg-orange-500/10 text-orange-400 border-orange-500/20'
+                      : cloudProvider === 'Azure' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                      : 'bg-sky-500/10 text-sky-400 border-sky-500/20'
+                    }`}>{cloudProvider}</span>
                   )}
                 </div>
                 <div className="col-span-2">
@@ -135,6 +145,26 @@ function SubdomainsTab({ subdomains }) {
               </div>
               {isOpen && hasExpanded && (
                 <div className="px-8 pb-3 pt-1 bg-white/2 border-b border-white/5 space-y-3">
+                  {(asnInfo || whoisOrg || cloudProvider) && (
+                    <div>
+                      <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Network Info</p>
+                      <div className="flex flex-wrap gap-2">
+                        {asnInfo && (
+                          <span className="bg-white/5 border border-white/10 text-gray-300 text-[10px] px-2 py-0.5 rounded font-mono">ASN: {asnInfo}</span>
+                        )}
+                        {whoisOrg && (
+                          <span className="bg-white/5 border border-white/10 text-gray-400 text-[10px] px-2 py-0.5 rounded">{whoisOrg}</span>
+                        )}
+                        {cloudProvider && (
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                            cloudProvider === 'AWS'   ? 'bg-orange-500/10 text-orange-400 border-orange-500/20'
+                            : cloudProvider === 'Azure' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                            : 'bg-sky-500/10 text-sky-400 border-sky-500/20'
+                          }`}>{cloudProvider}</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                   {tech && Object.values(tech).some(v => v != null) && (
                     <div>
                       <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Tech Stack</p>
@@ -322,6 +352,74 @@ function DnsSecurityTab({ checks }) {
             </div>
           )
         })}
+      </div>
+    </div>
+  )
+}
+
+/* ── Cloud Assets tab ── */
+const CLOUD_STYLE = {
+  S3:    { cls: 'bg-orange-500/10 text-orange-400 border-orange-500/20', label: 'S3'    },
+  Azure: { cls: 'bg-blue-500/10 text-blue-400 border-blue-500/20',       label: 'Azure' },
+  GCP:   { cls: 'bg-sky-500/10 text-sky-400 border-sky-500/20',          label: 'GCP'   },
+}
+
+function CloudAssetsTab({ assets }) {
+  if (!assets?.length) return <Empty text="No cloud storage assets discovered." />
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3 bg-orange-500/8 border border-orange-500/20 rounded-xl px-4 py-3">
+        <AlertTriangle className="w-4 h-4 text-orange-400 shrink-0" />
+        <span className="text-sm text-gray-300">
+          <span className="font-bold text-orange-400">{assets.length}</span> cloud storage asset{assets.length !== 1 ? 's' : ''} discovered on your attack surface
+        </span>
+      </div>
+      <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden">
+        <div className="grid grid-cols-12 px-5 py-3 border-b border-white/10 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+          <span className="col-span-2">Provider</span>
+          <span className="col-span-4">Bucket / Container</span>
+          <span className="col-span-3">Region</span>
+          <span className="col-span-2">Access</span>
+          <span className="col-span-1 text-right">Risk</span>
+        </div>
+        <div className="divide-y divide-white/5">
+          {assets.map((a, i) => {
+            const type         = field(a, 'type', 'Type') ?? 'S3'
+            const bucket       = field(a, 'bucket', 'Bucket', 'name', 'Name', 'container', 'Container') ?? '—'
+            const url          = field(a, 'url', 'Url', 'URL') ?? null
+            const region       = field(a, 'region', 'Region') ?? '—'
+            const publicAccess = field(a, 'publicAccess', 'PublicAccess', 'isPublic', 'IsPublic') ?? false
+            const risk         = field(a, 'risk', 'Risk') ?? (publicAccess ? 'High' : 'Low')
+            const style        = CLOUD_STYLE[type] ?? { cls: 'bg-gray-500/10 text-gray-400 border-gray-500/20', label: type }
+            return (
+              <div key={i} className="grid grid-cols-12 px-5 py-3 items-center hover:bg-white/3 transition-colors">
+                <div className="col-span-2">
+                  <span className={`inline-flex text-[10px] font-bold px-1.5 py-0.5 rounded border ${style.cls}`}>
+                    {style.label}
+                  </span>
+                </div>
+                <div className="col-span-4 min-w-0">
+                  <p className="text-xs font-mono text-white truncate">{bucket}</p>
+                  {url && (
+                    <a href={url} target="_blank" rel="noopener noreferrer"
+                      className="text-[10px] text-blue-400 hover:underline font-mono truncate block max-w-full">{url}</a>
+                  )}
+                </div>
+                <div className="col-span-3">
+                  <span className="text-xs font-mono text-gray-400">{region}</span>
+                </div>
+                <div className="col-span-2">
+                  {publicAccess
+                    ? <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded">🌍 Public</span>
+                    : <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded">🔒 Private</span>}
+                </div>
+                <div className="col-span-1 text-right">
+                  <RiskBadge risk={risk} />
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )
@@ -706,6 +804,7 @@ const TABS = [
   { id: 'certs',      label: 'Certificates'     },
   { id: 'services',   label: 'Exposed Services' },
   { id: 'dns',        label: 'DNS Security'     },
+  { id: 'cloud',      label: 'Cloud Assets'     },
   { id: 'history',    label: 'History'          },
 ]
 
@@ -734,6 +833,7 @@ export default function EasmPage() {
   const certs         = result ? (field(result,'certificates','Certificates') ?? []) : []
   const services      = result ? (field(result,'exposedServices','ExposedServices') ?? []) : []
   const dnsChecks     = result ? (field(result,'dnsChecks','DnsChecks') ?? []) : []
+  const cloudAssets   = result ? (field(result,'cloudAssets','CloudAssets') ?? []) : []
   const riskScore     = result ? field(result,'riskScore','RiskScore') : null
   const riskLevel     = result ? field(result,'riskLevel','RiskLevel') : null
   const ctSubdomains  = result ? field(result,'ctSubdomainsFound','CtSubdomainsFound') : null
@@ -745,6 +845,7 @@ export default function EasmPage() {
     certs:      certs.length,
     services:   services.length,
     dns:        dnsChecks.length,
+    cloud:      cloudAssets.length,
   }
 
   return (
@@ -877,6 +978,7 @@ export default function EasmPage() {
               {tab === 'certs'      && <CertificatesTab certificates={certs} />}
               {tab === 'services'   && <ExposedServicesTab services={services} />}
               {tab === 'dns'        && <DnsSecurityTab checks={dnsChecks} />}
+              {tab === 'cloud'      && <CloudAssetsTab assets={cloudAssets} />}
               {tab === 'history'    && <HistoryTab domain={scannedDomain} />}
             </>
           )}

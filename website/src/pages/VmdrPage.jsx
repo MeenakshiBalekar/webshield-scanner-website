@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { ShieldCheck, RefreshCw, ChevronDown, ChevronRight, AlertTriangle, CheckCircle2, XCircle, Clock } from 'lucide-react'
+import { ShieldCheck, RefreshCw, ChevronDown, ChevronRight, AlertTriangle, CheckCircle2, XCircle, Clock, Package, ScanLine, Download } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-import { getAgents, scanVmdr, getVmdrFindings, getVmdrSummary, updateFindingStatus } from '../services/api'
+import { getAgents, scanVmdr, getVmdrFindings, getVmdrSummary, updateFindingStatus, scanAgentPackages, getAgentPackageCves } from '../services/api'
 
 function field(obj, ...keys) {
   if (!obj) return undefined
@@ -30,8 +30,9 @@ const STATUS_CFG = {
 }
 
 const TABS = [
-  { id: 'findings', label: 'Findings' },
-  { id: 'vulns',   label: 'Host CVEs' },
+  { id: 'findings',  label: 'Findings'      },
+  { id: 'vulns',     label: 'Host CVEs'     },
+  { id: 'packages',  label: 'Package CVEs'  },
 ]
 
 function SevBadge({ sev }) {
@@ -87,16 +88,18 @@ function FindingRow({ finding, onStatusChange }) {
   const [expanded, setExpanded] = useState(false)
   const [updating, setUpdating] = useState(false)
 
-  const id     = field(finding, 'id')
-  const cveId  = field(finding, 'cveId', 'CveId')
-  const pkg    = field(finding, 'packageName', 'PackageName')
-  const inst   = field(finding, 'installedVersion', 'InstalledVersion')
-  const fixed  = field(finding, 'fixedVersion', 'FixedVersion')
-  const cvss   = field(finding, 'cvssScore', 'CvssScore')
-  const sev    = field(finding, 'severity', 'Severity') || 'Low'
-  const epss   = field(finding, 'epssScore', 'EpssScore')
-  const desc   = field(finding, 'description', 'Description')
-  const status = field(finding, 'status', 'Status') || 'Open'
+  const id         = field(finding, 'id')
+  const cveId      = field(finding, 'cveId', 'CveId')
+  const pkg        = field(finding, 'packageName', 'PackageName')
+  const inst       = field(finding, 'installedVersion', 'InstalledVersion')
+  const fixed      = field(finding, 'fixedVersion', 'FixedVersion')
+  const cvss       = field(finding, 'cvssScore', 'CvssScore')
+  const sev        = field(finding, 'severity', 'Severity') || 'Low'
+  const epss       = field(finding, 'epssScore', 'EpssScore')
+  const isKev      = field(finding, 'isKev', 'IsKev') ?? false
+  const kevDueDate = field(finding, 'kevDueDate', 'KevDueDate') ?? null
+  const desc       = field(finding, 'description', 'Description')
+  const status     = field(finding, 'status', 'Status') || 'Open'
 
   const handleStatusChange = async (e) => {
     const newStatus = e.target.value
@@ -117,6 +120,11 @@ function FindingRow({ finding, onStatusChange }) {
             : <ChevronRight className="w-3.5 h-3.5 text-gray-500" />}
         </td>
         <td className="px-4 py-3 text-xs font-mono text-sky-400 whitespace-nowrap">
+          {isKev && (
+            <span className="mr-1.5 inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded border bg-red-600/25 text-red-300 border-red-500/50 animate-pulse whitespace-nowrap">
+              ⚠ KEV
+            </span>
+          )}
           <a
             href={`https://nvd.nist.gov/vuln/detail/${cveId}`}
             target="_blank"
@@ -155,7 +163,16 @@ function FindingRow({ finding, onStatusChange }) {
       </tr>
       {expanded && (
         <tr className="border-b border-white/5 bg-white/2">
-          <td colSpan={9} className="px-6 py-4">
+          <td colSpan={9} className="px-6 py-4 space-y-2">
+            {isKev && (
+              <div className="bg-red-950/60 border border-red-700/50 rounded-lg px-3 py-2">
+                <p className="text-[10px] font-bold text-red-400 uppercase tracking-wide mb-0.5">🚨 CISA Known Exploited Vulnerability</p>
+                <p className="text-xs text-gray-300">Actively exploited in the wild.</p>
+                {kevDueDate && (
+                  <p className="text-xs text-red-300 font-bold mt-1">Patch due: {new Date(kevDueDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                )}
+              </div>
+            )}
             <p className="text-sm text-gray-300 leading-relaxed">{desc || 'No description available.'}</p>
           </td>
         </tr>
@@ -175,13 +192,16 @@ const SEV_ORDER = ['Critical', 'High', 'Medium', 'Low']
 function HostVulnRow({ vuln }) {
   const [expanded, setExpanded] = useState(false)
 
-  const cveId   = field(vuln, 'cveId', 'CveId')
-  const cvss    = field(vuln, 'cvssScore', 'CvssScore')
-  const pkg     = field(vuln, 'affectedPackage', 'AffectedPackage')
-  const ver     = field(vuln, 'packageVersion', 'PackageVersion')
-  const fixVer  = field(vuln, 'fixVersion', 'FixVersion')
-  const sev     = field(vuln, 'severity', 'Severity') || 'Low'
-  const desc    = field(vuln, 'description', 'Description')
+  const cveId      = field(vuln, 'cveId', 'CveId')
+  const cvss       = field(vuln, 'cvssScore', 'CvssScore')
+  const pkg        = field(vuln, 'affectedPackage', 'AffectedPackage')
+  const ver        = field(vuln, 'packageVersion', 'PackageVersion')
+  const fixVer     = field(vuln, 'fixVersion', 'FixVersion')
+  const sev        = field(vuln, 'severity', 'Severity') || 'Low'
+  const epss       = field(vuln, 'epssScore', 'EpssScore')
+  const isKev      = field(vuln, 'isKev', 'IsKev') ?? false
+  const kevDueDate = field(vuln, 'kevDueDate', 'KevDueDate') ?? null
+  const desc       = field(vuln, 'description', 'Description')
 
   return (
     <>
@@ -195,6 +215,11 @@ function HostVulnRow({ vuln }) {
             : <ChevronRight className="w-3.5 h-3.5 text-gray-500" />}
         </td>
         <td className="px-4 py-3 text-xs font-mono text-red-400 whitespace-nowrap">
+          {isKev && (
+            <span className="mr-1.5 inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded border bg-red-600/25 text-red-300 border-red-500/50 animate-pulse">
+              ⚠ KEV
+            </span>
+          )}
           {cveId ? (
             <a
               href={`https://nvd.nist.gov/vuln/detail/${cveId}`}
@@ -207,8 +232,17 @@ function HostVulnRow({ vuln }) {
             </a>
           ) : '—'}
         </td>
-        <td className="px-4 py-3 text-sm font-bold text-white whitespace-nowrap">
-          {cvss != null ? Number(cvss).toFixed(1) : '—'}
+        <td className="px-4 py-3 whitespace-nowrap">
+          <span className="text-sm font-bold text-white">{cvss != null ? Number(cvss).toFixed(1) : '—'}</span>
+          {epss != null && (
+            <span className={`ml-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded border ${
+              epss >= 0.5 ? 'bg-red-500/15 text-red-400 border-red-500/30'
+              : epss >= 0.1 ? 'bg-orange-500/15 text-orange-400 border-orange-500/30'
+              : 'bg-gray-500/15 text-gray-400 border-gray-500/30'
+            }`}>
+              {(epss * 100).toFixed(1)}% EPSS
+            </span>
+          )}
         </td>
         <td className="px-4 py-3 text-sm text-white font-medium">{pkg || '—'}</td>
         <td className="px-4 py-3 text-xs font-mono text-gray-400">{ver || '—'}</td>
@@ -220,7 +254,16 @@ function HostVulnRow({ vuln }) {
       </tr>
       {expanded && (
         <tr className="border-b border-white/5 bg-white/2">
-          <td colSpan={8} className="px-6 py-4">
+          <td colSpan={8} className="px-6 py-4 space-y-2">
+            {isKev && (
+              <div className="bg-red-950/60 border border-red-700/50 rounded-lg px-3 py-2">
+                <p className="text-[10px] font-bold text-red-400 uppercase tracking-wide mb-0.5">🚨 CISA Known Exploited Vulnerability</p>
+                <p className="text-xs text-gray-300">Actively exploited in the wild.</p>
+                {kevDueDate && (
+                  <p className="text-xs text-red-300 font-bold mt-1">Patch due: {new Date(kevDueDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                )}
+              </div>
+            )}
             <p className="text-sm text-gray-300 leading-relaxed">{desc || 'No description available.'}</p>
           </td>
         </tr>
@@ -376,6 +419,245 @@ function HostVulnsTab({ selectedId }) {
             </table>
           </div>
         </div>
+      )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Package CVE Scanner tab
+// ---------------------------------------------------------------------------
+
+function PackageCveTab({ selectedId }) {
+  const [vulns, setVulns]           = useState([])
+  const [loading, setLoading]       = useState(false)
+  const [scanning, setScanning]     = useState(false)
+  const [error, setError]           = useState('')
+  const [sevFilter, setSevFilter]   = useState('All')
+  const [scannedAt, setScannedAt]   = useState(null)
+
+  const loadResults = useCallback(async (id) => {
+    if (!id) return
+    setLoading(true); setError('')
+    try {
+      const data = await getAgentPackageCves(id)
+      const list = Array.isArray(data) ? data : (data?.vulnerabilities ?? data?.cves ?? data?.findings ?? [])
+      setVulns(list)
+      const ts = data?.scannedAt ?? data?.ScannedAt ?? null
+      if (ts) setScannedAt(ts)
+    } catch (e) {
+      if (!String(e.message).includes('404')) setError(e.message)
+    }
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { loadResults(selectedId) }, [selectedId, loadResults])
+
+  const handleScan = async () => {
+    if (!selectedId) return
+    setScanning(true); setError('')
+    try {
+      const data = await scanAgentPackages(selectedId)
+      const list = Array.isArray(data) ? data : (data?.vulnerabilities ?? data?.cves ?? data?.findings ?? [])
+      setVulns(list)
+      const ts = data?.scannedAt ?? data?.ScannedAt ?? new Date().toISOString()
+      setScannedAt(ts)
+    } catch (e) { setError(e.message || 'Package scan failed') }
+    setScanning(false)
+  }
+
+  const exportCsv = () => {
+    const rows = [
+      ['Package', 'Version', 'CVE ID', 'CVSS', 'Severity', 'Fix Version', 'Description'],
+      ...vulns.map(v => [
+        field(v, 'packageName', 'PackageName', 'package', 'Package'),
+        field(v, 'version', 'Version'),
+        field(v, 'cveId', 'CveId'),
+        field(v, 'cvssScore', 'CvssScore', 'cvss', 'Cvss'),
+        field(v, 'severity', 'Severity'),
+        field(v, 'fixVersion', 'FixVersion'),
+        field(v, 'description', 'Description'),
+      ]),
+    ]
+    const csv = rows.map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n')
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
+    const a = document.createElement('a'); a.href = url; a.download = `package-cves-${selectedId || 'export'}.csv`
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url)
+  }
+
+  if (!selectedId) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
+        <div className="w-14 h-14 bg-lime-500/10 border border-lime-500/20 rounded-2xl flex items-center justify-center">
+          <Package className="w-7 h-7 text-lime-400" />
+        </div>
+        <p className="text-gray-400 text-sm">Select an agent to view package CVEs.</p>
+      </div>
+    )
+  }
+
+  const counts = SEV_ORDER.reduce((acc, s) => {
+    acc[s] = vulns.filter(v => (field(v, 'severity', 'Severity') || 'Low') === s).length
+    return acc
+  }, {})
+
+  const filtered = sevFilter === 'All'
+    ? vulns
+    : vulns.filter(v => (field(v, 'severity', 'Severity') || 'Low') === sevFilter)
+
+  const sevChipColor = {
+    Critical: 'bg-red-500/15 text-red-400 border-red-500/30',
+    High:     'bg-orange-500/15 text-orange-400 border-orange-500/30',
+    Medium:   'bg-amber-500/15 text-amber-400 border-amber-500/30',
+    Low:      'bg-blue-500/15 text-blue-400 border-blue-500/30',
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Controls row */}
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          onClick={handleScan}
+          disabled={scanning || loading}
+          className="flex items-center gap-2 px-4 py-2 bg-lime-500 hover:bg-lime-600 text-black font-semibold text-sm rounded-xl disabled:opacity-50 transition-colors"
+        >
+          {scanning
+            ? <><RefreshCw className="w-4 h-4 animate-spin" /> Scanning…</>
+            : <><ScanLine className="w-4 h-4" /> Run Package Scan</>}
+        </button>
+        <button
+          onClick={() => loadResults(selectedId)}
+          disabled={loading || scanning}
+          className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 text-sm rounded-xl border border-white/10 disabled:opacity-50 transition-colors"
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
+        </button>
+        {vulns.length > 0 && (
+          <button
+            onClick={exportCsv}
+            className="flex items-center gap-1.5 px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white text-sm rounded-xl border border-white/10 transition-colors"
+          >
+            <Download className="w-4 h-4" /> Export CSV
+          </button>
+        )}
+        {scannedAt && (
+          <span className="text-xs text-gray-500 ml-auto">
+            Last scanned: {new Date(scannedAt).toLocaleString()}
+          </span>
+        )}
+      </div>
+
+      {error && (
+        <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-sm text-red-400">
+          <XCircle className="w-4 h-4 shrink-0" />{error}
+        </div>
+      )}
+
+      {loading && (
+        <div className="flex items-center justify-center gap-2 py-20 text-gray-400 text-sm">
+          <RefreshCw className="w-4 h-4 animate-spin" /> Loading package CVEs…
+        </div>
+      )}
+
+      {!loading && vulns.length === 0 && !error && (
+        <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
+          <div className="w-14 h-14 bg-lime-500/10 border border-lime-500/20 rounded-2xl flex items-center justify-center">
+            <Package className="w-7 h-7 text-lime-400" />
+          </div>
+          <p className="text-white font-semibold">No package CVEs found</p>
+          <p className="text-gray-400 text-sm">
+            Click "Run Package Scan" to scan installed packages on this agent for known CVEs.
+          </p>
+          <p className="text-xs text-gray-600 font-mono">
+            Agent flag: --scan packages
+          </p>
+        </div>
+      )}
+
+      {!loading && vulns.length > 0 && (
+        <>
+          {/* Summary bar */}
+          <div className="flex flex-wrap items-center gap-3 bg-white/3 border border-white/10 rounded-xl px-5 py-4">
+            <span className="text-sm font-semibold text-white mr-2">
+              {vulns.length} package CVE{vulns.length !== 1 ? 's' : ''}
+            </span>
+            {SEV_ORDER.map(s => counts[s] > 0 && (
+              <span key={s} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${sevChipColor[s]}`}>
+                <span>{s}</span><span className="opacity-80">{counts[s]}</span>
+              </span>
+            ))}
+          </div>
+
+          {/* Filter pills */}
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-xs text-gray-400 font-medium">Filter:</span>
+            {['All', ...SEV_ORDER].map(s => (
+              <button key={s} onClick={() => setSevFilter(s)}
+                className={`px-3 py-1 rounded-full text-xs font-semibold border transition-colors ${
+                  sevFilter === s
+                    ? 'bg-lime-500/20 text-lime-400 border-lime-500/40'
+                    : 'bg-white/4 text-gray-400 border-white/10 hover:border-white/20'
+                }`}>
+                {s}
+              </button>
+            ))}
+            <span className="ml-auto text-xs text-gray-500">{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
+          </div>
+
+          {/* Table */}
+          <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-white/8">
+                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-500">Package</th>
+                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-500">Version</th>
+                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-500">CVE ID</th>
+                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-500">CVSS</th>
+                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-500">Severity</th>
+                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-500">Fix Version</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((v, i) => {
+                    const pkg    = field(v, 'packageName', 'PackageName', 'package', 'Package') ?? '—'
+                    const ver    = field(v, 'version', 'Version') ?? '—'
+                    const cveId  = field(v, 'cveId', 'CveId') ?? null
+                    const cvss   = field(v, 'cvssScore', 'CvssScore', 'cvss', 'Cvss') ?? null
+                    const sev    = field(v, 'severity', 'Severity') || 'Low'
+                    const fixVer = field(v, 'fixVersion', 'FixVersion') ?? null
+                    const s      = SEV[sev] || SEV.Low
+                    return (
+                      <tr key={i} className="border-b border-white/5 last:border-0 hover:bg-white/3 transition-colors">
+                        <td className="px-4 py-2.5 text-white font-mono font-medium">{pkg}</td>
+                        <td className="px-4 py-2.5 text-gray-400 font-mono text-xs">{ver}</td>
+                        <td className="px-4 py-2.5">
+                          {cveId ? (
+                            <a href={`https://nvd.nist.gov/vuln/detail/${cveId}`} target="_blank" rel="noreferrer"
+                              className="text-xs font-mono text-red-400 hover:underline">
+                              {cveId}
+                            </a>
+                          ) : <span className="text-gray-600 text-xs">—</span>}
+                        </td>
+                        <td className="px-4 py-2.5 text-sm font-bold text-white whitespace-nowrap">
+                          {cvss != null ? Number(cvss).toFixed(1) : '—'}
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${s.bg} ${s.text} ${s.border}`}>
+                            {sev}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2.5 text-xs font-mono">
+                          {fixVer ? <span className="text-lime-400">{fixVer}</span> : <span className="text-gray-600">No fix</span>}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
       )}
     </div>
   )
@@ -685,6 +967,11 @@ export default function VmdrPage() {
             {/* Host CVEs tab */}
             {tab === 'vulns' && (
               <HostVulnsTab selectedId={selectedId} />
+            )}
+
+            {/* Package CVEs tab */}
+            {tab === 'packages' && (
+              <PackageCveTab selectedId={selectedId} />
             )}
           </div>
 

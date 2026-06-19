@@ -95,54 +95,189 @@ function ExpandedRow({ asset }) {
   const score = field(asset, 'riskScore', 'risk_score', 'score')
   const level = score != null ? riskLevel(score) : null
 
+  const id = field(asset, 'id', 'Id', 'assetId')
+
+  const [owner,       setOwner]       = useState(field(asset, 'owner', 'Owner') ?? '')
+  const [environment, setEnvironment] = useState(field(asset, 'environment', 'Environment', 'env') ?? '')
+  const [criticality, setCriticality] = useState(field(asset, 'criticality', 'Criticality') ?? '')
+  const [pciScope,    setPciScope]    = useState(field(asset, 'pciScope', 'PciScope', 'pci_scope') ?? false)
+  const [saving,      setSaving]      = useState(false)
+  const [saved,       setSaved]       = useState(false)
+
+  const handleSave = async () => {
+    setSaving(true)
+    setSaved(false)
+    try {
+      const token = localStorage.getItem('ws_token')
+      const res = await fetch(`${BASE}/api/assets/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ owner, environment, criticality, pciScope }),
+      })
+      if (res.ok) {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 3000)
+      }
+    } catch {}
+    setSaving(false)
+  }
+
   return (
-    <div className="px-6 py-4 bg-violet-500/5 border-t border-violet-500/10 grid sm:grid-cols-3 gap-6">
-      <div>
-        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Open Ports</p>
-        {Array.isArray(ports) && ports.length > 0 ? (
-          <div className="flex flex-wrap gap-1">
-            {ports.map((p, i) => (
-              <span key={i} className="text-xs font-mono bg-white/5 border border-white/10 text-gray-300 px-2 py-0.5 rounded">
-                {typeof p === 'object' ? (p.port ?? p.Port ?? JSON.stringify(p)) : p}
-              </span>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-600 text-xs">None detected</p>
-        )}
-      </div>
-      <div>
-        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Full Tech Stack</p>
-        {stack.length > 0 ? (
-          <div className="flex flex-wrap gap-1">
-            {stack.map((t, i) => (
-              <span key={i} className="text-xs font-medium bg-violet-500/10 border border-violet-500/20 text-violet-300 px-2 py-0.5 rounded-full">
-                {typeof t === 'string' ? t : (t.name ?? t.Name ?? JSON.stringify(t))}
-              </span>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-600 text-xs">None detected</p>
-        )}
-      </div>
-      <div>
-        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Risk Score Detail</p>
-        {score != null ? (
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className={`text-lg font-bold ${level === 'Critical' ? 'text-red-400' : level === 'High' ? 'text-orange-400' : level === 'Medium' ? 'text-amber-400' : 'text-blue-400'}`}>{score}</span>
-              <span className="text-gray-500 text-xs">/ 100 · {level}</span>
+    <div>
+      <div className="px-6 py-4 bg-violet-500/5 border-t border-violet-500/10 grid sm:grid-cols-3 gap-6">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Open Ports</p>
+          {Array.isArray(ports) && ports.length > 0 ? (
+            <div className="flex flex-wrap gap-1">
+              {ports.map((p, i) => (
+                <span key={i} className="text-xs font-mono bg-white/5 border border-white/10 text-gray-300 px-2 py-0.5 rounded">
+                  {typeof p === 'object' ? (p.port ?? p.Port ?? JSON.stringify(p)) : p}
+                </span>
+              ))}
             </div>
-            <div className="h-1.5 bg-white/10 rounded-full overflow-hidden w-32">
-              <div
-                className={`h-full rounded-full ${level === 'Critical' ? 'bg-red-500' : level === 'High' ? 'bg-orange-500' : level === 'Medium' ? 'bg-amber-400' : 'bg-blue-400'}`}
-                style={{ width: `${Math.min(score, 100)}%` }}
-              />
+          ) : (
+            <p className="text-gray-600 text-xs">None detected</p>
+          )}
+        </div>
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Full Tech Stack</p>
+          {stack.length > 0 ? (
+            <div className="flex flex-wrap gap-1">
+              {stack.map((t, i) => (
+                <span key={i} className="text-xs font-medium bg-violet-500/10 border border-violet-500/20 text-violet-300 px-2 py-0.5 rounded-full">
+                  {typeof t === 'string' ? t : (t.name ?? t.Name ?? JSON.stringify(t))}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-600 text-xs">None detected</p>
+          )}
+        </div>
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Risk Score Detail</p>
+          {score != null ? (
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className={`text-lg font-bold ${level === 'Critical' ? 'text-red-400' : level === 'High' ? 'text-orange-400' : level === 'Medium' ? 'text-amber-400' : 'text-blue-400'}`}>{score}</span>
+                <span className="text-gray-500 text-xs">/ 100 · {level}</span>
+              </div>
+              <div className="h-1.5 bg-white/10 rounded-full overflow-hidden w-32">
+                <div
+                  className={`h-full rounded-full ${level === 'Critical' ? 'bg-red-500' : level === 'High' ? 'bg-orange-500' : level === 'Medium' ? 'bg-amber-400' : 'bg-blue-400'}`}
+                  style={{ width: `${Math.min(score, 100)}%` }}
+                />
+              </div>
+            </div>
+          ) : (
+            <p className="text-gray-600 text-xs">Not scanned</p>
+          )}
+        </div>
+      </div>
+
+      {/* Asset Configuration */}
+      <div className="px-6 py-4 bg-violet-500/5 border-t border-violet-500/10">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3">Asset Configuration</p>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+          {/* Owner */}
+          <div>
+            <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Owner</label>
+            <input
+              type="text"
+              value={owner}
+              onChange={e => setOwner(e.target.value)}
+              placeholder="team@company.com"
+              className="w-full bg-white/5 border border-white/15 focus:border-violet-500/50 text-white placeholder-gray-600 px-3 py-2 rounded-lg text-xs outline-none transition-colors"
+            />
+          </div>
+
+          {/* Environment */}
+          <div>
+            <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Environment</label>
+            <select
+              value={environment}
+              onChange={e => setEnvironment(e.target.value)}
+              className="w-full bg-white/5 border border-white/15 focus:border-violet-500/50 text-white px-3 py-2 rounded-lg text-xs outline-none transition-colors appearance-none"
+              style={{ colorScheme: 'dark' }}
+            >
+              <option value="">— Select —</option>
+              <option value="Production">Production</option>
+              <option value="Staging">Staging</option>
+              <option value="Development">Development</option>
+              <option value="QA">QA</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          {/* Criticality */}
+          <div>
+            <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Criticality</label>
+            <div className="flex gap-1 flex-wrap">
+              {['Critical', 'High', 'Medium', 'Low'].map(c => {
+                const active = criticality === c
+                const activeStyle = {
+                  Critical: active ? 'bg-red-500 text-white border-red-500' : 'border-red-500/30 text-red-400 hover:border-red-500/60',
+                  High:     active ? 'bg-orange-500 text-white border-orange-500' : 'border-orange-500/30 text-orange-400 hover:border-orange-500/60',
+                  Medium:   active ? 'bg-amber-500 text-white border-amber-500' : 'border-amber-500/30 text-amber-400 hover:border-amber-500/60',
+                  Low:      active ? 'bg-blue-500 text-white border-blue-500' : 'border-blue-500/30 text-blue-400 hover:border-blue-500/60',
+                }
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setCriticality(active ? '' : c)}
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded border transition-colors ${activeStyle[c]}`}
+                  >
+                    {c}
+                  </button>
+                )
+              })}
             </div>
           </div>
-        ) : (
-          <p className="text-gray-600 text-xs">Not scanned</p>
-        )}
+
+          {/* PCI Scope */}
+          <div>
+            <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">PCI Scope</label>
+            <div className="flex items-center gap-2.5 mt-1.5">
+              <button
+                type="button"
+                onClick={() => setPciScope(v => !v)}
+                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
+                  pciScope ? 'bg-violet-500' : 'bg-white/15'
+                }`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${pciScope ? 'translate-x-4' : 'translate-x-0'}`} />
+              </button>
+              <span className={`text-xs font-medium ${pciScope ? 'text-violet-300' : 'text-gray-500'}`}>
+                {pciScope ? 'In PCI Scope' : 'Out of scope'}
+              </span>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Save button */}
+        <div className="flex items-center gap-3 mt-4">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving || !id}
+            className="flex items-center gap-1.5 bg-violet-500/15 hover:bg-violet-500/25 border border-violet-500/30 text-violet-400 font-semibold px-4 py-2 rounded-lg text-xs transition-colors disabled:opacity-50"
+          >
+            {saving
+              ? <><span className="w-3 h-3 border border-violet-400/30 border-t-violet-400 rounded-full animate-spin" /> Saving…</>
+              : 'Save Configuration'
+            }
+          </button>
+          {saved && (
+            <span className="text-xs text-green-400 flex items-center gap-1">
+              ✓ Saved
+            </span>
+          )}
+        </div>
       </div>
     </div>
   )

@@ -481,6 +481,215 @@ function AiFixButton({ findingId, checkName, severity, technicalDetails }) {
   )
 }
 
+const LIFECYCLE_STAGES = [
+  { id: 'Detected',      label: 'Detected',       color: 'text-gray-400',   dot: 'bg-gray-500' },
+  { id: 'Assigned',      label: 'Assigned',        color: 'text-blue-400',   dot: 'bg-blue-500' },
+  { id: 'InProgress',    label: 'In Progress',     color: 'text-amber-400',  dot: 'bg-amber-500' },
+  { id: 'VerifiedFixed', label: 'Verified Fixed',  color: 'text-green-400',  dot: 'bg-green-500' },
+]
+
+function LifecycleTracker({ findingId, initialStage, initialAssigneeId, initialAssigneeName }) {
+  const [stage, setStage]             = useState(initialStage ?? 'Detected')
+  const [assigneeId, setAssigneeId]   = useState(initialAssigneeId ?? '')
+  const [assigneeName, setAssigneeName] = useState(initialAssigneeName ?? '')
+  const [members, setMembers]         = useState(null)
+  const [saving, setSaving]           = useState(false)
+  const [showAssign, setShowAssign]   = useState(false)
+
+  if (!findingId) return null
+
+  const currentIdx = LIFECYCLE_STAGES.findIndex(s => s.id === stage)
+
+  const fetchMembers = async () => {
+    if (members) return
+    try {
+      const token = localStorage.getItem('ws_token')
+      const res = await fetch(`${BACKEND}/api/org/members`, {
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      })
+      if (res.ok) setMembers(await res.json())
+    } catch {}
+  }
+
+  const advance = async (targetStage) => {
+    if (targetStage === 'Assigned') {
+      await fetchMembers()
+      setShowAssign(true)
+      return
+    }
+    await patchLifecycle(targetStage, null)
+  }
+
+  const patchLifecycle = async (targetStage, memberId) => {
+    setSaving(true)
+    try {
+      const token = localStorage.getItem('ws_token')
+      const res = await fetch(`${BACKEND}/api/findings/${findingId}/lifecycle`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ stage: targetStage, ...(memberId ? { assigneeId: memberId } : {}) }),
+      })
+      if (!res.ok) throw new Error()
+      setStage(targetStage)
+      setShowAssign(false)
+    } catch {}
+    setSaving(false)
+  }
+
+  const handleAssign = async (member) => {
+    const id   = member.id ?? member.Id
+    const name = member.name ?? member.Name ?? member.email ?? member.Email ?? id
+    setAssigneeId(id)
+    setAssigneeName(name)
+    await patchLifecycle('Assigned', id)
+  }
+
+  return (
+    <div className="bg-white/3 border border-white/8 rounded-xl px-4 py-3" onClick={e => e.stopPropagation()}>
+      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-3">Finding Lifecycle</p>
+
+      {/* Stepper */}
+      <div className="flex items-center gap-0">
+        {LIFECYCLE_STAGES.map((s, i) => {
+          const done    = i < currentIdx
+          const active  = i === currentIdx
+          const next    = i === currentIdx + 1
+          const future  = i > currentIdx
+          return (
+            <React.Fragment key={s.id}>
+              <div className="flex flex-col items-center gap-1">
+                <button
+                  disabled={saving || (!next && !active)}
+                  onClick={() => next && advance(s.id)}
+                  className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all ${
+                    done    ? 'bg-green-500 border-green-500 text-white' :
+                    active  ? `${s.dot} border-current ${s.color} text-white` :
+                    next    ? 'border-white/30 bg-white/5 hover:border-white/60 cursor-pointer' :
+                              'border-white/10 bg-transparent cursor-default'
+                  }`}
+                  title={next ? `Advance to "${s.label}"` : s.label}
+                >
+                  {done
+                    ? <CheckCircle className="w-3.5 h-3.5" />
+                    : <span className="text-[9px] font-bold">{i + 1}</span>}
+                </button>
+                <span className={`text-[9px] font-semibold text-center leading-tight max-w-[56px] ${active ? s.color : future ? 'text-gray-600' : 'text-gray-400'}`}>
+                  {s.label}
+                  {active && s.id === 'Assigned' && assigneeName && (
+                    <span className="block text-[8px] text-blue-300">{assigneeName}</span>
+                  )}
+                </span>
+              </div>
+              {i < LIFECYCLE_STAGES.length - 1 && (
+                <div className={`flex-1 h-px mx-1 mb-5 ${i < currentIdx ? 'bg-green-500/50' : 'bg-white/10'}`} />
+              )}
+            </React.Fragment>
+          )
+        })}
+      </div>
+
+      {/* Assignee picker — shown when advancing to Assigned */}
+      {showAssign && (
+        <div className="mt-3 border-t border-white/10 pt-3">
+          <p className="text-[10px] text-gray-400 mb-2">Assign to team member:</p>
+          {!members && (
+            <span className="text-xs text-gray-500 flex items-center gap-1">
+              <span className="w-3 h-3 border border-white/20 border-t-white rounded-full animate-spin" /> Loading members…
+            </span>
+          )}
+          {members?.length === 0 && <p className="text-xs text-gray-500">No team members found.</p>}
+          {members?.map((m, i) => {
+            const id   = m.id   ?? m.Id
+            const name = m.name ?? m.Name ?? m.email ?? m.Email ?? id
+            const email = m.email ?? m.Email ?? ''
+            return (
+              <button
+                key={i}
+                onClick={() => handleAssign(m)}
+                disabled={saving}
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/8 text-left transition-colors"
+              >
+                <div className="w-6 h-6 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center shrink-0">
+                  <span className="text-[9px] font-bold text-blue-400">
+                    {(name[0] ?? '?').toUpperCase()}
+                  </span>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs text-white font-medium truncate">{name}</p>
+                  {email && name !== email && <p className="text-[10px] text-gray-500 truncate">{email}</p>}
+                </div>
+              </button>
+            )
+          })}
+          <button
+            onClick={() => setShowAssign(false)}
+            className="mt-2 text-[10px] text-gray-500 hover:text-gray-300"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
+      {saving && (
+        <p className="text-[10px] text-gray-500 mt-2 flex items-center gap-1">
+          <span className="w-2.5 h-2.5 border border-white/20 border-t-white rounded-full animate-spin" /> Saving…
+        </p>
+      )}
+    </div>
+  )
+}
+
+function RiskGauge({ score }) {
+  if (score == null) return null
+
+  // Normalize to 0–100
+  const s = score <= 10 ? score * 10 : Math.min(100, Math.max(0, score))
+
+  const urgency = s >= 67
+    ? { label: 'Fix This Quarter', color: '#22c55e', track: '#166534' }
+    : s >= 34
+      ? { label: 'Fix This Week',  color: '#f97316', track: '#7c2d12' }
+      : { label: 'Fix Today',      color: '#ef4444', track: '#7f1d1d' }
+
+  // SVG semicircle: radius 72, cx=100, cy=95, sweeps 180°
+  const R = 72
+  const CX = 100, CY = 95
+  const startX = CX - R, startY = CY
+  const endX   = CX + R, endY   = CY
+
+  // Arc from left to right (bottom semicircle excluded)
+  const trackPath = `M ${startX} ${startY} A ${R} ${R} 0 0 1 ${endX} ${endY}`
+
+  const pct = s / 100
+  // Full arc circumference of semicircle ≈ π * R
+  const arcLen = Math.PI * R
+  const dashArray = `${pct * arcLen} ${arcLen}`
+
+  return (
+    <div className="flex flex-col items-center gap-1 py-2">
+      <svg viewBox="0 0 200 100" className="w-40 overflow-visible" style={{ height: 90 }}>
+        {/* Track */}
+        <path d={trackPath} fill="none" stroke={urgency.track} strokeWidth="12" strokeLinecap="round" />
+        {/* Value arc */}
+        <path
+          d={trackPath}
+          fill="none"
+          stroke={urgency.color}
+          strokeWidth="12"
+          strokeLinecap="round"
+          strokeDasharray={dashArray}
+          strokeDashoffset="0"
+          style={{ transition: 'stroke-dasharray 0.6s ease' }}
+        />
+        {/* Center score */}
+        <text x={CX} y={CY - 8} textAnchor="middle" fill="white" fontSize="24" fontWeight="800">{s}</text>
+        <text x={CX} y={CY + 10} textAnchor="middle" fill="rgba(255,255,255,0.35)" fontSize="10">/100</text>
+      </svg>
+      <span className="text-xs font-bold" style={{ color: urgency.color }}>{urgency.label}</span>
+    </div>
+  )
+}
+
 function JiraTicketButton({ findingId, checkName, severity, recommendation }) {
   const [state, setState] = useState('idle') // idle | loading | success | error
   const [ticketUrl, setTicketUrl] = useState(null)
@@ -571,9 +780,12 @@ function FindingCard({ item }) {
   const slaStatus       = item.slaStatus       ?? item.SlaStatus       ?? null
   const slaDaysLeft     = item.slaDaysLeft     ?? item.SlaDaysLeft     ?? null
   const findingStatus   = item.findingStatus   ?? item.FindingStatus   ?? null
+  const lifecycleStage    = item.lifecycleStage    ?? item.LifecycleStage    ?? null
+  const lifecycleAssigneeId   = item.assigneeId    ?? item.AssigneeId        ?? null
+  const lifecycleAssigneeName = item.assigneeName  ?? item.AssigneeName      ?? null
 
   const c = sevTheme(severity)
-  const hasDetail = technicalDetails || whyItMatters || whatCanGoWrong || businessImpact || attackScenario || fixSteps || evidenceDetail || isKev
+  const hasDetail = technicalDetails || whyItMatters || whatCanGoWrong || businessImpact || attackScenario || fixSteps || evidenceDetail || isKev || !!findingId
 
   return (
     <div className={`rounded-xl border ${c.border} ${c.bg} mb-2 overflow-hidden transition-all`}>
@@ -644,6 +856,13 @@ function FindingCard({ item }) {
       {open && hasDetail && (
         <div className="px-4 pb-4 pt-3 border-t border-white/10 space-y-3">
 
+          <LifecycleTracker
+            findingId={findingId}
+            initialStage={lifecycleStage}
+            initialAssigneeId={lifecycleAssigneeId}
+            initialAssigneeName={lifecycleAssigneeName}
+          />
+
           {isKev && (
             <div className="bg-red-950/60 border border-red-700/50 rounded-lg px-3 py-2.5">
               <p className="text-[10px] font-bold text-red-400 uppercase tracking-wide mb-1">🚨 CISA Known Exploited Vulnerability (KEV)</p>
@@ -713,15 +932,7 @@ function FindingCard({ item }) {
             </div>
           )}
 
-          {riskScore != null && (
-            <div className="flex items-center gap-2 pt-1">
-              <span className="text-xs text-gray-500 shrink-0">Risk Score</span>
-              <div className="flex-1 bg-white/8 rounded-full h-1.5">
-                <div className={`h-1.5 rounded-full ${c.badge}`} style={{ width: `${(riskScore / 10) * 100}%` }} />
-              </div>
-              <span className={`text-xs font-bold ${c.text} shrink-0`}>{riskScore}/10</span>
-            </div>
-          )}
+          {riskScore != null && <RiskGauge score={riskScore} />}
 
           {!passed && evidence && <EvidencePanel evidence={evidence} />}
           {!passed && evidenceDetail && <EvidenceDetailBlock evidenceDetail={evidenceDetail} />}

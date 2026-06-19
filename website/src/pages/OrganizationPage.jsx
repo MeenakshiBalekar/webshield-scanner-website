@@ -3,13 +3,13 @@ import { Link } from 'react-router-dom'
 import {
   Building2, Plus, Loader2, AlertCircle, Users, Key,
   ClipboardList, ChevronDown, ChevronUp, Trash2, UserPlus,
-  RefreshCw, Check, Crown, Shield, User,
+  RefreshCw, Check, Crown, Shield, User, CreditCard,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import {
   getOrgs, createOrg, deleteOrg,
-  getOrgMembers, inviteOrgMember, removeOrgMember, updateMemberRole,
+  getOrgMembers, inviteOrgMember, removeOrgMember, updateMemberRole, getOrgPlan,
 } from '../services/api'
 
 const field = (obj, ...keys) => { for (const k of keys) if (obj?.[k] != null) return obj[k]; return null }
@@ -99,9 +99,70 @@ function MemberRow({ member, orgId, currentUserIsAdmin, onRemoved, onRoleChanged
   )
 }
 
+/* ── Plan & Limits section ── */
+function PlanSection({ orgId }) {
+  const [plan, setPlan]       = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [err, setErr]         = useState(null)
+
+  useEffect(() => {
+    setLoading(true); setErr(null)
+    getOrgPlan(orgId)
+      .then(data => setPlan(data))
+      .catch(e => setErr(e.message || 'Failed to load plan'))
+      .finally(() => setLoading(false))
+  }, [orgId])
+
+  if (loading) return (
+    <div className="flex items-center gap-2 text-xs text-gray-400 py-3">
+      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading plan…
+    </div>
+  )
+  if (err) return <p className="text-xs text-red-400 py-2">{err}</p>
+  if (!plan) return null
+
+  const planName = field(plan, 'plan', 'Plan', 'planName', 'PlanName') ?? 'Free'
+  const renewsAt = field(plan, 'renewsAt', 'RenewsAt', 'renewalDate', 'RenewalDate')
+  const limits = [
+    { label: 'Scans / month', used: field(plan,'scansUsed','ScansUsed') ?? 0, max: field(plan,'scansPerMonth','ScansPerMonth') ?? field(plan,'scans','Scans') ?? 0 },
+    { label: 'Members',       used: field(plan,'membersUsed','MembersUsed') ?? 0, max: field(plan,'members','Members') ?? 0 },
+    { label: 'API Keys',      used: field(plan,'apiKeysUsed','ApiKeysUsed') ?? 0, max: field(plan,'apiKeys','ApiKeys') ?? 0 },
+    { label: 'Targets',       used: field(plan,'targetsUsed','TargetsUsed') ?? 0, max: field(plan,'targets','Targets') ?? 0 },
+  ].filter(l => l.max > 0)
+
+  return (
+    <div className="border-t border-white/10 px-5 py-4 space-y-4">
+      <div className="flex items-center gap-3">
+        <span className="text-xs font-bold text-indigo-300 bg-indigo-500/10 border border-indigo-500/30 rounded-full px-3 py-0.5">{planName}</span>
+        {renewsAt && <span className="text-[10px] text-gray-500">Renews {new Date(renewsAt).toLocaleDateString()}</span>}
+      </div>
+      {limits.length > 0 && (
+        <div className="space-y-3">
+          {limits.map(({ label, used, max }) => {
+            const pct   = max > 0 ? Math.min(100, Math.round((used / max) * 100)) : 0
+            const color = pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-amber-400' : 'bg-indigo-500'
+            return (
+              <div key={label}>
+                <div className="flex justify-between text-[10px] mb-1">
+                  <span className="text-gray-400">{label}</span>
+                  <span className="text-gray-300">{used} / {max}</span>
+                </div>
+                <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                  <div className={`h-full ${color} rounded-full transition-all`} style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 /* ── Org card ── */
 function OrgCard({ org, onDeleted }) {
   const [expanded, setExpanded]   = useState(false)
+  const [showPlan, setShowPlan]   = useState(false)
   const [members, setMembers]     = useState(null)
   const [loadingM, setLoadingM]   = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
@@ -195,6 +256,12 @@ function OrgCard({ org, onDeleted }) {
             </button>
           )}
           <button
+            onClick={() => setShowPlan(v => !v)}
+            className={`flex items-center gap-1 text-xs bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-lg transition-colors ${showPlan ? 'text-indigo-400 border-indigo-500/30' : 'text-gray-400 hover:text-white'}`}
+          >
+            <CreditCard className="w-3.5 h-3.5" /> Plan
+          </button>
+          <button
             onClick={toggleMembers}
             className="flex items-center gap-1 text-xs text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-lg transition-colors"
           >
@@ -204,6 +271,8 @@ function OrgCard({ org, onDeleted }) {
           </button>
         </div>
       </div>
+
+      {showPlan && <PlanSection orgId={id} />}
 
       {expanded && (
         <div className="border-t border-white/10 px-5 py-4 space-y-4">

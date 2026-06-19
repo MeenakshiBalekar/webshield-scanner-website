@@ -66,6 +66,7 @@ import ThreatIntelPage from './pages/ThreatIntelPage'
 import EdrPage from './pages/EdrPage'
 import VmdrPage from './pages/VmdrPage'
 import EasmPage from './pages/EasmPage'
+import PolicyManagementPage from './pages/PolicyManagementPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -171,6 +172,7 @@ export default function App() {
           <Route path="/org"               element={<PrivateRoute><OrganizationPage /></PrivateRoute>} />
           <Route path="/org/:id/apikeys"   element={<PrivateRoute><ApiKeysPage /></PrivateRoute>} />
           <Route path="/audit"             element={<PrivateRoute><AuditLogPage /></PrivateRoute>} />
+          <Route path="/policy"            element={<PrivateRoute><PolicyManagementPage /></PrivateRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

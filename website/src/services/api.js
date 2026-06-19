@@ -405,6 +405,22 @@ export const getPatchDeployment  = (id)   => request(`/api/patch/deployments/${i
 export const runBehavioralAnalysis = (agentId) => request(`/api/edr/behavioral/${agentId}`, { method: 'POST' })
 export const getBehavioralSummary  = ()        => request('/api/edr/behavioral/summary')
 
+// Policy Management
+export const getPolicies      = ()         => request('/api/policies')
+export const createPolicy     = (data)     => request('/api/policies', { method: 'POST', body: JSON.stringify(data) })
+export const updatePolicy     = (id, data) => request(`/api/policies/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+export const patchPolicy      = (id, data) => request(`/api/policies/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
+export const deletePolicy     = (id)       => request(`/api/policies/${id}`, { method: 'DELETE' })
+
+// Exception Requests
+export const getExceptions    = ()     => request('/api/exceptions')
+export const createException  = (data) => request('/api/exceptions', { method: 'POST', body: JSON.stringify(data) })
+export const approveException = (id)   => request(`/api/exceptions/${id}/approve`, { method: 'PATCH' })
+export const rejectException  = (id)   => request(`/api/exceptions/${id}/reject`, { method: 'PATCH' })
+
+// Org plan & limits
+export const getOrgPlan = (orgId) => request(`/api/org/${orgId}/plan`)
+
 // Compliance Deep Scan
 export const deepScanCompliance = (frameworkId, agentId) =>
   request(`/api/compliance/deep-scan/${frameworkId}?agentId=${agentId}`, { method: 'POST' })

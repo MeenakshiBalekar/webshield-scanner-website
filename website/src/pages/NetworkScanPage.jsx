@@ -26,6 +26,78 @@ const field = (obj, ...keys) => { for (const k of keys) if (obj?.[k] != null) re
 function riskStyle(r) { return RISK_STYLES[r] || RISK_STYLES.Info }
 function stateStyle(s) { return STATE_STYLES[s?.toLowerCase()] || STATE_STYLES.closed }
 
+/* ── CVE pill ── */
+function CvePill({ cve }) {
+  const id   = field(cve, 'id', 'Id', 'cveId', 'CveId') || '—'
+  const cvss = field(cve, 'cvss', 'Cvss', 'cvssScore', 'CvssScore')
+  const sev  = field(cve, 'severity', 'Severity') || 'Medium'
+  const desc = field(cve, 'description', 'Description', 'summary', 'Summary')
+  const style = riskStyle(sev)
+  return (
+    <div className="flex items-center gap-3 bg-white/3 border border-white/10 rounded-lg px-3 py-2 min-w-0">
+      <code className="text-xs font-mono text-blue-400 shrink-0">{id}</code>
+      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border shrink-0 ${style.badge}`}>{sev}</span>
+      {cvss != null && <span className="text-xs text-gray-400 shrink-0">CVSS {cvss}</span>}
+      {desc && <span className="text-xs text-gray-500 truncate">{desc}</span>}
+    </div>
+  )
+}
+
+/* ── Risk heatmap table ── */
+function RiskHeatmapTable({ findings }) {
+  const risks    = ['Critical', 'High', 'Medium', 'Low', 'Info']
+  const services = [...new Set(findings.map(f =>
+    field(f, 'service', 'Service', 'serviceName', 'ServiceName') || 'Unknown'
+  ))]
+
+  if (services.length < 2) return null
+
+  const heatCls = (n) => {
+    if (n === 0) return ''
+    if (n >= 3) return 'bg-red-500/25 text-red-300 font-bold'
+    if (n >= 2) return 'bg-orange-500/20 text-orange-300 font-bold'
+    return 'bg-yellow-500/15 text-yellow-300 font-semibold'
+  }
+
+  return (
+    <div className="bg-white/3 border border-white/10 rounded-xl overflow-hidden">
+      <div className="px-4 py-3 border-b border-white/10">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Risk Heatmap — Service × Severity</p>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="border-b border-white/10">
+              <th className="text-left px-4 py-2.5 text-gray-500 font-semibold w-32">Service</th>
+              {risks.map(r => (
+                <th key={r} className="text-center px-4 py-2.5 text-gray-500 font-semibold">{r}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {services.map(svc => (
+              <tr key={svc} className="border-b border-white/5 last:border-0 hover:bg-white/3 transition-colors">
+                <td className="px-4 py-2.5 font-mono font-semibold text-white">{svc}</td>
+                {risks.map(r => {
+                  const cnt = findings.filter(f =>
+                    (field(f,'service','Service','serviceName','ServiceName') || 'Unknown') === svc &&
+                    (field(f,'risk','Risk','severity','Severity') || 'Info') === r
+                  ).length
+                  return (
+                    <td key={r} className={`text-center px-4 py-2.5 transition-colors ${heatCls(cnt)}`}>
+                      {cnt > 0 ? cnt : <span className="text-gray-700 font-normal">—</span>}
+                    </td>
+                  )
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
 /* ── Port card ── */
 function PortCard({ finding }) {
   const [open, setOpen] = useState(false)
@@ -38,6 +110,7 @@ function PortCard({ finding }) {
   const desc     = field(finding, 'description', 'Description')
   const protocol = field(finding, 'protocol', 'Protocol') || 'tcp'
   const banner   = field(finding, 'banner', 'Banner', 'version', 'Version')
+  const cves     = field(finding, 'cves', 'Cves', 'vulnerabilities', 'Vulnerabilities') || []
 
   const style    = riskStyle(risk)
   const RiskIcon = style.icon
@@ -93,6 +166,17 @@ function PortCard({ finding }) {
               <code className="block bg-navy-950 border border-white/10 rounded-lg px-3 py-2 text-xs text-gray-300 font-mono break-all">
                 {banner}
               </code>
+            </div>
+          )}
+
+          {cves.length > 0 && (
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-2">
+                CVE Matches ({cves.length})
+              </p>
+              <div className="space-y-1.5">
+                {cves.map((cve, i) => <CvePill key={i} cve={cve} />)}
+              </div>
             </div>
           )}
 
@@ -296,6 +380,8 @@ export default function NetworkScanPage() {
               ) : (
                 <>
                   <RiskBar findings={findings} />
+
+                  <RiskHeatmapTable findings={findings} />
 
                   {/* Risk filter pills */}
                   <div className="flex flex-wrap gap-2">

@@ -26,7 +26,7 @@ const FRAMEWORKS = [
     desc: 'Security, availability, processing integrity, confidentiality & privacy trust service criteria.',
   },
   {
-    id: 'iso27001',
+    id: 'iso-27001',
     name: 'ISO 27001',
     version: '2022',
     color: 'text-purple-400',
@@ -36,7 +36,7 @@ const FRAMEWORKS = [
     desc: 'International standard for information security management systems (ISMS).',
   },
   {
-    id: 'pci-dss',
+    id: 'pci-dss-v4',
     name: 'PCI DSS',
     version: 'v4.0',
     color: 'text-emerald-400',
@@ -499,7 +499,12 @@ function FrameworkSelector({ onSelect, onDeepScan, agents, agentId, onAgentChang
             >
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <p className={`text-base font-extrabold ${fw.color}`}>{fw.name}</p>
+                  <p className={`text-base font-extrabold ${fw.color}`}>
+                    {fw.name}
+                    {fw.id === 'pci-dss-v4' && (
+                      <span className="text-[9px] font-bold text-amber-400 ml-1.5">v4.0</span>
+                    )}
+                  </p>
                   <p className="text-[10px] text-gray-500 font-mono mt-0.5">{fw.version}</p>
                 </div>
                 <ShieldCheck className={`w-5 h-5 ${fw.color} opacity-60`} />
@@ -576,7 +581,7 @@ export default function CompliancePage() {
               <span className="text-xs font-bold uppercase tracking-widest text-sky-400">Compliance</span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2">Compliance</h1>
-            <p className="text-gray-400">Evaluate your security posture against SOC 2, ISO 27001, PCI DSS, HIPAA, CIS Controls, and GDPR.</p>
+            <p className="text-gray-400">Evaluate your security posture against SOC 2, ISO 27001, PCI DSS v4.0, HIPAA, CIS Controls v8, and GDPR.</p>
           </div>
         </div>
 

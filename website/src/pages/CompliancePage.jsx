@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react'
 import {
   ShieldCheck, Loader2, AlertCircle, CheckCircle2, XCircle,
   ChevronDown, ChevronUp, Download, ArrowLeft, RefreshCw,
-  AlertTriangle, ExternalLink, Minus, ScanLine, Cpu,
+  AlertTriangle, ExternalLink, Minus, ScanLine, Cpu, Globe,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
@@ -211,6 +211,7 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
   const [assessing, setAssessing]           = useState(false)
   const [deepScanning, setDeepSc]           = useState(false)
   const [exporting, setExporting]           = useState(false)
+  const [htmlExporting, setHtmlExporting]   = useState(false)
   const [fetchingEvidence, setFetchingEvidence] = useState(false)
   const [evidenceArtifacts, setEvidenceArtifacts] = useState(null)
   const [evidenceOpen, setEvidenceOpen]     = useState(false)
@@ -267,6 +268,25 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
       setEvidenceOpen(true)
     } catch (e) { setError(e.message || 'Evidence fetch failed') }
     setFetchingEvidence(false)
+  }
+
+  const handleHtmlReport = async () => {
+    setHtmlExporting(true)
+    try {
+      const token = localStorage.getItem('ws_token')
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL || 'https://webshield-backend-api.onrender.com'}/api/compliance/report/html?frameworkId=${encodeURIComponent(fw.id)}`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      )
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const html = await res.text()
+      const blob = new Blob([html], { type: 'text/html' })
+      const blobUrl = URL.createObjectURL(blob)
+      const win = window.open(blobUrl, '_blank', 'noopener,noreferrer')
+      if (!win) throw new Error('Popup blocked — please allow popups for this site')
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000)
+    } catch (e) { setError(e.message || 'HTML export failed') }
+    setHtmlExporting(false)
   }
 
   const handleExport = async () => {
@@ -329,6 +349,11 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
             className="flex items-center gap-1.5 bg-white/5 border border-white/15 hover:bg-white/10 text-gray-300 hover:text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40">
             {fetchingEvidence ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
             {evidenceArtifacts ? 'Refresh Evidence' : 'Fetch Evidence Artifacts'}
+          </button>
+          <button onClick={handleHtmlReport} disabled={htmlExporting || !assessed}
+            className="flex items-center gap-1.5 bg-white/5 border border-white/15 hover:bg-white/10 text-gray-300 hover:text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40">
+            {htmlExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Globe className="w-3.5 h-3.5" />}
+            {htmlExporting ? 'Building…' : 'Export HTML Report'}
           </button>
         </div>
       </div>

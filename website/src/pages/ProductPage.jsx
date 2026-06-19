@@ -5,7 +5,7 @@ import {
   CheckCircle, XCircle, ChevronDown, ChevronUp,
   LayoutDashboard, FileText, Download, Mail, Send, ArrowRight,
   TrendingUp, TrendingDown, Clock, Wifi, Cpu, Globe, Lock,
-  PlusCircle, MinusCircle, Zap, Sparkles, AlertTriangle,
+  PlusCircle, MinusCircle, Zap, Sparkles, AlertTriangle, ExternalLink,
 } from 'lucide-react'
 import axios from 'axios'
 import { useAuth } from '../context/AuthContext'
@@ -1000,6 +1000,97 @@ function EvidenceDetailBlock({ evidenceDetail }) {
   )
 }
 
+/* ── Attack Path panel ── */
+function AttackPathCard({ path }) {
+  const [expanded, setExpanded] = useState(false)
+  const title    = path.title    ?? path.Title    ?? 'Attack Chain'
+  const score    = path.combinedRiskScore ?? path.CombinedRiskScore ?? null
+  const severity = path.severity ?? path.Severity ?? 'High'
+  const steps    = path.steps    ?? path.Steps    ?? []
+  const narrative = path.attackNarrative ?? path.AttackNarrative ?? null
+  const c = sevTheme(severity)
+
+  return (
+    <div className={`rounded-2xl border ${c.border} ${c.bg} overflow-hidden`}>
+      <button onClick={() => setExpanded(v => !v)}
+        className="w-full flex items-center gap-3 px-5 py-4 text-left">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded text-white ${c.badge}`}>{severity}</span>
+            {score != null && <span className={`text-xs font-bold ${c.text}`}>Risk {score}/10</span>}
+          </div>
+          <h3 className="text-sm font-bold text-white leading-snug">{title}</h3>
+          {steps.length > 0 && (
+            <p className="text-[10px] text-gray-500 mt-1 truncate">
+              {steps.map(s => s.vulnerability ?? s.Vulnerability ?? String(s)).join(' → ')}
+            </p>
+          )}
+        </div>
+        <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform shrink-0 ${expanded ? 'rotate-180' : ''}`} />
+      </button>
+
+      {expanded && (
+        <div className="px-5 pb-5 border-t border-white/10 pt-4 space-y-4">
+          {/* Steps timeline */}
+          {steps.length > 0 && (
+            <div className="space-y-0">
+              {steps.map((step, i) => {
+                const vuln = step.vulnerability ?? step.Vulnerability ?? String(step)
+                const desc = step.description  ?? step.Description  ?? null
+                return (
+                  <div key={i} className="flex items-start gap-3">
+                    <div className="flex flex-col items-center shrink-0 mt-0.5">
+                      <div className={`w-2.5 h-2.5 rounded-full border-2 ${
+                        i === 0
+                          ? 'border-gray-400 bg-gray-600'
+                          : i === steps.length - 1
+                            ? `${c.text} border-current`
+                            : 'border-gray-500 bg-gray-700'
+                      }`} />
+                      {i < steps.length - 1 && <div className="w-px h-4 bg-white/10 my-0.5" />}
+                    </div>
+                    <div className="flex-1 pb-1">
+                      <div className="flex items-center gap-2">
+                        <p className={`text-xs font-semibold ${i === steps.length - 1 ? c.text : 'text-white'}`}>{vuln}</p>
+                        {i < steps.length - 1 && <ArrowRight className={`w-3 h-3 shrink-0 ${c.text} opacity-40`} />}
+                      </div>
+                      {desc && <p className="text-[11px] text-gray-400 leading-relaxed mt-0.5">{desc}</p>}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {narrative && (
+            <div className="bg-black/20 rounded-lg px-4 py-3 border border-white/8">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">Attack Story</p>
+              <p className="text-xs text-gray-300 leading-relaxed">{narrative}</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AttackPathSection({ attackPaths }) {
+  if (!attackPaths?.length) return null
+  return (
+    <div className="mb-6">
+      <div className="flex items-center gap-2 mb-3">
+        <h2 className="text-sm font-semibold text-white">⛓ Attack Paths</h2>
+        <span className="text-xs text-gray-500 bg-white/5 border border-white/10 px-2 py-0.5 rounded-full">
+          {attackPaths.length} chain{attackPaths.length !== 1 ? 's' : ''}
+        </span>
+      </div>
+      <div className="space-y-3">
+        {attackPaths.map((path, i) => <AttackPathCard key={i} path={path} />)}
+      </div>
+    </div>
+  )
+}
+
 function RemediationPlanPanel({ scanUrl, result }) {
   const [planData, setPlanData] = useState(null)
   const [planLoading, setPlanLoading] = useState(false)
@@ -1125,6 +1216,7 @@ function RemediationPlanPanel({ scanUrl, result }) {
 function ReportPanel({ scanUrl, scanResult }) {
   const [reportEmail, setReportEmail] = useState('')
   const [downloading, setDownloading] = useState(false)
+  const [htmlExporting, setHtmlExporting] = useState(false)
   const [sending, setSending] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
   const [error, setError] = useState(null)
@@ -1146,6 +1238,24 @@ function ReportPanel({ scanUrl, scanResult }) {
       setError(err.message)
     }
     setDownloading(false)
+  }
+
+  const handleHtmlReport = async () => {
+    setHtmlExporting(true); setError(null)
+    try {
+      const token = localStorage.getItem('ws_token')
+      const res = await fetch(`${BACKEND}/api/reports/html?url=${encodeURIComponent(scanUrl)}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const html = await res.text()
+      const blob = new Blob([html], { type: 'text/html' })
+      const blobUrl = URL.createObjectURL(blob)
+      const win = window.open(blobUrl, '_blank', 'noopener,noreferrer')
+      if (!win) throw new Error('Popup blocked — please allow popups for this site')
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000)
+    } catch (err) { setError(err.message) }
+    setHtmlExporting(false)
   }
 
   const handleSendEmail = async () => {
@@ -1191,14 +1301,24 @@ function ReportPanel({ scanUrl, scanResult }) {
         </button>
       </div>
 
-      <button
-        onClick={handleDownload}
-        disabled={downloading}
-        className="flex items-center gap-2 bg-crimson-500 hover:bg-crimson-600 disabled:bg-crimson-500/50 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
-      >
-        {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-        {downloading ? 'Generating PDF…' : 'Download PDF Report'}
-      </button>
+      <div className="flex flex-wrap gap-3">
+        <button
+          onClick={handleDownload}
+          disabled={downloading}
+          className="flex items-center gap-2 bg-crimson-500 hover:bg-crimson-600 disabled:bg-crimson-500/50 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
+        >
+          {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+          {downloading ? 'Generating PDF…' : 'Download PDF Report'}
+        </button>
+        <button
+          onClick={handleHtmlReport}
+          disabled={htmlExporting}
+          className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/15 disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
+        >
+          {htmlExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
+          {htmlExporting ? 'Building report…' : 'Export HTML Report'}
+        </button>
+      </div>
 
       {emailSent && (
         <div className="flex items-center gap-2 mt-3 text-green-400 text-xs">
@@ -1417,6 +1537,7 @@ export default function ProductPage() {
     return s === 'critical' || s === 'high'
   }).length
   const displayResults = resultsView === 'top' && topIssues ? topIssues : results
+  const attackPaths    = result?.attackPaths   ?? result?.AttackPaths   ?? null
   const hasGroups      = findingGroups && findingGroups.length > 0
 
   return (
@@ -1475,6 +1596,67 @@ export default function ProductPage() {
                 : <><ScanLine className="w-4 h-4" /> {authType !== 'none' ? 'Run Authenticated Scan' : 'Run Scan'}</>}
             </button>
           </div>
+
+          {/* Authentication section — web scanner */}
+          {type === 'web' && (
+            <div>
+              <button
+                type="button"
+                onClick={() => setAuthType(at => at === 'formlogin' ? 'none' : 'formlogin')}
+                className="flex items-center gap-2 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
+              >
+                <Lock className={`w-3.5 h-3.5 transition-transform ${authType === 'formlogin' ? 'text-crimson-400' : ''}`} />
+                Authentication
+                {authType === 'formlogin' && (
+                  <span className="ml-1 text-[10px] bg-crimson-500/20 text-crimson-400 border border-crimson-500/30 px-1.5 py-0.5 rounded font-bold">Active</span>
+                )}
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${authType === 'formlogin' ? 'rotate-180' : ''}`} />
+              </button>
+
+              {authType === 'formlogin' && (
+                <div className="mt-3 bg-white/3 border border-crimson-500/20 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-start gap-2 text-[10px] text-amber-400 bg-amber-500/8 border border-amber-500/20 rounded-lg px-3 py-2">
+                    <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
+                    Credentials are sent directly to your target site only. WebShield never stores or logs them.
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                      Login URL <span className="text-gray-600 normal-case font-normal">(leave blank to auto-detect)</span>
+                    </label>
+                    <input value={authForm.loginUrl} onChange={setAuth('loginUrl')}
+                      placeholder={`${url || 'https://example.com'}/login`}
+                      className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors" />
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                        Username field <span className="text-gray-600 normal-case font-normal">(HTML name)</span>
+                      </label>
+                      <input value={authForm.usernameField} onChange={setAuth('usernameField')} placeholder="email"
+                        className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors font-mono" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                        Password field <span className="text-gray-600 normal-case font-normal">(HTML name)</span>
+                      </label>
+                      <input value={authForm.passwordField} onChange={setAuth('passwordField')} placeholder="password"
+                        className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors font-mono" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Your username</label>
+                      <input value={authForm.username} onChange={setAuth('username')} placeholder="user@example.com" autoComplete="off"
+                        className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Your password</label>
+                      <input type="password" value={authForm.password} onChange={setAuth('password')} placeholder="••••••••" autoComplete="new-password"
+                        className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors" />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Advanced Options — web scanner only */}
           {type === 'web' && (
@@ -1781,6 +1963,9 @@ export default function ProductPage() {
 
             {/* Score breakdown panel */}
             <ScoreBreakdownPanel bkd={bkd} />
+
+            {/* Attack Path section */}
+            <AttackPathSection attackPaths={attackPaths} />
 
             {/* Schedule scan button */}
             <div className="flex items-center justify-end mb-4">

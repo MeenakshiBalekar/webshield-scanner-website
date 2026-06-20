@@ -67,6 +67,10 @@ import EdrPage from './pages/EdrPage'
 import VmdrPage from './pages/VmdrPage'
 import EasmPage from './pages/EasmPage'
 import PolicyManagementPage from './pages/PolicyManagementPage'
+import MsspDashboardPage from './pages/MsspDashboardPage'
+import MsspTenantsPage from './pages/MsspTenantsPage'
+import MsspTenantDetailPage from './pages/MsspTenantDetailPage'
+import MsspWhiteLabelPage from './pages/MsspWhiteLabelPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -173,6 +177,11 @@ export default function App() {
           <Route path="/org/:id/apikeys"   element={<PrivateRoute><ApiKeysPage /></PrivateRoute>} />
           <Route path="/audit"             element={<PrivateRoute><AuditLogPage /></PrivateRoute>} />
           <Route path="/policy"            element={<PrivateRoute><PolicyManagementPage /></PrivateRoute>} />
+          {/* MSSP Portal */}
+          <Route path="/mssp/dashboard"    element={<PrivateRoute><MsspDashboardPage /></PrivateRoute>} />
+          <Route path="/mssp/tenants"      element={<PrivateRoute><MsspTenantsPage /></PrivateRoute>} />
+          <Route path="/mssp/tenants/:id"  element={<PrivateRoute><MsspTenantDetailPage /></PrivateRoute>} />
+          <Route path="/mssp/white-label"  element={<PrivateRoute><MsspWhiteLabelPage /></PrivateRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react'
 import {
   ShieldCheck, Loader2, AlertCircle, CheckCircle2, XCircle,
   ChevronDown, ChevronUp, Download, ArrowLeft, RefreshCw,
-  AlertTriangle, ExternalLink, Minus, ScanLine, Cpu, Globe,
+  AlertTriangle, ExternalLink, Minus, ScanLine, Cpu, Globe, Archive,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
@@ -211,7 +211,8 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
   const [assessing, setAssessing]           = useState(false)
   const [deepScanning, setDeepSc]           = useState(false)
   const [exporting, setExporting]           = useState(false)
-  const [htmlExporting, setHtmlExporting]   = useState(false)
+  const [htmlExporting, setHtmlExporting]       = useState(false)
+  const [exportingEvidence, setExportingEvidence] = useState(false)
   const [fetchingEvidence, setFetchingEvidence] = useState(false)
   const [evidenceArtifacts, setEvidenceArtifacts] = useState(null)
   const [evidenceOpen, setEvidenceOpen]     = useState(false)
@@ -268,6 +269,27 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
       setEvidenceOpen(true)
     } catch (e) { setError(e.message || 'Evidence fetch failed') }
     setFetchingEvidence(false)
+  }
+
+  const handleEvidenceExport = async () => {
+    setExportingEvidence(true)
+    try {
+      const assessId = scanId || fw.id
+      const token = localStorage.getItem('ws_token')
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL || 'https://webshield-backend-api.onrender.com'}/api/compliance/assessment/${encodeURIComponent(assessId)}/evidence-export`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      )
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const blob = await res.blob()
+      const url  = URL.createObjectURL(blob)
+      const a    = document.createElement('a')
+      a.href     = url
+      a.download = `${fw.id}-evidence-${new Date().toISOString().split('T')[0]}.zip`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (e) { setError(e.message || 'Evidence export failed') }
+    setExportingEvidence(false)
   }
 
   const handleHtmlReport = async () => {
@@ -355,6 +377,11 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
             {htmlExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Globe className="w-3.5 h-3.5" />}
             {htmlExporting ? 'Building…' : 'Export HTML Report'}
           </button>
+          <button onClick={handleEvidenceExport} disabled={exportingEvidence || !assessed}
+            className="flex items-center gap-1.5 bg-white/5 border border-white/15 hover:bg-white/10 text-gray-300 hover:text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40">
+            {exportingEvidence ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Archive className="w-3.5 h-3.5" />}
+            {exportingEvidence ? 'Packaging…' : 'Download Evidence (.zip)'}
+          </button>
         </div>
       </div>
 
@@ -421,6 +448,7 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
                 const evValue  = evidence ? field(evidence, 'capturedValue', 'CapturedValue') : null
                 const evExpect = evidence ? field(evidence, 'expectedValue', 'ExpectedValue') : null
                 const evTs     = evidence ? field(evidence, 'capturedAt', 'CapturedAt') : null
+                const sha256   = field(item, 'sha256', 'Sha256', 'SHA256', 'hash', 'Hash')
                 return (
                   <div key={i} className="px-4 py-3 space-y-1.5">
                     <div className="flex items-center gap-2">
@@ -437,6 +465,12 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
                       <span className="text-gray-300">{evExpect != null ? String(evExpect) : '—'}</span>
                       <span className="text-gray-400">{evTs ? new Date(evTs).toLocaleString() : '—'}</span>
                     </div>
+                    {sha256 && (
+                      <div className="flex items-center gap-2 pl-2">
+                        <span className="text-[10px] text-gray-600 shrink-0">SHA-256:</span>
+                        <code className="text-[10px] font-mono text-gray-500 truncate">{sha256}</code>
+                      </div>
+                    )}
                   </div>
                 )
               }) : (

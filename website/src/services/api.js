@@ -421,6 +421,18 @@ export const rejectException  = (id)   => request(`/api/exceptions/${id}/reject`
 // Org plan & limits
 export const getOrgPlan = (orgId) => request(`/api/org/${orgId}/plan`)
 
+// MSSP Portal
+export const getMsspDashboard        = ()         => request('/api/mssp/dashboard')
+export const getMsspTenants          = ()         => request('/api/mssp/tenants')
+export const getMsspTenant           = (id)       => request(`/api/mssp/tenants/${id}`)
+export const getMsspWhiteLabel       = ()         => request('/api/mssp/white-label')
+export const updateMsspWhiteLabel    = (data)     => request('/api/mssp/white-label', { method: 'PUT', body: JSON.stringify(data) })
+export const updateTenantWhiteLabel  = (id, data) => request(`/api/mssp/tenants/${id}/config`, { method: 'PUT', body: JSON.stringify(data) })
+export const createMsspTenant        = (data)     => request('/api/mssp/tenants', { method: 'POST', body: JSON.stringify(data) })
+
+// Asset bulk operations
+export const bulkTagAssets = (data) => request('/api/assets/bulk-tag', { method: 'PATCH', body: JSON.stringify(data) })
+
 // Compliance Deep Scan
 export const deepScanCompliance = (frameworkId, agentId) =>
   request(`/api/compliance/deep-scan/${frameworkId}?agentId=${agentId}`, { method: 'POST' })

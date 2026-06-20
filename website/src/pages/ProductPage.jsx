@@ -754,6 +754,79 @@ function JiraTicketButton({ findingId, checkName, severity, recommendation }) {
   )
 }
 
+/* ── Exploit Proof Viewer ── */
+function HighlightedResponse({ response, pattern }) {
+  const parts = response.split(pattern)
+  if (parts.length === 1) {
+    return <span className="text-gray-300 whitespace-pre-wrap">{response}</span>
+  }
+  return (
+    <span className="whitespace-pre-wrap">
+      {parts.map((part, i) => (
+        <React.Fragment key={i}>
+          <span className="text-gray-300">{part}</span>
+          {i < parts.length - 1 && (
+            <mark className="bg-green-500/30 text-green-300 rounded px-0.5 not-italic">{pattern}</mark>
+          )}
+        </React.Fragment>
+      ))}
+    </span>
+  )
+}
+
+function ProofPanel({ proof }) {
+  if (!proof) return null
+  const payload   = proof.payloadSent    ?? proof.PayloadSent   ?? proof.payload   ?? proof.Payload   ?? null
+  const response  = proof.rawResponse   ?? proof.RawResponse  ?? proof.response  ?? proof.Response  ?? null
+  const matched   = proof.matchedPattern ?? proof.MatchedPattern ?? proof.matched   ?? proof.Matched   ?? null
+  const matchedIn = proof.matchedIn      ?? proof.MatchedIn     ?? null
+  const context   = proof.context        ?? proof.Context       ?? null
+
+  if (!payload && !response) return null
+
+  return (
+    <div className="space-y-3">
+      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">🎯 Exploit Proof</p>
+      <div className={`grid gap-3 ${response ? 'sm:grid-cols-2' : 'grid-cols-1'}`}>
+        {payload && (
+          <div>
+            <p className="text-[10px] font-semibold text-crimson-400 uppercase tracking-wider mb-1.5">→ Payload Sent</p>
+            <code className="block bg-crimson-500/8 border border-crimson-500/25 rounded-lg px-3 py-2.5 text-xs font-mono text-crimson-300 break-all whitespace-pre-wrap">
+              {payload}
+            </code>
+          </div>
+        )}
+        {response && (
+          <div>
+            <p className="text-[10px] font-semibold text-green-400 uppercase tracking-wider mb-1.5">
+              ← Raw Response {matchedIn && <span className="text-gray-500 normal-case font-normal">({matchedIn})</span>}
+            </p>
+            <div className="bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-xs font-mono overflow-auto max-h-40">
+              {matched
+                ? <HighlightedResponse response={response} pattern={matched} />
+                : <span className="text-gray-300 whitespace-pre-wrap">{response}</span>
+              }
+            </div>
+          </div>
+        )}
+      </div>
+      {(matched || context) && (
+        <div className="bg-green-500/8 border border-green-500/25 rounded-lg px-3 py-2 flex items-start gap-2">
+          <span className="text-green-400 shrink-0 mt-0.5">✓</span>
+          <div>
+            {matched && (
+              <p className="text-[10px] text-green-400">
+                Matched: <code className="font-mono">{matched}</code>
+              </p>
+            )}
+            {context && <p className="text-xs text-gray-400 mt-0.5">{context}</p>}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function FindingCard({ item }) {
   const [open, setOpen] = useState(false)
 
@@ -783,9 +856,10 @@ function FindingCard({ item }) {
   const lifecycleStage    = item.lifecycleStage    ?? item.LifecycleStage    ?? null
   const lifecycleAssigneeId   = item.assigneeId    ?? item.AssigneeId        ?? null
   const lifecycleAssigneeName = item.assigneeName  ?? item.AssigneeName      ?? null
+  const exploitProof          = item.exploitProof  ?? item.ExploitProof  ?? item.proof ?? item.Proof ?? null
 
   const c = sevTheme(severity)
-  const hasDetail = technicalDetails || whyItMatters || whatCanGoWrong || businessImpact || attackScenario || fixSteps || evidenceDetail || isKev || !!findingId
+  const hasDetail = technicalDetails || whyItMatters || whatCanGoWrong || businessImpact || attackScenario || fixSteps || evidenceDetail || isKev || !!findingId || !!exploitProof
 
   return (
     <div className={`rounded-xl border ${c.border} ${c.bg} mb-2 overflow-hidden transition-all`}>
@@ -931,6 +1005,8 @@ function FindingCard({ item }) {
               )}
             </div>
           )}
+
+          {exploitProof && <ProofPanel proof={exploitProof} />}
 
           {riskScore != null && <RiskGauge score={riskScore} />}
 

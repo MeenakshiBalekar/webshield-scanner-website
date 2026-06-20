@@ -433,6 +433,25 @@ export const createMsspTenant        = (data)     => request('/api/mssp/tenants'
 // Asset bulk operations
 export const bulkTagAssets = (data) => request('/api/assets/bulk-tag', { method: 'PATCH', body: JSON.stringify(data) })
 
+// AI Narrative Engine
+export const generateAiNarrative = (scanId, url) =>
+  request(`/api/ai-narrative/generate/${encodeURIComponent(scanId)}`, { method: 'POST', body: JSON.stringify({ url }) })
+export const getAiNarrative = (scanId) =>
+  request(`/api/ai-narrative/${encodeURIComponent(scanId)}`)
+
+// Notification preferences
+export const getNotificationPrefs   = ()     => request('/api/user/notification-preferences')
+export const updateNotificationPrefs = (data) =>
+  request('/api/user/notification-preferences', { method: 'PATCH', body: JSON.stringify(data) })
+
+// Business Logic Testing
+export const runBizLogicScan = (data) =>
+  request('/api/bizlogic/scan', { method: 'POST', body: JSON.stringify(data) })
+
+// Adaptive Fuzzer
+export const runFuzzScan = (data) =>
+  request('/api/fuzz/scan', { method: 'POST', body: JSON.stringify(data) })
+
 // Compliance Deep Scan
 export const deepScanCompliance = (frameworkId, agentId) =>
   request(`/api/compliance/deep-scan/${frameworkId}?agentId=${agentId}`, { method: 'POST' })

@@ -71,6 +71,7 @@ import MsspDashboardPage from './pages/MsspDashboardPage'
 import MsspTenantsPage from './pages/MsspTenantsPage'
 import MsspTenantDetailPage from './pages/MsspTenantDetailPage'
 import MsspWhiteLabelPage from './pages/MsspWhiteLabelPage'
+import BizLogicPage from './pages/BizLogicPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -177,6 +178,7 @@ export default function App() {
           <Route path="/org/:id/apikeys"   element={<PrivateRoute><ApiKeysPage /></PrivateRoute>} />
           <Route path="/audit"             element={<PrivateRoute><AuditLogPage /></PrivateRoute>} />
           <Route path="/policy"            element={<PrivateRoute><PolicyManagementPage /></PrivateRoute>} />
+          <Route path="/bizlogic"       element={<PrivateRoute><BizLogicPage /></PrivateRoute>} />
           {/* MSSP Portal */}
           <Route path="/mssp/dashboard"    element={<PrivateRoute><MsspDashboardPage /></PrivateRoute>} />
           <Route path="/mssp/tenants"      element={<PrivateRoute><MsspTenantsPage /></PrivateRoute>} />

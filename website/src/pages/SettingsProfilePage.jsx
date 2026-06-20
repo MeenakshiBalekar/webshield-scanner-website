@@ -2,13 +2,13 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import {
   User, Mail, Lock, Trash2, Loader2, CheckCircle2, AlertCircle,
-  Camera, Github, ExternalLink, Shield, CreditCard, ChevronRight, Plug,
+  Camera, Github, ExternalLink, Shield, CreditCard, ChevronRight, Plug, Bell,
 } from 'lucide-react'
 import axios from 'axios'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
-import { getMe, updateProfile, changePassword, deleteAccount, uploadProfilePicture } from '../services/api'
+import { getMe, updateProfile, changePassword, deleteAccount, uploadProfilePicture, getNotificationPrefs, updateNotificationPrefs } from '../services/api'
 
 const SETTINGS_TABS = [
   { label: 'Profile & Settings', href: '/settings/profile' },
@@ -204,6 +204,30 @@ export default function SettingsProfilePage() {
   // Delete modal
   const [showDelete, setShowDelete]   = useState(false)
   const [deleting, setDeleting]       = useState(false)
+
+  // Notification preferences
+  const [notifPrefs, setNotifPrefs]       = useState({})
+  const [notifSaving, setNotifSaving]     = useState(null)  // key being saved
+  const [notifFb, setNotifFb]             = useState(null)
+
+  useEffect(() => {
+    getNotificationPrefs().then(setNotifPrefs).catch(() => {})
+  }, [])
+
+  const handleNotifToggle = async (key) => {
+    const next = !notifPrefs[key]
+    setNotifPrefs(p => ({ ...p, [key]: next }))
+    setNotifSaving(key); setNotifFb(null)
+    try {
+      await updateNotificationPrefs({ [key]: next })
+      setNotifFb({ ok: true, msg: 'Saved.' })
+    } catch (e) {
+      setNotifPrefs(p => ({ ...p, [key]: !next }))
+      setNotifFb({ ok: false, msg: e.message || 'Failed to save.' })
+    }
+    setNotifSaving(null)
+    setTimeout(() => setNotifFb(null), 3000)
+  }
 
   useEffect(() => {
     getMe().then((p) => {
@@ -480,6 +504,54 @@ export default function SettingsProfilePage() {
                 <Trash2 className="w-4 h-4" /> Delete Account
               </button>
             </div>
+          </Section>
+
+          {/* ── Notification Preferences ── */}
+          <Section title="Notification Preferences" icon={Bell}>
+            <p className="text-xs text-gray-500 mb-5">Control when and how WebShield notifies you.</p>
+            {[
+              {
+                key: 'autoAiNarrative',
+                label: 'Auto-generate AI analysis after every scan',
+                desc: 'Automatically runs the AI Narrative Engine when a scan completes and emails the report.',
+              },
+              {
+                key: 'scanCompleteEmail',
+                label: 'Email me when a scan completes',
+                desc: 'Sends a summary email with your scan grade and top findings.',
+              },
+              {
+                key: 'criticalAlerts',
+                label: 'Instant alert on critical findings',
+                desc: 'Receive an immediate email or webhook push when a Critical-severity finding is detected.',
+              },
+              {
+                key: 'weeklyDigest',
+                label: 'Weekly security digest',
+                desc: 'A curated weekly email showing posture trends, resolved issues, and new threats.',
+              },
+            ].map(({ key, label, desc }) => {
+              const enabled = !!(notifPrefs[key])
+              const saving  = notifSaving === key
+              return (
+                <div key={key} className="flex items-start justify-between gap-4 py-3 border-b border-white/8 last:border-0">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-white font-medium">{label}</p>
+                    <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{desc}</p>
+                  </div>
+                  <button
+                    onClick={() => handleNotifToggle(key)}
+                    disabled={saving}
+                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none disabled:opacity-60 mt-0.5 ${
+                      enabled ? 'bg-crimson-500' : 'bg-white/15'
+                    }`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-4' : 'translate-x-0'}`} />
+                  </button>
+                </div>
+              )
+            })}
+            {notifFb && <Feedback ok={notifFb.ok} msg={notifFb.msg} />}
           </Section>
 
         </div>

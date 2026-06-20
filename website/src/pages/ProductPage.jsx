@@ -827,6 +827,257 @@ function ProofPanel({ proof }) {
   )
 }
 
+/* ── AI Narrative Engine ── */
+const VERDICT_STYLE = {
+  'Confirmed Exploitable': 'text-red-400 bg-red-500/10 border-red-500/30',
+  'Likely Exploitable':    'text-orange-400 bg-orange-500/10 border-orange-500/30',
+  'Theoretical':           'text-yellow-400 bg-yellow-500/10 border-yellow-500/30',
+}
+
+function AiNarrativePanel({ scanId, scanUrl }) {
+  const [state, setState] = useState('idle')
+  const [data, setData]   = useState(null)
+  const [err, setErr]     = useState(null)
+
+  const generate = async () => {
+    setState('loading'); setErr(null)
+    try {
+      const id = scanId || encodeURIComponent(scanUrl)
+      const token = localStorage.getItem('ws_token')
+      const res = await fetch(`${BACKEND}/api/ai-narrative/generate/${encodeURIComponent(id)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ url: scanUrl }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      setData(await res.json())
+      setState('done')
+    } catch (e) { setErr(e.message); setState('error') }
+  }
+
+  const attackStory    = data?.attackStory           ?? data?.AttackStory          ?? null
+  const businessImpact = data?.businessImpact        ?? data?.BusinessImpact        ?? []
+  const verdict        = data?.exploitabilityVerdict ?? data?.ExploitabilityVerdict ?? null
+  const verdictReason  = data?.verdictReasoning      ?? data?.VerdictReasoning      ?? null
+  const fixCode        = data?.fixCode               ?? data?.FixCode               ?? null
+  const fixLang        = data?.fixCodeLanguage       ?? data?.FixCodeLanguage       ?? 'code'
+
+  const impactList = Array.isArray(businessImpact) ? businessImpact : (businessImpact ? [String(businessImpact)] : [])
+  const vStyle = VERDICT_STYLE[verdict] ?? VERDICT_STYLE['Theoretical']
+
+  if (state === 'idle' || state === 'error') {
+    return (
+      <div className="bg-violet-500/5 border border-violet-500/20 rounded-2xl p-6 text-center space-y-3">
+        <Sparkles className="w-8 h-8 text-violet-400 mx-auto" />
+        <p className="text-white font-semibold">AI Narrative Analysis</p>
+        <p className="text-xs text-gray-400 max-w-xs mx-auto">
+          Get an AI-generated attack story, business impact summary, exploitability verdict, and patched code example for this scan.
+        </p>
+        <button onClick={generate}
+          className="inline-flex items-center gap-2 bg-violet-500 hover:bg-violet-600 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
+          <Sparkles className="w-4 h-4" /> Generate AI Analysis
+        </button>
+        {err && <p className="text-xs text-red-400">{err}</p>}
+      </div>
+    )
+  }
+
+  if (state === 'loading') {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 gap-4">
+        <div className="w-10 h-10 rounded-full border-2 border-violet-500/30 border-t-violet-400 animate-spin" />
+        <p className="text-sm text-gray-400">Generating AI analysis — this may take 5–10 seconds…</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-5">
+      {verdict && (
+        <div className={`flex items-start gap-3 px-4 py-3 rounded-xl border ${vStyle}`}>
+          <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+          <div>
+            <span className="text-sm font-bold">{verdict}</span>
+            {verdictReason && <p className="text-xs mt-0.5 opacity-80">{verdictReason}</p>}
+          </div>
+        </div>
+      )}
+
+      {attackStory && (
+        <div className="bg-white/3 border border-white/10 rounded-2xl p-5">
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">📖 Attack Story</p>
+          <div className="space-y-3">
+            {attackStory.split('\n\n').filter(Boolean).map((para, i) => (
+              <p key={i} className="text-sm text-gray-300 leading-relaxed">{para}</p>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {impactList.length > 0 && (
+        <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-5">
+          <p className="text-[10px] font-bold text-amber-400 uppercase tracking-wider mb-3">🏢 Business Impact</p>
+          <ul className="space-y-2">
+            {impactList.map((item, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm text-gray-300 leading-relaxed">
+                <span className="text-amber-400 shrink-0 mt-0.5">•</span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {fixCode && (
+        <div className="bg-green-950/40 border border-green-800/40 rounded-2xl overflow-hidden">
+          <div className="px-4 py-2 border-b border-green-800/40 flex items-center justify-between">
+            <p className="text-[10px] font-bold text-green-400 uppercase tracking-wider">🛠 Patched Code Example</p>
+            <span className="text-[10px] font-mono text-green-600">{fixLang}</span>
+          </div>
+          <pre className="px-4 py-3 text-xs text-green-200 font-mono overflow-x-auto whitespace-pre">{fixCode}</pre>
+        </div>
+      )}
+
+      <button onClick={generate}
+        className="flex items-center gap-1.5 text-[10px] font-semibold text-violet-400 hover:text-violet-300 transition-colors">
+        <Sparkles className="w-3 h-3" /> Regenerate
+      </button>
+    </div>
+  )
+}
+
+/* ── Adaptive Fuzzer ── */
+const ANOMALY_STYLE = {
+  'Timing Anomaly':      'text-orange-400 bg-orange-500/10 border-orange-500/30',
+  'Length Differential': 'text-blue-400 bg-blue-500/10 border-blue-500/30',
+  'Error Entropy':       'text-red-400 bg-red-500/10 border-red-500/30',
+}
+
+function FuzzResultRow({ item }) {
+  const [open, setOpen] = useState(false)
+  const payload     = item.payload             ?? item.Payload             ?? item.payloadSent ?? item.PayloadSent ?? '—'
+  const baseMs      = item.baselineDurationMs  ?? item.BaselineDurationMs  ?? null
+  const baseLen     = item.baselineBodyLen     ?? item.BaselineBodyLen     ?? null
+  const anomMs      = item.anomalousDurationMs ?? item.AnomalousDurationMs ?? null
+  const anomLen     = item.anomalousBodyLen    ?? item.AnomalousBodyLen    ?? null
+  const anomalyType = item.anomalyType         ?? item.AnomalyType         ?? 'Anomaly'
+  const aStyle      = ANOMALY_STYLE[anomalyType] ?? 'text-gray-400 bg-white/5 border-white/10'
+  const ratio       = baseMs && anomMs ? Math.round((anomMs / baseMs) * 10) / 10 : null
+
+  return (
+    <div className="border-b border-white/5 last:border-0">
+      <button onClick={() => setOpen(v => !v)}
+        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/3 transition-colors">
+        <span className={`text-[10px] font-bold px-2 py-0.5 rounded border shrink-0 ${aStyle}`}>{anomalyType}</span>
+        <code className="flex-1 text-xs font-mono text-gray-300 truncate">{payload}</code>
+        {open ? <ChevronUp className="w-3.5 h-3.5 text-gray-600 shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-gray-600 shrink-0" />}
+      </button>
+      {open && (
+        <div className="px-4 pb-3 pl-6 space-y-2 border-t border-white/5 pt-2">
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            <div className="bg-blue-500/5 border border-blue-500/15 rounded-lg px-3 py-2">
+              <p className="text-[10px] font-bold text-blue-400 mb-1">Baseline</p>
+              <p className="text-gray-300">{baseMs != null ? `${baseMs}ms` : '—'} · {baseLen != null ? `${baseLen} bytes` : '—'}</p>
+            </div>
+            <div className="bg-red-500/5 border border-red-500/15 rounded-lg px-3 py-2">
+              <p className="text-[10px] font-bold text-red-400 mb-1">Anomalous</p>
+              <p className="text-gray-300">{anomMs != null ? `${anomMs}ms` : '—'} · {anomLen != null ? `${anomLen} bytes` : '—'}</p>
+            </div>
+          </div>
+          {baseMs != null && anomMs != null && (
+            <div className="flex items-center gap-2 text-[10px] text-gray-500">
+              <div className="w-24 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                <div className="h-full bg-blue-500/60 rounded-full" style={{ width: `${Math.round((baseMs / Math.max(baseMs, anomMs)) * 100)}%` }} />
+              </div>
+              <span className="text-blue-400">{baseMs}ms</span>
+              <span>→</span>
+              <div className="w-24 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                <div className="h-full bg-red-500/70 rounded-full" style={{ width: `${Math.round((anomMs / Math.max(baseMs, anomMs)) * 100)}%` }} />
+              </div>
+              <span className="text-red-400">{anomMs}ms</span>
+              {ratio != null && <span className="text-gray-600">({ratio}× slower)</span>}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function FuzzPanel({ scanUrl }) {
+  const [state, setState]   = useState('idle')
+  const [fuzzData, setFuzzData] = useState(null)
+  const [err, setErr]       = useState(null)
+
+  const runScan = async () => {
+    setState('loading'); setErr(null)
+    try {
+      const token = localStorage.getItem('ws_token')
+      const res = await fetch(`${BACKEND}/api/fuzz/scan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ url: scanUrl }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      setFuzzData(await res.json())
+      setState('done')
+    } catch (e) { setErr(e.message); setState('error') }
+  }
+
+  const results = fuzzData?.fuzzResults ?? fuzzData?.FuzzResults ?? fuzzData?.results ?? fuzzData?.Results
+    ?? (Array.isArray(fuzzData) ? fuzzData : [])
+
+  if (state === 'loading') {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 gap-3">
+        <Loader2 className="w-7 h-7 text-orange-400 animate-spin" />
+        <p className="text-sm text-gray-400">Running adaptive fuzzer…</p>
+      </div>
+    )
+  }
+
+  if (state !== 'done') {
+    return (
+      <div className="bg-white/3 border border-white/10 rounded-2xl p-6 text-center space-y-4">
+        <Zap className="w-8 h-8 text-orange-400 mx-auto" />
+        <p className="text-white font-semibold">Adaptive Fuzzer</p>
+        <p className="text-xs text-gray-400 max-w-xs mx-auto">
+          Send adaptive payloads and detect anomalies in response timing, body length, and error entropy.
+        </p>
+        <button onClick={runScan}
+          className="inline-flex items-center gap-2 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/30 text-orange-300 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
+          <Zap className="w-4 h-4" /> Run Fuzz Scan
+        </button>
+        {err && <p className="text-xs text-red-400">{err}</p>}
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+        <div className="flex items-center gap-2">
+          <Zap className="w-4 h-4 text-orange-400" />
+          <p className="text-sm font-semibold text-white">Fuzz Results</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-gray-500">{results.length} anomal{results.length !== 1 ? 'ies' : 'y'} detected</span>
+          <button onClick={runScan} className="text-[10px] text-orange-400 hover:text-orange-300 font-semibold transition-colors">Re-run</button>
+        </div>
+      </div>
+      {results.length === 0 ? (
+        <div className="py-12 text-center">
+          <CheckCircle className="w-8 h-8 text-green-400 mx-auto mb-2" />
+          <p className="text-sm text-white font-semibold">No anomalies detected</p>
+          <p className="text-xs text-gray-500 mt-1">All fuzz payloads returned baseline-consistent responses.</p>
+        </div>
+      ) : (
+        results.map((item, i) => <FuzzResultRow key={i} item={item} />)
+      )}
+    </div>
+  )
+}
+
 function FindingCard({ item }) {
   const [open, setOpen] = useState(false)
 
@@ -2094,6 +2345,22 @@ export default function ProductPage() {
                 >
                   View All Checks {results.length > 0 && <span className="opacity-60">({results.length})</span>}
                 </button>
+                <button
+                  onClick={() => setResultsView('ai')}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                    resultsView === 'ai' ? 'bg-crimson-500 text-white shadow' : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <Sparkles className="w-3 h-3" /> AI Analysis
+                </button>
+                <button
+                  onClick={() => setResultsView('fuzz')}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                    resultsView === 'fuzz' ? 'bg-crimson-500 text-white shadow' : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <Zap className="w-3 h-3" /> Fuzz Results
+                </button>
               </div>
 
               {/* Intelligence View — finding groups */}
@@ -2141,6 +2408,15 @@ export default function ProductPage() {
                   {results.map((item, i) => <FindingCard key={i} item={item} />)}
                 </div>
               )}
+
+              {resultsView === 'ai' && (
+                <AiNarrativePanel
+                  scanId={result?.id ?? result?.Id ?? result?.scanId ?? result?.ScanId ?? null}
+                  scanUrl={url}
+                />
+              )}
+
+              {resultsView === 'fuzz' && <FuzzPanel scanUrl={url} />}
             </div>
 
             {/* Authenticated pages scanned */}

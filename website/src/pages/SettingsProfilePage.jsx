@@ -8,7 +8,7 @@ import axios from 'axios'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
-import { getMe, updateProfile, changePassword, deleteAccount, uploadProfilePicture, getNotificationPrefs, updateNotificationPrefs, exportUserData } from '../services/api'
+import { getMe, updateProfile, changePassword, deleteAccount, uploadProfilePicture, getNotificationPrefs, updateNotificationPrefs, exportUserData, getBillingPortalUrl } from '../services/api'
 
 const SETTINGS_TABS = [
   { label: 'Profile & Settings', href: '/settings/profile' },
@@ -204,6 +204,9 @@ export default function SettingsProfilePage() {
   // Export data
   const [exporting, setExporting]     = useState(false)
 
+  // Manage subscription portal
+  const [portalLoading, setPortalLoading] = useState(false)
+
   // Delete modal
   const [showDelete, setShowDelete]   = useState(false)
   const [deleting, setDeleting]       = useState(false)
@@ -305,6 +308,19 @@ export default function SettingsProfilePage() {
       setPwFb({ ok: false, msg: e.message || 'Failed to change password.' })
     }
     setSavingPw(false)
+  }
+
+  /* Manage subscription */
+  const handleManageSubscription = async () => {
+    setPortalLoading(true)
+    try {
+      const data = await getBillingPortalUrl()
+      const portalUrl = data?.url ?? data?.Url ?? data?.portalUrl ?? data?.PortalUrl
+      if (portalUrl) window.location.href = portalUrl
+    } catch (e) {
+      alert(e.message || 'Could not open billing portal. Please try again.')
+    }
+    setPortalLoading(false)
   }
 
   /* Export user data */
@@ -447,15 +463,25 @@ export default function SettingsProfilePage() {
                 {/* Feature list */}
                 {limits && <FeatureList limits={limits} />}
 
-                {/* Upgrade button */}
-                {((plan.type ?? plan.Type ?? '').toLowerCase() !== 'enterprise') && (
+                {/* Manage subscription + upgrade */}
+                <div className="flex flex-wrap gap-3 mt-5">
                   <button
-                    onClick={() => navigate('/billing')}
-                    className="mt-5 flex items-center gap-2 bg-crimson-500 hover:bg-crimson-600 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
+                    onClick={handleManageSubscription}
+                    disabled={portalLoading}
+                    className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/15 text-gray-300 font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors disabled:opacity-50"
                   >
-                    Upgrade to Pro <ChevronRight className="w-4 h-4" />
+                    {portalLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
+                    {portalLoading ? 'Opening…' : 'Manage Subscription'}
                   </button>
-                )}
+                  {((plan.type ?? plan.Type ?? '').toLowerCase() !== 'enterprise') && (
+                    <button
+                      onClick={() => navigate('/billing')}
+                      className="flex items-center gap-2 bg-crimson-500 hover:bg-crimson-600 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
+                    >
+                      Upgrade to Pro <ChevronRight className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               </>
             ) : (
               <div className="text-center py-6">

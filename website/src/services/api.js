@@ -516,3 +516,19 @@ export const assessCompliance        = (id, targetUrl) =>
   request(`/api/compliance/assess/${id}`, { method: 'POST', body: JSON.stringify({ targetUrl, profile: id }) })
 export const exportComplianceReport  = (id)  => blobRequest(`/api/compliance/report/${id}?format=csv`)
 export const getComplianceSummary    = ()    => request('/api/compliance/summary')
+
+// Billing plans & checkout
+export const getBillingPlans        = ()     => request('/api/billing/plans')
+export const createBillingCheckout  = (data) => request('/api/billing/checkout', { method: 'POST', body: JSON.stringify(data) })
+
+// Security score trend
+export const getTrend           = (url) => request(`/api/trend?url=${encodeURIComponent(url)}`)
+export const getPortfolioTrend  = ()    => request('/api/trend/portfolio')
+
+// Industry benchmark analysis
+export const analyzeBenchmark = (data) =>
+  request('/api/benchmark/analyze', { method: 'POST', body: JSON.stringify(data) })
+
+// Compliance report from scan findings (returns blob — PDF/document)
+export const generateComplianceReport = (data) =>
+  blobRequest('/api/compliance/report', { method: 'POST', body: JSON.stringify(data) })

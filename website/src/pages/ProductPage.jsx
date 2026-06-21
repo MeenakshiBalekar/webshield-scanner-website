@@ -5,14 +5,14 @@ import {
   CheckCircle, XCircle, ChevronDown, ChevronUp,
   LayoutDashboard, FileText, Download, Mail, Send, ArrowRight,
   TrendingUp, TrendingDown, Clock, Wifi, Cpu, Globe, Lock,
-  PlusCircle, MinusCircle, Zap, Sparkles, AlertTriangle, ExternalLink, Code2,
+  PlusCircle, MinusCircle, Zap, Sparkles, AlertTriangle, ExternalLink, Code2, BarChart3,
 } from 'lucide-react'
 import axios from 'axios'
 import { useAuth } from '../context/AuthContext'
 
 const API = import.meta.env.VITE_API_URL ?? ''
 const BACKEND = API || 'https://webshield-backend-api.onrender.com'
-import { getRemediation, downloadReportPdf, emailReport, createSchedule, startAuthenticatedScan, startCrawlScan, getRemediationCode } from '../services/api'
+import { getRemediation, downloadReportPdf, emailReport, createSchedule, startAuthenticatedScan, startCrawlScan, getRemediationCode, analyzeBenchmark } from '../services/api'
 import ApiErrorBanner from '../components/ApiErrorBanner'
 import EvidencePanel from '../components/EvidencePanel'
 import Navbar from '../components/Navbar'
@@ -1850,6 +1850,121 @@ function ScoreBreakdownPanel({ bkd }) {
   )
 }
 
+/* ── "How you compare" benchmark widget ── */
+const INDUSTRIES = ['SaaS', 'Finance', 'Healthcare', 'E-commerce', 'Education', 'Government', 'Media', 'Other']
+
+function BenchmarkWidget({ results }) {
+  const [industry, setIndustry] = useState('SaaS')
+  const [loading, setLoading]   = useState(false)
+  const [data, setData]         = useState(null)
+  const [err, setErr]           = useState(null)
+  const [ran, setRan]           = useState(false)
+
+  const failingChecks = (Array.isArray(results) ? results : [])
+    .filter(r => r.passed === false || (r.status ?? '').toLowerCase() === 'failed' || (r.status ?? '').toLowerCase() === 'fail')
+    .map(r => r.checkName ?? r.name ?? r.header ?? '')
+    .filter(Boolean)
+
+  const handleAnalyze = async () => {
+    setLoading(true); setErr(null); setData(null)
+    try {
+      const res = await analyzeBenchmark({ checks: failingChecks, industry })
+      setData(res); setRan(true)
+    } catch (e) { setErr(e.message || 'Analysis failed') }
+    setLoading(false)
+  }
+
+  const percentile = data?.percentile ?? data?.Percentile ?? null
+  const avgFailed  = data?.industryAvgFailed  ?? data?.IndustryAvgFailed  ?? data?.average ?? null
+  const comparison = data?.comparison ?? data?.Comparison ?? null
+  const topIssues  = data?.commonIssues ?? data?.CommonIssues ?? data?.topIssues ?? []
+
+  const compareColor = comparison === 'better' ? 'text-green-400' : comparison === 'worse' ? 'text-red-400' : 'text-yellow-400'
+  const compareLabel = comparison === 'better' ? 'Better than average' : comparison === 'worse' ? 'Below average' : 'About average'
+
+  return (
+    <div className="mt-6 bg-white/3 border border-white/10 rounded-2xl p-5">
+      <div className="flex items-center gap-2 mb-1">
+        <BarChart3 className="w-4 h-4 text-sky-400" />
+        <h2 className="text-sm font-semibold text-white">How You Compare</h2>
+      </div>
+      <p className="text-xs text-gray-400 mb-4">
+        See how your security posture stacks up against peers in your industry.
+      </p>
+
+      <div className="flex gap-3 mb-4 flex-wrap">
+        <select
+          value={industry}
+          onChange={e => setIndustry(e.target.value)}
+          className="bg-white/5 border border-white/15 focus:border-sky-500 text-white text-sm px-3 py-2 rounded-xl outline-none transition-colors"
+          style={{ colorScheme: 'dark' }}
+        >
+          {INDUSTRIES.map(ind => (
+            <option key={ind} value={ind} className="bg-[#0d1f3c]">{ind}</option>
+          ))}
+        </select>
+        <button
+          onClick={handleAnalyze}
+          disabled={loading || failingChecks.length === 0}
+          className="flex items-center gap-2 bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-300 font-semibold px-4 py-2 rounded-xl text-sm transition-colors disabled:opacity-40"
+        >
+          {loading
+            ? <><span className="w-4 h-4 border-2 border-sky-400/30 border-t-sky-400 rounded-full animate-spin" /> Analyzing…</>
+            : <><BarChart3 className="w-4 h-4" /> Analyze</>}
+        </button>
+        {failingChecks.length === 0 && (
+          <span className="text-xs text-gray-500 self-center">No failing checks to analyze.</span>
+        )}
+      </div>
+
+      {err && <p className="text-xs text-red-400 mb-3">{err}</p>}
+
+      {ran && data && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {percentile != null && (
+              <div className="bg-white/3 border border-white/10 rounded-xl p-3 text-center">
+                <p className="text-2xl font-extrabold text-white">{Math.round(percentile)}<span className="text-sm text-gray-500">th</span></p>
+                <p className="text-[10px] text-gray-500 mt-0.5">Percentile</p>
+              </div>
+            )}
+            {avgFailed != null && (
+              <div className="bg-white/3 border border-white/10 rounded-xl p-3 text-center">
+                <p className="text-2xl font-extrabold text-gray-300">{Math.round(avgFailed)}</p>
+                <p className="text-[10px] text-gray-500 mt-0.5">Industry avg failed</p>
+              </div>
+            )}
+            <div className="bg-white/3 border border-white/10 rounded-xl p-3 text-center">
+              <p className="text-2xl font-extrabold text-orange-400">{failingChecks.length}</p>
+              <p className="text-[10px] text-gray-500 mt-0.5">Your failed checks</p>
+            </div>
+          </div>
+
+          {comparison && (
+            <div className={`flex items-center gap-2 px-4 py-3 rounded-xl border bg-white/3 border-white/10`}>
+              <span className={`text-sm font-bold ${compareColor}`}>{compareLabel}</span>
+              <span className="text-xs text-gray-500">vs. {industry} industry peers</span>
+            </div>
+          )}
+
+          {topIssues.length > 0 && (
+            <div>
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Common issues in {industry}</p>
+              <div className="flex flex-wrap gap-2">
+                {topIssues.slice(0, 8).map((issue, i) => (
+                  <span key={i} className="text-[10px] px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-gray-400">
+                    {typeof issue === 'string' ? issue : (issue?.name ?? issue?.checkName ?? JSON.stringify(issue))}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function ProductPage() {
   const { type } = useParams()
   const { logout } = useAuth()
@@ -2596,6 +2711,9 @@ export default function ProductPage() {
 
             {/* Remediation plan panel */}
             <RemediationPlanPanel scanUrl={url} result={result} />
+
+            {/* How you compare — benchmark widget */}
+            <BenchmarkWidget results={results} />
 
             {/* Report panel */}
             <ReportPanel scanUrl={url} scanResult={result} />

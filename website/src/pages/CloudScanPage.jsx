@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import ApiErrorBanner from '../components/ApiErrorBanner'
 import {
   getCloudChecksAws,
   startCloudScanAws,
@@ -505,7 +506,7 @@ export default function CloudScanPage() {
     try {
       setResults(await SCAN_FNS[provider](payload))
     } catch (err) {
-      setError(err.message || 'Scan failed')
+      setError(err)
     }
     setScanning(false)
   }
@@ -562,11 +563,7 @@ export default function CloudScanPage() {
           {provider === 'aws' && <CheckPreview checks={checks} />}
 
           {/* Credential form */}
-          {error && (
-            <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
-              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />{error}
-            </div>
-          )}
+          {error && <ApiErrorBanner error={error} />}
 
           {provider === 'aws'   && <AwsForm   onSubmit={handleScan} scanning={scanning} />}
           {provider === 'azure' && <AzureForm  onSubmit={handleScan} scanning={scanning} />}

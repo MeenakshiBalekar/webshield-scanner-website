@@ -6,6 +6,7 @@ import {
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { startNetworkScan } from '../services/api'
+import ApiErrorBanner from '../components/ApiErrorBanner'
 
 /* ── helpers ── */
 const RISK_STYLES = {
@@ -245,7 +246,7 @@ export default function NetworkScanPage() {
       const data = await startNetworkScan({ host, mode })
       setResults(data)
     } catch (err) {
-      setError(err.message || 'Scan failed')
+      setError(err)
     }
     setScanning(false)
   }
@@ -339,11 +340,7 @@ export default function NetworkScanPage() {
               </div>
             </div>
 
-            {error && (
-              <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
-                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />{error}
-              </div>
-            )}
+            {error && <ApiErrorBanner error={error} />}
 
             <button
               type="submit"

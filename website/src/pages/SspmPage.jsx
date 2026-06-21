@@ -6,6 +6,7 @@ import {
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { startSspmScan } from '../services/api'
+import ApiErrorBanner from '../components/ApiErrorBanner'
 
 const field = (obj, ...keys) => { for (const k of keys) if (obj?.[k] != null) return obj[k]; return null }
 
@@ -245,7 +246,7 @@ export default function SspmPage() {
   const scan = async () => {
     setLoading(true); setError(null); setResult(null)
     try { setResult(await startSspmScan({ provider, credentials: creds })) }
-    catch (e) { setError(e.message || 'SSPM audit failed') }
+    catch (e) { setError(e) }
     setLoading(false)
   }
 
@@ -305,11 +306,7 @@ export default function SspmPage() {
             </button>
           </div>
 
-          {error && (
-            <div className="mt-5 flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
-              <AlertCircle className="w-4 h-4 shrink-0" />{error}
-            </div>
-          )}
+          {error && <ApiErrorBanner error={error} className="mt-5" />}
 
           {result && <Results data={result} />}
 

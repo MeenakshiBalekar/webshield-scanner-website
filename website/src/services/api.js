@@ -12,11 +12,19 @@ async function request(path, options = {}) {
   })
   if (!res.ok) {
     let msg = `HTTP ${res.status}`
+    let howToFix = null, azureErrorCode = null, details = null
     try {
       const body = await res.json()
-      msg = body.error || body.details || body.message || body.title || msg
+      msg = body.error || body.message || body.title || msg
+      howToFix      = body.howToFix      ?? body.HowToFix      ?? null
+      azureErrorCode = body.azureErrorCode ?? body.AzureErrorCode ?? null
+      details        = body.details        ?? body.Details        ?? null
     } catch {}
-    throw new Error(msg)
+    const err = new Error(msg)
+    if (howToFix)       err.howToFix       = howToFix
+    if (azureErrorCode) err.azureErrorCode  = azureErrorCode
+    if (details && details !== msg) err.details = details
+    throw err
   }
   return res.json()
 }
@@ -499,6 +507,7 @@ export const getEasmDiff    = (domain, fromScanId) => request(`/api/easm/diff/${
 // Compliance
 export const getComplianceFrameworks = ()    => request('/api/compliance/frameworks')
 export const getFrameworkControls    = (id)  => request(`/api/compliance/frameworks/${id}`)
-export const assessCompliance        = (id)  => request(`/api/compliance/assess/${id}`, { method: 'POST' })
+export const assessCompliance        = (id, targetUrl) =>
+  request(`/api/compliance/assess/${id}`, { method: 'POST', body: JSON.stringify({ targetUrl, profile: id }) })
 export const exportComplianceReport  = (id)  => blobRequest(`/api/compliance/report/${id}?format=csv`)
 export const getComplianceSummary    = ()    => request('/api/compliance/summary')

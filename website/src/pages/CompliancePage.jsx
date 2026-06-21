@@ -10,6 +10,7 @@ import {
   getFrameworkControls, assessCompliance, exportComplianceReport,
   deepScanCompliance, getAgents, fetchComplianceEvidence,
 } from '../services/api'
+import ApiErrorBanner from '../components/ApiErrorBanner'
 
 const field = (obj, ...keys) => { for (const k of keys) if (obj?.[k] != null) return obj[k]; return null }
 
@@ -219,6 +220,7 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
   const [error, setError]                   = useState(null)
   const [assessed, setAssessed]             = useState(false)
   const [scanId, setScanId]                 = useState(null)
+  const [targetUrl, setTargetUrl]           = useState('')
 
   const loadControls = useCallback(async () => {
     setLoading(true); setError(null)
@@ -250,13 +252,13 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
   const runAssessment = async () => {
     setAssessing(true); setError(null)
     try {
-      const data = await assessCompliance(fw.id)
+      const data = await assessCompliance(fw.id, targetUrl.trim() || undefined)
       const list = Array.isArray(data) ? data : (data?.controls ?? data?.Controls ?? data?.results ?? data?.Results ?? data?.items ?? data?.Items ?? [])
       if (list.length > 0) setControls(list)
       const sid = field(data, 'scanId', 'ScanId', 'scan_id', 'id', 'Id')
       if (sid) setScanId(String(sid))
       setAssessed(true)
-    } catch (e) { setError(e.message || 'Assessment failed') }
+    } catch (e) { setError(e) }
     setAssessing(false)
   }
 
@@ -385,6 +387,18 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
         </div>
       </div>
 
+      {/* Target URL */}
+      <div className="flex items-center gap-3 bg-white/3 border border-white/10 rounded-xl px-4 py-3">
+        <Globe className="w-4 h-4 text-gray-500 shrink-0" />
+        <input
+          type="url"
+          value={targetUrl}
+          onChange={e => setTargetUrl(e.target.value)}
+          placeholder="https://yoursite.com — target URL required to run assessment"
+          className="flex-1 bg-transparent text-sm text-white placeholder:text-gray-600 outline-none"
+        />
+      </div>
+
       {/* Score header */}
       <div className={`${fw.bg} border ${fw.border} rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-6`}>
         {score !== null
@@ -416,11 +430,7 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
         </div>
       </div>
 
-      {error && (
-        <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
-          <AlertCircle className="w-4 h-4 shrink-0" />{error}
-        </div>
-      )}
+      {error && <ApiErrorBanner error={error} />}
 
       {/* Evidence artifacts panel */}
       {evidenceArtifacts && (

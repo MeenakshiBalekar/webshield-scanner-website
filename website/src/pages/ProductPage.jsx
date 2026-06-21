@@ -13,6 +13,7 @@ import { useAuth } from '../context/AuthContext'
 const API = import.meta.env.VITE_API_URL ?? ''
 const BACKEND = API || 'https://webshield-backend-api.onrender.com'
 import { getRemediation, downloadReportPdf, emailReport, createSchedule, startAuthenticatedScan, startCrawlScan } from '../services/api'
+import ApiErrorBanner from '../components/ApiErrorBanner'
 import EvidencePanel from '../components/EvidencePanel'
 import Navbar from '../components/Navbar'
 
@@ -1686,12 +1687,7 @@ function ReportPanel({ scanUrl, scanResult }) {
           Report sent to <span className="font-semibold">{reportEmail}</span>
         </div>
       )}
-      {error && (
-        <div className="flex items-start gap-2 mt-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-3 py-2.5 text-xs">
-          <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
+      {error && <ApiErrorBanner error={error} className="mt-3" />}
     </div>
   )
 }
@@ -1847,7 +1843,13 @@ export default function ProductPage() {
         .then((d) => { if (d) setTrend(Array.isArray(d) ? d : d?.scores ?? d?.trend ?? d?.data ?? []) })
         .catch(() => {})
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Scan failed. Check the URL and try again.')
+      const body = err.response?.data
+      const msg  = body?.error || body?.message || err.message || 'Scan failed. Check the URL and try again.'
+      const rich = new Error(msg)
+      if (body?.howToFix)       rich.howToFix       = body.howToFix
+      if (body?.azureErrorCode) rich.azureErrorCode  = body.azureErrorCode
+      if (body?.details)        rich.details         = body.details
+      setError(rich)
     }
     setLoading(false)
   }
@@ -2194,12 +2196,7 @@ export default function ProductPage() {
         </form>
 
         {/* Scan error */}
-        {error && (
-          <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm mb-6">
-            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
+        {error && <ApiErrorBanner error={error} className="mb-6" />}
 
         {/* Results */}
         {result && (

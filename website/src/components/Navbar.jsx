@@ -25,6 +25,7 @@ const SCANNERS_NAV = {
     { label: 'Cloud Scanner',      href: '/scanner/cloud' },
     { label: 'Code Scanner',       href: '/scanner/code' },
     { label: 'CI/CD Setup',        href: '/scanner/cicd' },
+    { label: 'SSPM Scanner',       href: '/scanner/sspm' },
     { label: 'Agent Scanner',      href: '/scanner/agent' },
     { label: 'All Scanners',       href: '/scanner' },
   ],

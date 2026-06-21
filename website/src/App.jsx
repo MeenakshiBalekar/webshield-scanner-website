@@ -77,6 +77,9 @@ import SecurityCopilot from './pages/SecurityCopilot'
 import ApiSecurityPage from './pages/ApiSecurityPage'
 import SecretsScannerPage from './pages/SecretsScannerPage'
 import IacScannerPage from './pages/IacScannerPage'
+import WhiteLabelPage from './pages/WhiteLabelPage'
+import ImportPage from './pages/ImportPage'
+import AlertConfigPage from './pages/AlertConfigPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -194,6 +197,11 @@ export default function App() {
           <Route path="/mssp/tenants"      element={<PrivateRoute><MsspTenantsPage /></PrivateRoute>} />
           <Route path="/mssp/tenants/:id"  element={<PrivateRoute><MsspTenantDetailPage /></PrivateRoute>} />
           <Route path="/mssp/white-label"  element={<PrivateRoute><MsspWhiteLabelPage /></PrivateRoute>} />
+
+          {/* Phase 6 */}
+          <Route path="/whitelabel"        element={<PrivateRoute><WhiteLabelPage /></PrivateRoute>} />
+          <Route path="/import"            element={<PrivateRoute><ImportPage /></PrivateRoute>} />
+          <Route path="/alerts/config"     element={<PrivateRoute><AlertConfigPage /></PrivateRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

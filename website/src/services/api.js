@@ -532,3 +532,31 @@ export const analyzeBenchmark = (data) =>
 // Compliance report from scan findings (returns blob — PDF/document)
 export const generateComplianceReport = (data) =>
   blobRequest('/api/compliance/report', { method: 'POST', body: JSON.stringify(data) })
+
+// SSO
+export const getSsoProviders = () => request('/api/sso/providers')
+export const ssoCallback     = (data) => request('/api/sso/callback', { method: 'POST', body: JSON.stringify(data) })
+
+// White-label (non-MSSP; org-level)
+export const getWhiteLabel  = ()     => request('/api/whitelabel')
+export const saveWhiteLabel = (data) => request('/api/whitelabel', { method: 'POST', body: JSON.stringify(data) })
+
+// Scan import (multipart — Nessus / Burp / ZAP)
+export const importScan = (format, formData) => {
+  const token   = localStorage.getItem('ws_token')
+  const headers = token ? { Authorization: `Bearer ${token}` } : {}
+  return fetch(`${BASE}/api/import/${encodeURIComponent(format)}`, { method: 'POST', headers, body: formData })
+    .then(async (res) => {
+      if (!res.ok) {
+        let msg = `HTTP ${res.status}`
+        try { const b = await res.json(); msg = b.error || b.message || msg } catch {}
+        throw new Error(msg)
+      }
+      return res.json()
+    })
+}
+
+// Alert config (Slack / Teams webhooks)
+export const getAlertConfig   = ()     => request('/api/alerts/config')
+export const configSlackAlert = (data) => request('/api/alerts/config/slack', { method: 'POST', body: JSON.stringify(data) })
+export const configTeamsAlert = (data) => request('/api/alerts/config/teams', { method: 'POST', body: JSON.stringify(data) })

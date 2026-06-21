@@ -1,7 +1,8 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate, Link, useSearchParams } from 'react-router-dom'
-import { Loader2, AlertCircle, Eye, EyeOff, Github } from 'lucide-react'
+import { Loader2, AlertCircle, Eye, EyeOff, Github, LogIn, ShieldCheck } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { getSsoProviders } from '../services/api'
 
 const BACKEND = import.meta.env.VITE_API_URL || 'https://webshield-backend-api.onrender.com'
 
@@ -29,6 +30,20 @@ function LinkedInIcon() {
   )
 }
 
+/* Provider icon for known IDs */
+function ProviderIcon({ id }) {
+  if (id === 'github')   return <Github className="w-4 h-4" />
+  if (id === 'google')   return <GoogleIcon />
+  if (id === 'linkedin') return <LinkedInIcon />
+  return <LogIn className="w-4 h-4 text-gray-400" />
+}
+
+const STATIC_PROVIDERS = [
+  { id: 'github',   name: 'GitHub'   },
+  { id: 'google',   name: 'Google'   },
+  { id: 'linkedin', name: 'LinkedIn' },
+]
+
 export default function Login() {
   const { login, register } = useAuth()
   const navigate = useNavigate()
@@ -42,6 +57,18 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading]         = useState(false)
   const [error, setError]             = useState(null)
+
+  // Dynamic SSO providers from /api/sso/providers
+  const [ssoProviders, setSsoProviders] = useState(null) // null = loading, [] = none/failed
+
+  useEffect(() => {
+    getSsoProviders()
+      .then((data) => {
+        const list = Array.isArray(data) ? data : (data?.providers ?? data?.Providers ?? [])
+        setSsoProviders(list.length > 0 ? list : null) // null → fall back to static list
+      })
+      .catch(() => setSsoProviders(null)) // on error → use static list
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -114,29 +141,31 @@ export default function Login() {
             </div>
           )}
 
-          {/* SSO buttons */}
+          {/* SSO buttons — dynamic from /api/sso/providers, fallback to static list */}
           <div className="space-y-2.5 mb-6">
-            <a
-              href={`${BACKEND}/api/auth/github/login`}
-              className="flex items-center justify-center gap-2.5 w-full bg-white/5 hover:bg-white/10 border border-white/15 hover:border-white/25 text-gray-200 font-semibold py-2.5 rounded-xl text-sm transition-colors"
-            >
-              <Github className="w-4 h-4" />
-              Continue with GitHub
-            </a>
-            <a
-              href={`${BACKEND}/api/auth/google/login`}
-              className="flex items-center justify-center gap-2.5 w-full bg-white/5 hover:bg-white/10 border border-white/15 hover:border-white/25 text-gray-200 font-semibold py-2.5 rounded-xl text-sm transition-colors"
-            >
-              <GoogleIcon />
-              Continue with Google
-            </a>
-            <a
-              href={`${BACKEND}/api/auth/linkedin/login`}
-              className="flex items-center justify-center gap-2.5 w-full bg-white/5 hover:bg-white/10 border border-white/15 hover:border-white/25 text-gray-200 font-semibold py-2.5 rounded-xl text-sm transition-colors"
-            >
-              <LinkedInIcon />
-              Continue with LinkedIn
-            </a>
+            {(ssoProviders ?? STATIC_PROVIDERS).map((p) => {
+              const id   = p?.id   ?? p?.Id   ?? (typeof p === 'string' ? p : '')
+              const name = p?.name ?? p?.Name ?? (typeof p === 'string' ? p : id)
+              // For legacy providers use old auth paths; new ones use /api/sso/login/{id}
+              const legacyPath = id === 'github' ? '/api/auth/github/login'
+                : id === 'google'   ? '/api/auth/google/login'
+                : id === 'linkedin' ? '/api/auth/linkedin/login'
+                : null
+              const href = ssoProviders
+                ? `${BACKEND}/api/sso/login/${encodeURIComponent(id)}`
+                : `${BACKEND}${legacyPath}`
+              if (!href.includes('/null')) return (
+                <a
+                  key={id}
+                  href={href}
+                  className="flex items-center justify-center gap-2.5 w-full bg-white/5 hover:bg-white/10 border border-white/15 hover:border-white/25 text-gray-200 font-semibold py-2.5 rounded-xl text-sm transition-colors"
+                >
+                  <ProviderIcon id={id} />
+                  Continue with {name.charAt(0).toUpperCase() + name.slice(1)}
+                </a>
+              )
+              return null
+            })}
           </div>
 
           {/* Divider */}

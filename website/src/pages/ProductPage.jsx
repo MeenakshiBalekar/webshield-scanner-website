@@ -5,7 +5,7 @@ import {
   CheckCircle, XCircle, ChevronDown, ChevronUp,
   LayoutDashboard, FileText, Download, Mail, Send, ArrowRight,
   TrendingUp, TrendingDown, Clock, Wifi, Cpu, Globe, Lock,
-  PlusCircle, MinusCircle, Zap, Sparkles, AlertTriangle,
+  PlusCircle, MinusCircle, Zap, Sparkles, AlertTriangle, ExternalLink,
 } from 'lucide-react'
 import axios from 'axios'
 import { useAuth } from '../context/AuthContext'
@@ -754,6 +754,331 @@ function JiraTicketButton({ findingId, checkName, severity, recommendation }) {
   )
 }
 
+/* ── Exploit Proof Viewer ── */
+function HighlightedResponse({ response, pattern }) {
+  const parts = response.split(pattern)
+  if (parts.length === 1) {
+    return <span className="text-gray-300 whitespace-pre-wrap">{response}</span>
+  }
+  return (
+    <span className="whitespace-pre-wrap">
+      {parts.map((part, i) => (
+        <React.Fragment key={i}>
+          <span className="text-gray-300">{part}</span>
+          {i < parts.length - 1 && (
+            <mark className="bg-green-500/30 text-green-300 rounded px-0.5 not-italic">{pattern}</mark>
+          )}
+        </React.Fragment>
+      ))}
+    </span>
+  )
+}
+
+function ProofPanel({ proof }) {
+  if (!proof) return null
+  const payload   = proof.payloadSent    ?? proof.PayloadSent   ?? proof.payload   ?? proof.Payload   ?? null
+  const response  = proof.rawResponse   ?? proof.RawResponse  ?? proof.response  ?? proof.Response  ?? null
+  const matched   = proof.matchedPattern ?? proof.MatchedPattern ?? proof.matched   ?? proof.Matched   ?? null
+  const matchedIn = proof.matchedIn      ?? proof.MatchedIn     ?? null
+  const context   = proof.context        ?? proof.Context       ?? null
+
+  if (!payload && !response) return null
+
+  return (
+    <div className="space-y-3">
+      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">🎯 Exploit Proof</p>
+      <div className={`grid gap-3 ${response ? 'sm:grid-cols-2' : 'grid-cols-1'}`}>
+        {payload && (
+          <div>
+            <p className="text-[10px] font-semibold text-crimson-400 uppercase tracking-wider mb-1.5">→ Payload Sent</p>
+            <code className="block bg-crimson-500/8 border border-crimson-500/25 rounded-lg px-3 py-2.5 text-xs font-mono text-crimson-300 break-all whitespace-pre-wrap">
+              {payload}
+            </code>
+          </div>
+        )}
+        {response && (
+          <div>
+            <p className="text-[10px] font-semibold text-green-400 uppercase tracking-wider mb-1.5">
+              ← Raw Response {matchedIn && <span className="text-gray-500 normal-case font-normal">({matchedIn})</span>}
+            </p>
+            <div className="bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-xs font-mono overflow-auto max-h-40">
+              {matched
+                ? <HighlightedResponse response={response} pattern={matched} />
+                : <span className="text-gray-300 whitespace-pre-wrap">{response}</span>
+              }
+            </div>
+          </div>
+        )}
+      </div>
+      {(matched || context) && (
+        <div className="bg-green-500/8 border border-green-500/25 rounded-lg px-3 py-2 flex items-start gap-2">
+          <span className="text-green-400 shrink-0 mt-0.5">✓</span>
+          <div>
+            {matched && (
+              <p className="text-[10px] text-green-400">
+                Matched: <code className="font-mono">{matched}</code>
+              </p>
+            )}
+            {context && <p className="text-xs text-gray-400 mt-0.5">{context}</p>}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ── AI Narrative Engine ── */
+const VERDICT_STYLE = {
+  'Confirmed Exploitable': 'text-red-400 bg-red-500/10 border-red-500/30',
+  'Likely Exploitable':    'text-orange-400 bg-orange-500/10 border-orange-500/30',
+  'Theoretical':           'text-yellow-400 bg-yellow-500/10 border-yellow-500/30',
+}
+
+function AiNarrativePanel({ scanId, scanUrl }) {
+  const [state, setState] = useState('idle')
+  const [data, setData]   = useState(null)
+  const [err, setErr]     = useState(null)
+
+  const generate = async () => {
+    setState('loading'); setErr(null)
+    try {
+      const id = scanId || encodeURIComponent(scanUrl)
+      const token = localStorage.getItem('ws_token')
+      const res = await fetch(`${BACKEND}/api/ai-narrative/generate/${encodeURIComponent(id)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ url: scanUrl }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      setData(await res.json())
+      setState('done')
+    } catch (e) { setErr(e.message); setState('error') }
+  }
+
+  const attackStory    = data?.attackStory           ?? data?.AttackStory          ?? null
+  const businessImpact = data?.businessImpact        ?? data?.BusinessImpact        ?? []
+  const verdict        = data?.exploitabilityVerdict ?? data?.ExploitabilityVerdict ?? null
+  const verdictReason  = data?.verdictReasoning      ?? data?.VerdictReasoning      ?? null
+  const fixCode        = data?.fixCode               ?? data?.FixCode               ?? null
+  const fixLang        = data?.fixCodeLanguage       ?? data?.FixCodeLanguage       ?? 'code'
+
+  const impactList = Array.isArray(businessImpact) ? businessImpact : (businessImpact ? [String(businessImpact)] : [])
+  const vStyle = VERDICT_STYLE[verdict] ?? VERDICT_STYLE['Theoretical']
+
+  if (state === 'idle' || state === 'error') {
+    return (
+      <div className="bg-violet-500/5 border border-violet-500/20 rounded-2xl p-6 text-center space-y-3">
+        <Sparkles className="w-8 h-8 text-violet-400 mx-auto" />
+        <p className="text-white font-semibold">AI Narrative Analysis</p>
+        <p className="text-xs text-gray-400 max-w-xs mx-auto">
+          Get an AI-generated attack story, business impact summary, exploitability verdict, and patched code example for this scan.
+        </p>
+        <button onClick={generate}
+          className="inline-flex items-center gap-2 bg-violet-500 hover:bg-violet-600 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
+          <Sparkles className="w-4 h-4" /> Generate AI Analysis
+        </button>
+        {err && <p className="text-xs text-red-400">{err}</p>}
+      </div>
+    )
+  }
+
+  if (state === 'loading') {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 gap-4">
+        <div className="w-10 h-10 rounded-full border-2 border-violet-500/30 border-t-violet-400 animate-spin" />
+        <p className="text-sm text-gray-400">Generating AI analysis — this may take 5–10 seconds…</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-5">
+      {verdict && (
+        <div className={`flex items-start gap-3 px-4 py-3 rounded-xl border ${vStyle}`}>
+          <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+          <div>
+            <span className="text-sm font-bold">{verdict}</span>
+            {verdictReason && <p className="text-xs mt-0.5 opacity-80">{verdictReason}</p>}
+          </div>
+        </div>
+      )}
+
+      {attackStory && (
+        <div className="bg-white/3 border border-white/10 rounded-2xl p-5">
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">📖 Attack Story</p>
+          <div className="space-y-3">
+            {attackStory.split('\n\n').filter(Boolean).map((para, i) => (
+              <p key={i} className="text-sm text-gray-300 leading-relaxed">{para}</p>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {impactList.length > 0 && (
+        <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-5">
+          <p className="text-[10px] font-bold text-amber-400 uppercase tracking-wider mb-3">🏢 Business Impact</p>
+          <ul className="space-y-2">
+            {impactList.map((item, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm text-gray-300 leading-relaxed">
+                <span className="text-amber-400 shrink-0 mt-0.5">•</span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {fixCode && (
+        <div className="bg-green-950/40 border border-green-800/40 rounded-2xl overflow-hidden">
+          <div className="px-4 py-2 border-b border-green-800/40 flex items-center justify-between">
+            <p className="text-[10px] font-bold text-green-400 uppercase tracking-wider">🛠 Patched Code Example</p>
+            <span className="text-[10px] font-mono text-green-600">{fixLang}</span>
+          </div>
+          <pre className="px-4 py-3 text-xs text-green-200 font-mono overflow-x-auto whitespace-pre">{fixCode}</pre>
+        </div>
+      )}
+
+      <button onClick={generate}
+        className="flex items-center gap-1.5 text-[10px] font-semibold text-violet-400 hover:text-violet-300 transition-colors">
+        <Sparkles className="w-3 h-3" /> Regenerate
+      </button>
+    </div>
+  )
+}
+
+/* ── Adaptive Fuzzer ── */
+const ANOMALY_STYLE = {
+  'Timing Anomaly':      'text-orange-400 bg-orange-500/10 border-orange-500/30',
+  'Length Differential': 'text-blue-400 bg-blue-500/10 border-blue-500/30',
+  'Error Entropy':       'text-red-400 bg-red-500/10 border-red-500/30',
+}
+
+function FuzzResultRow({ item }) {
+  const [open, setOpen] = useState(false)
+  const payload     = item.payload             ?? item.Payload             ?? item.payloadSent ?? item.PayloadSent ?? '—'
+  const baseMs      = item.baselineDurationMs  ?? item.BaselineDurationMs  ?? null
+  const baseLen     = item.baselineBodyLen     ?? item.BaselineBodyLen     ?? null
+  const anomMs      = item.anomalousDurationMs ?? item.AnomalousDurationMs ?? null
+  const anomLen     = item.anomalousBodyLen    ?? item.AnomalousBodyLen    ?? null
+  const anomalyType = item.anomalyType         ?? item.AnomalyType         ?? 'Anomaly'
+  const aStyle      = ANOMALY_STYLE[anomalyType] ?? 'text-gray-400 bg-white/5 border-white/10'
+  const ratio       = baseMs && anomMs ? Math.round((anomMs / baseMs) * 10) / 10 : null
+
+  return (
+    <div className="border-b border-white/5 last:border-0">
+      <button onClick={() => setOpen(v => !v)}
+        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/3 transition-colors">
+        <span className={`text-[10px] font-bold px-2 py-0.5 rounded border shrink-0 ${aStyle}`}>{anomalyType}</span>
+        <code className="flex-1 text-xs font-mono text-gray-300 truncate">{payload}</code>
+        {open ? <ChevronUp className="w-3.5 h-3.5 text-gray-600 shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-gray-600 shrink-0" />}
+      </button>
+      {open && (
+        <div className="px-4 pb-3 pl-6 space-y-2 border-t border-white/5 pt-2">
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            <div className="bg-blue-500/5 border border-blue-500/15 rounded-lg px-3 py-2">
+              <p className="text-[10px] font-bold text-blue-400 mb-1">Baseline</p>
+              <p className="text-gray-300">{baseMs != null ? `${baseMs}ms` : '—'} · {baseLen != null ? `${baseLen} bytes` : '—'}</p>
+            </div>
+            <div className="bg-red-500/5 border border-red-500/15 rounded-lg px-3 py-2">
+              <p className="text-[10px] font-bold text-red-400 mb-1">Anomalous</p>
+              <p className="text-gray-300">{anomMs != null ? `${anomMs}ms` : '—'} · {anomLen != null ? `${anomLen} bytes` : '—'}</p>
+            </div>
+          </div>
+          {baseMs != null && anomMs != null && (
+            <div className="flex items-center gap-2 text-[10px] text-gray-500">
+              <div className="w-24 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                <div className="h-full bg-blue-500/60 rounded-full" style={{ width: `${Math.round((baseMs / Math.max(baseMs, anomMs)) * 100)}%` }} />
+              </div>
+              <span className="text-blue-400">{baseMs}ms</span>
+              <span>→</span>
+              <div className="w-24 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                <div className="h-full bg-red-500/70 rounded-full" style={{ width: `${Math.round((anomMs / Math.max(baseMs, anomMs)) * 100)}%` }} />
+              </div>
+              <span className="text-red-400">{anomMs}ms</span>
+              {ratio != null && <span className="text-gray-600">({ratio}× slower)</span>}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function FuzzPanel({ scanUrl }) {
+  const [state, setState]   = useState('idle')
+  const [fuzzData, setFuzzData] = useState(null)
+  const [err, setErr]       = useState(null)
+
+  const runScan = async () => {
+    setState('loading'); setErr(null)
+    try {
+      const token = localStorage.getItem('ws_token')
+      const res = await fetch(`${BACKEND}/api/fuzz/scan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ url: scanUrl }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      setFuzzData(await res.json())
+      setState('done')
+    } catch (e) { setErr(e.message); setState('error') }
+  }
+
+  const _rawFuzz = fuzzData?.fuzzResults ?? fuzzData?.FuzzResults ?? fuzzData?.results ?? fuzzData?.Results
+    ?? (Array.isArray(fuzzData) ? fuzzData : null)
+  const results = Array.isArray(_rawFuzz) ? _rawFuzz : []
+
+  if (state === 'loading') {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 gap-3">
+        <Loader2 className="w-7 h-7 text-orange-400 animate-spin" />
+        <p className="text-sm text-gray-400">Running adaptive fuzzer…</p>
+      </div>
+    )
+  }
+
+  if (state !== 'done') {
+    return (
+      <div className="bg-white/3 border border-white/10 rounded-2xl p-6 text-center space-y-4">
+        <Zap className="w-8 h-8 text-orange-400 mx-auto" />
+        <p className="text-white font-semibold">Adaptive Fuzzer</p>
+        <p className="text-xs text-gray-400 max-w-xs mx-auto">
+          Send adaptive payloads and detect anomalies in response timing, body length, and error entropy.
+        </p>
+        <button onClick={runScan}
+          className="inline-flex items-center gap-2 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/30 text-orange-300 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
+          <Zap className="w-4 h-4" /> Run Fuzz Scan
+        </button>
+        {err && <p className="text-xs text-red-400">{err}</p>}
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+        <div className="flex items-center gap-2">
+          <Zap className="w-4 h-4 text-orange-400" />
+          <p className="text-sm font-semibold text-white">Fuzz Results</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-gray-500">{results.length} anomal{results.length !== 1 ? 'ies' : 'y'} detected</span>
+          <button onClick={runScan} className="text-[10px] text-orange-400 hover:text-orange-300 font-semibold transition-colors">Re-run</button>
+        </div>
+      </div>
+      {results.length === 0 ? (
+        <div className="py-12 text-center">
+          <CheckCircle className="w-8 h-8 text-green-400 mx-auto mb-2" />
+          <p className="text-sm text-white font-semibold">No anomalies detected</p>
+          <p className="text-xs text-gray-500 mt-1">All fuzz payloads returned baseline-consistent responses.</p>
+        </div>
+      ) : (
+        results.map((item, i) => <FuzzResultRow key={i} item={item} />)
+      )}
+    </div>
+  )
+}
+
 function FindingCard({ item }) {
   const [open, setOpen] = useState(false)
 
@@ -783,9 +1108,10 @@ function FindingCard({ item }) {
   const lifecycleStage    = item.lifecycleStage    ?? item.LifecycleStage    ?? null
   const lifecycleAssigneeId   = item.assigneeId    ?? item.AssigneeId        ?? null
   const lifecycleAssigneeName = item.assigneeName  ?? item.AssigneeName      ?? null
+  const exploitProof          = item.exploitProof  ?? item.ExploitProof  ?? item.proof ?? item.Proof ?? null
 
   const c = sevTheme(severity)
-  const hasDetail = technicalDetails || whyItMatters || whatCanGoWrong || businessImpact || attackScenario || fixSteps || evidenceDetail || isKev || !!findingId
+  const hasDetail = technicalDetails || whyItMatters || whatCanGoWrong || businessImpact || attackScenario || fixSteps || evidenceDetail || isKev || !!findingId || !!exploitProof
 
   return (
     <div className={`rounded-xl border ${c.border} ${c.bg} mb-2 overflow-hidden transition-all`}>
@@ -932,6 +1258,8 @@ function FindingCard({ item }) {
             </div>
           )}
 
+          {exploitProof && <ProofPanel proof={exploitProof} />}
+
           {riskScore != null && <RiskGauge score={riskScore} />}
 
           {!passed && evidence && <EvidencePanel evidence={evidence} />}
@@ -996,6 +1324,97 @@ function EvidenceDetailBlock({ evidenceDetail }) {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+/* ── Attack Path panel ── */
+function AttackPathCard({ path }) {
+  const [expanded, setExpanded] = useState(false)
+  const title    = path.title    ?? path.Title    ?? 'Attack Chain'
+  const score    = path.combinedRiskScore ?? path.CombinedRiskScore ?? null
+  const severity = path.severity ?? path.Severity ?? 'High'
+  const steps    = path.steps    ?? path.Steps    ?? []
+  const narrative = path.attackNarrative ?? path.AttackNarrative ?? null
+  const c = sevTheme(severity)
+
+  return (
+    <div className={`rounded-2xl border ${c.border} ${c.bg} overflow-hidden`}>
+      <button onClick={() => setExpanded(v => !v)}
+        className="w-full flex items-center gap-3 px-5 py-4 text-left">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded text-white ${c.badge}`}>{severity}</span>
+            {score != null && <span className={`text-xs font-bold ${c.text}`}>Risk {score}/10</span>}
+          </div>
+          <h3 className="text-sm font-bold text-white leading-snug">{title}</h3>
+          {steps.length > 0 && (
+            <p className="text-[10px] text-gray-500 mt-1 truncate">
+              {steps.map(s => s.vulnerability ?? s.Vulnerability ?? String(s)).join(' → ')}
+            </p>
+          )}
+        </div>
+        <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform shrink-0 ${expanded ? 'rotate-180' : ''}`} />
+      </button>
+
+      {expanded && (
+        <div className="px-5 pb-5 border-t border-white/10 pt-4 space-y-4">
+          {/* Steps timeline */}
+          {steps.length > 0 && (
+            <div className="space-y-0">
+              {steps.map((step, i) => {
+                const vuln = step.vulnerability ?? step.Vulnerability ?? String(step)
+                const desc = step.description  ?? step.Description  ?? null
+                return (
+                  <div key={i} className="flex items-start gap-3">
+                    <div className="flex flex-col items-center shrink-0 mt-0.5">
+                      <div className={`w-2.5 h-2.5 rounded-full border-2 ${
+                        i === 0
+                          ? 'border-gray-400 bg-gray-600'
+                          : i === steps.length - 1
+                            ? `${c.text} border-current`
+                            : 'border-gray-500 bg-gray-700'
+                      }`} />
+                      {i < steps.length - 1 && <div className="w-px h-4 bg-white/10 my-0.5" />}
+                    </div>
+                    <div className="flex-1 pb-1">
+                      <div className="flex items-center gap-2">
+                        <p className={`text-xs font-semibold ${i === steps.length - 1 ? c.text : 'text-white'}`}>{vuln}</p>
+                        {i < steps.length - 1 && <ArrowRight className={`w-3 h-3 shrink-0 ${c.text} opacity-40`} />}
+                      </div>
+                      {desc && <p className="text-[11px] text-gray-400 leading-relaxed mt-0.5">{desc}</p>}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {narrative && (
+            <div className="bg-black/20 rounded-lg px-4 py-3 border border-white/8">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">Attack Story</p>
+              <p className="text-xs text-gray-300 leading-relaxed">{narrative}</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AttackPathSection({ attackPaths }) {
+  if (!attackPaths?.length) return null
+  return (
+    <div className="mb-6">
+      <div className="flex items-center gap-2 mb-3">
+        <h2 className="text-sm font-semibold text-white">⛓ Attack Paths</h2>
+        <span className="text-xs text-gray-500 bg-white/5 border border-white/10 px-2 py-0.5 rounded-full">
+          {attackPaths.length} chain{attackPaths.length !== 1 ? 's' : ''}
+        </span>
+      </div>
+      <div className="space-y-3">
+        {attackPaths.map((path, i) => <AttackPathCard key={i} path={path} />)}
+      </div>
     </div>
   )
 }
@@ -1125,9 +1544,34 @@ function RemediationPlanPanel({ scanUrl, result }) {
 function ReportPanel({ scanUrl, scanResult }) {
   const [reportEmail, setReportEmail] = useState('')
   const [downloading, setDownloading] = useState(false)
+  const [htmlExporting, setHtmlExporting] = useState(false)
+  const [pentestDownloading, setPentestDownloading] = useState(false)
   const [sending, setSending] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
   const [error, setError] = useState(null)
+
+  const handlePentestReport = async () => {
+    setPentestDownloading(true); setError(null)
+    try {
+      const token = localStorage.getItem('ws_token')
+      const res = await fetch(`${BACKEND}/api/reports/pentest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ url: scanUrl }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const blob = await res.blob()
+      const objUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = objUrl
+      a.download = `pentest-report-${new Date().toISOString().split('T')[0]}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(objUrl)
+    } catch (err) { setError(err.message) }
+    setPentestDownloading(false)
+  }
 
   const handleDownload = async () => {
     setDownloading(true)
@@ -1146,6 +1590,24 @@ function ReportPanel({ scanUrl, scanResult }) {
       setError(err.message)
     }
     setDownloading(false)
+  }
+
+  const handleHtmlReport = async () => {
+    setHtmlExporting(true); setError(null)
+    try {
+      const token = localStorage.getItem('ws_token')
+      const res = await fetch(`${BACKEND}/api/reports/html?url=${encodeURIComponent(scanUrl)}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const html = await res.text()
+      const blob = new Blob([html], { type: 'text/html' })
+      const blobUrl = URL.createObjectURL(blob)
+      const win = window.open(blobUrl, '_blank', 'noopener,noreferrer')
+      if (!win) throw new Error('Popup blocked — please allow popups for this site')
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000)
+    } catch (err) { setError(err.message) }
+    setHtmlExporting(false)
   }
 
   const handleSendEmail = async () => {
@@ -1191,14 +1653,32 @@ function ReportPanel({ scanUrl, scanResult }) {
         </button>
       </div>
 
-      <button
-        onClick={handleDownload}
-        disabled={downloading}
-        className="flex items-center gap-2 bg-crimson-500 hover:bg-crimson-600 disabled:bg-crimson-500/50 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
-      >
-        {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-        {downloading ? 'Generating PDF…' : 'Download PDF Report'}
-      </button>
+      <div className="flex flex-wrap gap-3">
+        <button
+          onClick={handleDownload}
+          disabled={downloading}
+          className="flex items-center gap-2 bg-crimson-500 hover:bg-crimson-600 disabled:bg-crimson-500/50 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
+        >
+          {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+          {downloading ? 'Generating PDF…' : 'Download PDF Report'}
+        </button>
+        <button
+          onClick={handleHtmlReport}
+          disabled={htmlExporting}
+          className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/15 disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
+        >
+          {htmlExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
+          {htmlExporting ? 'Building report…' : 'Export HTML Report'}
+        </button>
+        <button
+          onClick={handlePentestReport}
+          disabled={pentestDownloading}
+          className="flex items-center gap-2 bg-violet-500/15 hover:bg-violet-500/25 border border-violet-500/30 disabled:opacity-50 text-violet-300 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
+        >
+          {pentestDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
+          {pentestDownloading ? 'Generating…' : 'Download Pentest Report'}
+        </button>
+      </div>
 
       {emailSent && (
         <div className="flex items-center gap-2 mt-3 text-green-400 text-xs">
@@ -1381,7 +1861,8 @@ export default function ProductPage() {
     setScheduling(false)
   }
 
-  const results = result?.results || result?.checks || result?.findings || []
+  const _rawResults = result?.results ?? result?.checks ?? result?.findings
+  const results = Array.isArray(_rawResults) ? _rawResults : []
   // Use API's pre-computed fields; fall back to case-insensitive filter
   const passed = result?.passedChecks ?? result?.PassedChecks
     ?? results.filter((r) => (r.passed === true) || (r.status?.toLowerCase() === 'passed') || (r.status?.toLowerCase() === 'pass')).length
@@ -1417,6 +1898,7 @@ export default function ProductPage() {
     return s === 'critical' || s === 'high'
   }).length
   const displayResults = resultsView === 'top' && topIssues ? topIssues : results
+  const attackPaths    = result?.attackPaths   ?? result?.AttackPaths   ?? null
   const hasGroups      = findingGroups && findingGroups.length > 0
 
   return (
@@ -1475,6 +1957,67 @@ export default function ProductPage() {
                 : <><ScanLine className="w-4 h-4" /> {authType !== 'none' ? 'Run Authenticated Scan' : 'Run Scan'}</>}
             </button>
           </div>
+
+          {/* Authentication section — web scanner */}
+          {type === 'web' && (
+            <div>
+              <button
+                type="button"
+                onClick={() => setAuthType(at => at === 'formlogin' ? 'none' : 'formlogin')}
+                className="flex items-center gap-2 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
+              >
+                <Lock className={`w-3.5 h-3.5 transition-transform ${authType === 'formlogin' ? 'text-crimson-400' : ''}`} />
+                Authentication
+                {authType === 'formlogin' && (
+                  <span className="ml-1 text-[10px] bg-crimson-500/20 text-crimson-400 border border-crimson-500/30 px-1.5 py-0.5 rounded font-bold">Active</span>
+                )}
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${authType === 'formlogin' ? 'rotate-180' : ''}`} />
+              </button>
+
+              {authType === 'formlogin' && (
+                <div className="mt-3 bg-white/3 border border-crimson-500/20 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-start gap-2 text-[10px] text-amber-400 bg-amber-500/8 border border-amber-500/20 rounded-lg px-3 py-2">
+                    <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
+                    Credentials are sent directly to your target site only. WebShield never stores or logs them.
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                      Login URL <span className="text-gray-600 normal-case font-normal">(leave blank to auto-detect)</span>
+                    </label>
+                    <input value={authForm.loginUrl} onChange={setAuth('loginUrl')}
+                      placeholder={`${url || 'https://example.com'}/login`}
+                      className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors" />
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                        Username field <span className="text-gray-600 normal-case font-normal">(HTML name)</span>
+                      </label>
+                      <input value={authForm.usernameField} onChange={setAuth('usernameField')} placeholder="email"
+                        className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors font-mono" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                        Password field <span className="text-gray-600 normal-case font-normal">(HTML name)</span>
+                      </label>
+                      <input value={authForm.passwordField} onChange={setAuth('passwordField')} placeholder="password"
+                        className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors font-mono" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Your username</label>
+                      <input value={authForm.username} onChange={setAuth('username')} placeholder="user@example.com" autoComplete="off"
+                        className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Your password</label>
+                      <input type="password" value={authForm.password} onChange={setAuth('password')} placeholder="••••••••" autoComplete="new-password"
+                        className="w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors" />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Advanced Options — web scanner only */}
           {type === 'web' && (
@@ -1782,6 +2325,9 @@ export default function ProductPage() {
             {/* Score breakdown panel */}
             <ScoreBreakdownPanel bkd={bkd} />
 
+            {/* Attack Path section */}
+            <AttackPathSection attackPaths={attackPaths} />
+
             {/* Schedule scan button */}
             <div className="flex items-center justify-end mb-4">
               <button
@@ -1833,6 +2379,22 @@ export default function ProductPage() {
                 >
                   View All Checks {results.length > 0 && <span className="opacity-60">({results.length})</span>}
                 </button>
+                <button
+                  onClick={() => setResultsView('ai')}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                    resultsView === 'ai' ? 'bg-crimson-500 text-white shadow' : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <Sparkles className="w-3 h-3" /> AI Analysis
+                </button>
+                <button
+                  onClick={() => setResultsView('fuzz')}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                    resultsView === 'fuzz' ? 'bg-crimson-500 text-white shadow' : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <Zap className="w-3 h-3" /> Fuzz Results
+                </button>
               </div>
 
               {/* Intelligence View — finding groups */}
@@ -1880,6 +2442,15 @@ export default function ProductPage() {
                   {results.map((item, i) => <FindingCard key={i} item={item} />)}
                 </div>
               )}
+
+              {resultsView === 'ai' && (
+                <AiNarrativePanel
+                  scanId={result?.id ?? result?.Id ?? result?.scanId ?? result?.ScanId ?? null}
+                  scanUrl={url}
+                />
+              )}
+
+              {resultsView === 'fuzz' && <FuzzPanel scanUrl={url} />}
             </div>
 
             {/* Authenticated pages scanned */}

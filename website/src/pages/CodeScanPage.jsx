@@ -24,21 +24,36 @@ function redact(val) {
   return val.slice(0, 4) + '•'.repeat(Math.min(val.length - 8, 12)) + val.slice(-4)
 }
 
+/* ── CVE Similarity helpers ── */
+function cveSimilarityStyle(score) {
+  if (score >= 80) return 'text-red-400 bg-red-500/10 border-red-500/30'
+  if (score >= 50) return 'text-orange-400 bg-orange-500/10 border-orange-500/30'
+  return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30'
+}
+
 /* ── Finding row ── */
 function FindingRow({ finding }) {
-  const [open, setOpen]     = useState(false)
-  const [reveal, setReveal] = useState(false)
+  const [open, setOpen]       = useState(false)
+  const [reveal, setReveal]   = useState(false)
+  const [cveOpen, setCveOpen] = useState(false)
 
-  const checkName = field(finding, 'checkName', 'CheckName', 'type', 'Type', 'name', 'Name', 'rule', 'Rule')
-  const severity  = field(finding, 'severity', 'Severity')
-  const file      = field(finding, 'file', 'File', 'filename', 'Filename', 'path', 'Path')
-  const line      = field(finding, 'line', 'Line', 'lineNumber', 'LineNumber')
-  const value     = field(finding, 'value', 'Value', 'secret', 'Secret', 'match', 'Match')
-  const context   = field(finding, 'context', 'Context', 'snippet', 'Snippet')
-  const rec       = field(finding, 'recommendation', 'Recommendation', 'fix', 'Fix')
-  const desc      = field(finding, 'description', 'Description')
-  const isSecret  = !!(value)
-  const style     = sevStyle(severity)
+  const checkName     = field(finding, 'checkName', 'CheckName', 'type', 'Type', 'name', 'Name', 'rule', 'Rule')
+  const severity      = field(finding, 'severity', 'Severity')
+  const file          = field(finding, 'file', 'File', 'filename', 'Filename', 'path', 'Path')
+  const line          = field(finding, 'line', 'Line', 'lineNumber', 'LineNumber')
+  const value         = field(finding, 'value', 'Value', 'secret', 'Secret', 'match', 'Match')
+  const context       = field(finding, 'context', 'Context', 'snippet', 'Snippet')
+  const rec           = field(finding, 'recommendation', 'Recommendation', 'fix', 'Fix')
+  const desc          = field(finding, 'description', 'Description')
+  const isSecret      = !!(value)
+  const style         = sevStyle(severity)
+
+  const similarityCves = (finding.similarityCves ?? finding.SimilarityCves ?? finding.cveSimilarity ?? finding.CveSimilarity ?? [])
+  const topCve = similarityCves.length > 0
+    ? [...similarityCves].sort((a, b) => (b.score ?? b.Score ?? 0) - (a.score ?? a.Score ?? 0))[0]
+    : null
+  const topScore = topCve ? (topCve.score ?? topCve.Score ?? 0) : 0
+  const topLabel = topCve ? (topCve.label ?? topCve.Label ?? topCve.cveId ?? topCve.CveId ?? topCve.id ?? '') : ''
 
   return (
     <div className={`border rounded-xl overflow-hidden transition-all ${open ? 'border-crimson-500/30' : 'border-white/10'}`}>
@@ -56,6 +71,14 @@ function FindingRow({ finding }) {
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          {topCve && (
+            <button
+              onClick={e => { e.stopPropagation(); setCveOpen(v => !v); setOpen(true) }}
+              className={`text-[10px] font-bold px-2 py-0.5 rounded border whitespace-nowrap ${cveSimilarityStyle(topScore)}`}
+            >
+              {topScore}% {topLabel ? `— ${topLabel}` : 'CVE match'}
+            </button>
+          )}
           <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${style.badge}`}>
             {severity || 'Info'}
           </span>
@@ -66,6 +89,36 @@ function FindingRow({ finding }) {
       {open && (
         <div className="px-4 pb-4 pt-1 border-t border-white/10 space-y-3">
           {desc && <p className="text-sm text-gray-400">{desc}</p>}
+
+          {similarityCves.length > 0 && (
+            <div>
+              <button
+                onClick={() => setCveOpen(v => !v)}
+                className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider hover:text-white transition-colors mb-1"
+              >
+                🧬 CVE Similarity
+                {cveOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              </button>
+              {cveOpen && (
+                <div className="space-y-2">
+                  {similarityCves.map((cve, i) => {
+                    const score  = cve.score       ?? cve.Score       ?? 0
+                    const cveId  = cve.cveId       ?? cve.CveId       ?? cve.id ?? `CVE-${i}`
+                    const cveDesc = cve.description ?? cve.Description ?? null
+                    return (
+                      <div key={i} className={`rounded-lg px-3 py-2 border text-xs ${cveSimilarityStyle(score)}`}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-bold text-[10px]">{score}%</span>
+                          <span className="font-mono font-bold">{cveId}</span>
+                        </div>
+                        {cveDesc && <p className="text-gray-300 leading-relaxed">{cveDesc}</p>}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           {isSecret && (
             <div>

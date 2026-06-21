@@ -405,9 +405,78 @@ export const getPatchDeployment  = (id)   => request(`/api/patch/deployments/${i
 export const runBehavioralAnalysis = (agentId) => request(`/api/edr/behavioral/${agentId}`, { method: 'POST' })
 export const getBehavioralSummary  = ()        => request('/api/edr/behavioral/summary')
 
+// Policy Management
+export const getPolicies      = ()         => request('/api/policies')
+export const createPolicy     = (data)     => request('/api/policies', { method: 'POST', body: JSON.stringify(data) })
+export const updatePolicy     = (id, data) => request(`/api/policies/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+export const patchPolicy      = (id, data) => request(`/api/policies/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
+export const deletePolicy     = (id)       => request(`/api/policies/${id}`, { method: 'DELETE' })
+
+// Exception Requests
+export const getExceptions    = ()     => request('/api/exceptions')
+export const createException  = (data) => request('/api/exceptions', { method: 'POST', body: JSON.stringify(data) })
+export const approveException = (id)   => request(`/api/exceptions/${id}/approve`, { method: 'PATCH' })
+export const rejectException  = (id)   => request(`/api/exceptions/${id}/reject`, { method: 'PATCH' })
+
+// Org plan & limits
+export const getOrgPlan = (orgId) => request(`/api/org/${orgId}/plan`)
+
+// MSSP Portal
+export const getMsspDashboard        = ()         => request('/api/mssp/dashboard')
+export const getMsspTenants          = ()         => request('/api/mssp/tenants')
+export const getMsspTenant           = (id)       => request(`/api/mssp/tenants/${id}`)
+export const getMsspWhiteLabel       = ()         => request('/api/mssp/white-label')
+export const updateMsspWhiteLabel    = (data)     => request('/api/mssp/white-label', { method: 'PUT', body: JSON.stringify(data) })
+export const updateTenantWhiteLabel  = (id, data) => request(`/api/mssp/tenants/${id}/config`, { method: 'PUT', body: JSON.stringify(data) })
+export const createMsspTenant        = (data)     => request('/api/mssp/tenants', { method: 'POST', body: JSON.stringify(data) })
+
+// Asset bulk operations
+export const bulkTagAssets = (data) => request('/api/assets/bulk-tag', { method: 'PATCH', body: JSON.stringify(data) })
+
+// AI Narrative Engine
+export const generateAiNarrative = (scanId, url) =>
+  request(`/api/ai-narrative/generate/${encodeURIComponent(scanId)}`, { method: 'POST', body: JSON.stringify({ url }) })
+export const getAiNarrative = (scanId) =>
+  request(`/api/ai-narrative/${encodeURIComponent(scanId)}`)
+
+// Notification preferences
+export const getNotificationPrefs   = ()     => request('/api/user/notification-preferences')
+export const updateNotificationPrefs = (data) =>
+  request('/api/user/notification-preferences', { method: 'PATCH', body: JSON.stringify(data) })
+
+// Business Logic Testing
+export const runBizLogicScan = (data) =>
+  request('/api/bizlogic/scan', { method: 'POST', body: JSON.stringify(data) })
+
+// Adaptive Fuzzer
+export const runFuzzScan = (data) =>
+  request('/api/fuzz/scan', { method: 'POST', body: JSON.stringify(data) })
+
+// Attack Chains
+export const getAttackChains = () => request('/api/attack-chains')
+
+// Exploit Forecast
+export const getExploitForecast = () => request('/api/exploit-forecast')
+
+// Pentest Report
+export const downloadPentestReport = (payload) =>
+  blobRequest('/api/reports/pentest', { method: 'POST', body: JSON.stringify(payload) })
+
 // Compliance Deep Scan
 export const deepScanCompliance = (frameworkId, agentId) =>
   request(`/api/compliance/deep-scan/${frameworkId}?agentId=${agentId}`, { method: 'POST' })
+
+// API Security Scanner
+export const runApiSecurityScan = (data) =>
+  request('/api/scanner/api-security', { method: 'POST', body: JSON.stringify(data) })
+
+// Secrets Detection
+export const runSecretsScan = (data) =>
+  request('/api/scanner/secrets', { method: 'POST', body: JSON.stringify(data) })
+
+// IaC Security Scanner
+export const runIacScan = (data) =>
+  request('/api/scanner/iac', { method: 'POST', body: JSON.stringify(data) })
 
 // Compliance evidence — returns JSON artifacts per control
 export const fetchComplianceEvidence = (assessmentId) =>

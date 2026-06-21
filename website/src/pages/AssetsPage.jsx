@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Server, Globe, Database, Wifi, Shield, ChevronDown, ChevronUp, RefreshCw, Loader2, AlertCircle, Filter, Tag } from 'lucide-react'
+import { Server, Globe, Database, Wifi, Shield, ChevronDown, ChevronUp, RefreshCw, Loader2, AlertCircle, Filter, Tag, Check, X, CheckSquare, Square } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import { bulkTagAssets } from '../services/api'
 
 const BASE = import.meta.env.VITE_API_URL || 'https://webshield-backend-api.onrender.com'
 
@@ -89,6 +90,75 @@ function SummaryCard({ label, value, color }) {
   )
 }
 
+/* ── Bulk tag action bar ── */
+function BulkTagBar({ count, onApplyTag, onClearSelection }) {
+  const [tagInput, setTagInput]   = useState('')
+  const [mode, setMode]           = useState(null) // 'add' | 'remove'
+  const [applying, setApplying]   = useState(false)
+  const [done, setDone]           = useState(false)
+
+  const apply = async () => {
+    const tag = tagInput.trim()
+    if (!tag) return
+    setApplying(true)
+    try {
+      await onApplyTag(tag, mode === 'remove')
+      setDone(true)
+      setTagInput('')
+      setTimeout(() => { setDone(false); setMode(null) }, 2500)
+    } catch {}
+    setApplying(false)
+  }
+
+  return (
+    <div className="sticky top-16 z-30 bg-violet-900/80 backdrop-blur border-b border-violet-500/30 px-4 py-2.5 flex flex-wrap items-center gap-3">
+      <span className="text-sm font-semibold text-violet-300">
+        {count} asset{count !== 1 ? 's' : ''} selected
+      </span>
+      <div className="flex gap-1.5">
+        <button
+          onClick={() => setMode(m => m === 'add' ? null : 'add')}
+          className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${mode === 'add' ? 'bg-violet-500 text-white border-violet-400' : 'bg-white/5 text-gray-300 border-white/20 hover:border-violet-400'}`}
+        >
+          + Apply Tag
+        </button>
+        <button
+          onClick={() => setMode(m => m === 'remove' ? null : 'remove')}
+          className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${mode === 'remove' ? 'bg-red-500/80 text-white border-red-400' : 'bg-white/5 text-gray-300 border-white/20 hover:border-red-400'}`}
+        >
+          − Remove Tag
+        </button>
+      </div>
+      {mode && (
+        <div className="flex items-center gap-2">
+          <input
+            autoFocus
+            value={tagInput}
+            onChange={e => setTagInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && apply()}
+            placeholder={mode === 'add' ? 'Tag to add…' : 'Tag to remove…'}
+            className="bg-white/10 border border-white/20 focus:border-violet-400 text-white placeholder-gray-500 px-3 py-1.5 rounded-lg text-xs outline-none transition-colors"
+          />
+          <button
+            onClick={apply}
+            disabled={applying || !tagInput.trim()}
+            className="flex items-center gap-1 text-xs font-semibold bg-violet-500 hover:bg-violet-600 disabled:bg-violet-500/50 text-white px-3 py-1.5 rounded-lg transition-colors"
+          >
+            {applying ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+            {applying ? 'Applying…' : (done ? 'Done!' : 'Apply')}
+          </button>
+        </div>
+      )}
+      <button
+        onClick={onClearSelection}
+        className="ml-auto text-xs text-gray-400 hover:text-white flex items-center gap-1 transition-colors"
+      >
+        <X className="w-3.5 h-3.5" /> Clear selection
+      </button>
+    </div>
+  )
+}
+
 function ExpandedRow({ asset }) {
   const ports = field(asset, 'openPorts', 'open_ports', 'ports') ?? []
   const stack = field(asset, 'techStack', 'tech_stack', 'technologies') ?? []
@@ -97,12 +167,27 @@ function ExpandedRow({ asset }) {
 
   const id = field(asset, 'id', 'Id', 'assetId')
 
-  const [owner,       setOwner]       = useState(field(asset, 'owner', 'Owner') ?? '')
-  const [environment, setEnvironment] = useState(field(asset, 'environment', 'Environment', 'env') ?? '')
-  const [criticality, setCriticality] = useState(field(asset, 'criticality', 'Criticality') ?? '')
-  const [pciScope,    setPciScope]    = useState(field(asset, 'pciScope', 'PciScope', 'pci_scope') ?? false)
-  const [saving,      setSaving]      = useState(false)
-  const [saved,       setSaved]       = useState(false)
+  const [owner,        setOwner]        = useState(field(asset, 'owner', 'Owner') ?? '')
+  const [environment,  setEnvironment]  = useState(field(asset, 'environment', 'Environment', 'env') ?? '')
+  const [criticality,  setCriticality]  = useState(field(asset, 'criticality', 'Criticality') ?? '')
+  const [pciScope,     setPciScope]     = useState(field(asset, 'pciScope', 'PciScope', 'pci_scope') ?? false)
+  const [businessUnit, setBusinessUnit] = useState(field(asset, 'businessUnit', 'BusinessUnit', 'business_unit') ?? '')
+  const [geography,    setGeography]    = useState(field(asset, 'geography', 'Geography', 'region', 'Region') ?? '')
+  const [customTags,   setCustomTags]   = useState(() => {
+    const t = field(asset, 'customTags', 'CustomTags', 'custom_tags') ?? []
+    return Array.isArray(t) ? t : Object.entries(t).map(([key, value]) => ({ key, value }))
+  })
+  const [tagKey,   setTagKey]   = useState('')
+  const [tagVal,   setTagVal]   = useState('')
+  const [saving,   setSaving]   = useState(false)
+  const [saved,    setSaved]    = useState(false)
+
+  const addCustomTag = () => {
+    const k = tagKey.trim(), v = tagVal.trim()
+    if (!k) return
+    setCustomTags(ts => [...ts.filter(t => t.key !== k), { key: k, value: v }])
+    setTagKey(''); setTagVal('')
+  }
 
   const handleSave = async () => {
     setSaving(true)
@@ -115,7 +200,7 @@ function ExpandedRow({ asset }) {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ owner, environment, criticality, pciScope }),
+        body: JSON.stringify({ owner, environment, criticality, pciScope, businessUnit, geography, customTags }),
       })
       if (res.ok) {
         setSaved(true)
@@ -257,6 +342,72 @@ function ExpandedRow({ asset }) {
             </div>
           </div>
 
+          {/* Business Unit */}
+          <div>
+            <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Business Unit</label>
+            <select
+              value={businessUnit}
+              onChange={e => setBusinessUnit(e.target.value)}
+              className="w-full bg-white/5 border border-white/15 focus:border-violet-500/50 text-white px-3 py-2 rounded-lg text-xs outline-none transition-colors appearance-none"
+              style={{ colorScheme: 'dark' }}
+            >
+              <option value="">— Select —</option>
+              {['Engineering', 'Marketing', 'Finance', 'Sales', 'IT', 'Legal', 'Operations', 'Other'].map(v => (
+                <option key={v} value={v}>{v}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Geography */}
+          <div>
+            <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Geography / Region</label>
+            <select
+              value={geography}
+              onChange={e => setGeography(e.target.value)}
+              className="w-full bg-white/5 border border-white/15 focus:border-violet-500/50 text-white px-3 py-2 rounded-lg text-xs outline-none transition-colors appearance-none"
+              style={{ colorScheme: 'dark' }}
+            >
+              <option value="">— Select —</option>
+              {['AMER', 'EMEA', 'APAC', 'LATAM', 'Global'].map(v => (
+                <option key={v} value={v}>{v}</option>
+              ))}
+            </select>
+          </div>
+
+        </div>
+
+        {/* Custom Tags (key:value) */}
+        <div className="mt-4">
+          <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Custom Tags</label>
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {customTags.map(({ key, value }) => (
+              <span key={key} className="inline-flex items-center gap-1 text-[10px] font-semibold bg-violet-500/10 text-violet-300 border border-violet-500/30 rounded-full px-2 py-0.5">
+                <span className="font-mono">{key}</span>
+                {value && <><span className="text-gray-500">:</span><span>{value}</span></>}
+                <button type="button" onClick={() => setCustomTags(ts => ts.filter(t => t.key !== key))} className="hover:text-white transition-colors ml-0.5">
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              </span>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              value={tagKey} onChange={e => setTagKey(e.target.value)}
+              placeholder="key"
+              className="w-24 bg-white/5 border border-white/15 focus:border-violet-500/50 text-white placeholder-gray-600 px-2 py-1.5 rounded-lg text-xs outline-none font-mono transition-colors"
+            />
+            <span className="text-gray-600 self-center">:</span>
+            <input
+              value={tagVal} onChange={e => setTagVal(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && addCustomTag()}
+              placeholder="value (optional)"
+              className="flex-1 bg-white/5 border border-white/15 focus:border-violet-500/50 text-white placeholder-gray-600 px-2 py-1.5 rounded-lg text-xs outline-none transition-colors"
+            />
+            <button type="button" onClick={addCustomTag} disabled={!tagKey.trim()}
+              className="text-xs bg-violet-500/15 hover:bg-violet-500/25 border border-violet-500/30 text-violet-400 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40">
+              Add
+            </button>
+          </div>
         </div>
 
         {/* Save button */}
@@ -284,12 +435,14 @@ function ExpandedRow({ asset }) {
 }
 
 export default function AssetsPage() {
-  const [assets, setAssets] = useState([])
-  const [summary, setSummary] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [scanning, setScanning] = useState({})
-  const [expanded, setExpanded] = useState({})
+  const [assets, setAssets]       = useState([])
+  const [summary, setSummary]     = useState(null)
+  const [loading, setLoading]     = useState(true)
+  const [error, setError]         = useState(null)
+  const [scanning, setScanning]   = useState({})
+  const [expanded, setExpanded]   = useState({})
+  const [selected, setSelected]   = useState({})
+  const [tagFilter, setTagFilter] = useState(null)
   const [filterRisk, setFilterRisk] = useState('All')
   const [filterType, setFilterType] = useState('All')
   const [filterSeen, setFilterSeen] = useState('All time')
@@ -382,8 +535,42 @@ export default function AssetsPage() {
       if (filterSeen === 'Last 30 days' && diffDays > 30) return false
     }
 
+    if (tagFilter) {
+      const t = field(a, 'customTags', 'CustomTags', 'custom_tags') ?? []
+      const arr = Array.isArray(t) ? t : Object.entries(t).map(([key, value]) => ({ key, value }))
+      if (!arr.some(({ key }) => key === tagFilter)) return false
+    }
+
     return true
   })
+
+  const selectedIds    = Object.keys(selected).filter(k => selected[k])
+  const selectedCount  = selectedIds.length
+
+  const allTags = [...new Set(
+    assets.flatMap(a => {
+      const t = field(a, 'customTags', 'CustomTags', 'custom_tags') ?? []
+      const arr = Array.isArray(t) ? t : Object.entries(t).map(([key, value]) => ({ key, value }))
+      return arr.map(({ key }) => key)
+    })
+  )].filter(Boolean)
+
+  const handleBulkTag = async (tag, remove = false) => {
+    await bulkTagAssets({ assetIds: selectedIds, [remove ? 'removeTags' : 'addTags']: [tag] })
+    setSelected({})
+  }
+
+  const toggleSelect = (id, e) => {
+    e.stopPropagation()
+    setSelected(s => ({ ...s, [id]: !s[id] }))
+  }
+
+  const toggleAll = () => {
+    const allSelected = filtered.every(a => selected[field(a,'id','Id') ?? ''])
+    const next = {}
+    if (!allSelected) filtered.forEach(a => { next[field(a,'id','Id') ?? ''] = true })
+    setSelected(next)
+  }
 
   const selectCls = 'bg-white/5 border border-white/10 text-gray-300 text-sm px-3 py-2 rounded-xl outline-none focus:border-violet-500/50 transition-colors appearance-none cursor-pointer'
 
@@ -392,6 +579,13 @@ export default function AssetsPage() {
       <Navbar />
 
       <main className="flex-1 pt-16">
+        {selectedCount > 0 && (
+          <BulkTagBar
+            count={selectedCount}
+            onApplyTag={handleBulkTag}
+            onClearSelection={() => setSelected({})}
+          />
+        )}
         <div className="border-b border-white/10 px-4 py-10 bg-violet-500/5">
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
@@ -450,6 +644,33 @@ export default function AssetsPage() {
             <span className="text-sm text-gray-500 font-medium">{filtered.length} asset{filtered.length !== 1 ? 's' : ''}</span>
           </div>
 
+          {/* Tag filter chips */}
+          {allTags.length > 0 && (
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-600 flex items-center gap-1">
+                <Tag className="w-3 h-3" /> Tags
+              </span>
+              {allTags.map(tag => (
+                <button
+                  key={tag}
+                  onClick={() => setTagFilter(t => t === tag ? null : tag)}
+                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-colors ${
+                    tagFilter === tag
+                      ? 'bg-violet-500/20 text-violet-300 border-violet-500/50'
+                      : 'bg-white/5 text-gray-500 border-white/10 hover:text-gray-300 hover:border-white/20'
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
+              {tagFilter && (
+                <button onClick={() => setTagFilter(null)} className="text-[10px] text-gray-600 hover:text-white transition-colors">
+                  ✕ clear
+                </button>
+              )}
+            </div>
+          )}
+
           {error && (
             <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -484,6 +705,13 @@ export default function AssetsPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-white/10 bg-white/3">
+                      <th className="px-4 py-3 w-8">
+                        <button onClick={toggleAll} className="text-gray-500 hover:text-violet-400 transition-colors">
+                          {filtered.every(a => selected[field(a,'id','Id') ?? ''])
+                            ? <CheckSquare className="w-4 h-4 text-violet-400" />
+                            : <Square className="w-4 h-4" />}
+                        </button>
+                      </th>
                       <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Asset</th>
                       <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Risk Score</th>
                       <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Last Scanned</th>
@@ -509,8 +737,13 @@ export default function AssetsPage() {
                         <React.Fragment key={id}>
                           <tr
                             onClick={() => toggleRow(id)}
-                            className="border-b border-white/5 hover:bg-violet-500/5 transition-colors cursor-pointer"
+                            className={`border-b border-white/5 hover:bg-violet-500/5 transition-colors cursor-pointer ${selected[id] ? 'bg-violet-500/8' : ''}`}
                           >
+                            <td className="px-4 py-4" onClick={e => toggleSelect(id, e)}>
+                              {selected[id]
+                                ? <CheckSquare className="w-4 h-4 text-violet-400" />
+                                : <Square className="w-4 h-4 text-gray-600 hover:text-gray-400 transition-colors" />}
+                            </td>
                             <td className="px-4 py-4">
                               <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 bg-violet-500/10 border border-violet-500/20 rounded-lg flex items-center justify-center shrink-0 text-violet-400">
@@ -550,7 +783,7 @@ export default function AssetsPage() {
                           </tr>
                           {isExpanded && (
                             <tr className="border-b border-white/5">
-                              <td colSpan={7} className="p-0">
+                              <td colSpan={8} className="p-0">
                                 <ExpandedRow asset={asset} />
                               </td>
                             </tr>

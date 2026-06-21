@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react'
 import {
   ShieldCheck, Loader2, AlertCircle, CheckCircle2, XCircle,
   ChevronDown, ChevronUp, Download, ArrowLeft, RefreshCw,
-  AlertTriangle, ExternalLink, Minus, ScanLine, Cpu,
+  AlertTriangle, ExternalLink, Minus, ScanLine, Cpu, Globe, Archive,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
@@ -26,7 +26,7 @@ const FRAMEWORKS = [
     desc: 'Security, availability, processing integrity, confidentiality & privacy trust service criteria.',
   },
   {
-    id: 'iso27001',
+    id: 'iso-27001',
     name: 'ISO 27001',
     version: '2022',
     color: 'text-purple-400',
@@ -36,7 +36,7 @@ const FRAMEWORKS = [
     desc: 'International standard for information security management systems (ISMS).',
   },
   {
-    id: 'pci-dss',
+    id: 'pci-dss-v4',
     name: 'PCI DSS',
     version: 'v4.0',
     color: 'text-emerald-400',
@@ -211,6 +211,8 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
   const [assessing, setAssessing]           = useState(false)
   const [deepScanning, setDeepSc]           = useState(false)
   const [exporting, setExporting]           = useState(false)
+  const [htmlExporting, setHtmlExporting]       = useState(false)
+  const [exportingEvidence, setExportingEvidence] = useState(false)
   const [fetchingEvidence, setFetchingEvidence] = useState(false)
   const [evidenceArtifacts, setEvidenceArtifacts] = useState(null)
   const [evidenceOpen, setEvidenceOpen]     = useState(false)
@@ -267,6 +269,46 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
       setEvidenceOpen(true)
     } catch (e) { setError(e.message || 'Evidence fetch failed') }
     setFetchingEvidence(false)
+  }
+
+  const handleEvidenceExport = async () => {
+    setExportingEvidence(true)
+    try {
+      const assessId = scanId || fw.id
+      const token = localStorage.getItem('ws_token')
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL || 'https://webshield-backend-api.onrender.com'}/api/compliance/assessment/${encodeURIComponent(assessId)}/evidence-export`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      )
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const blob = await res.blob()
+      const url  = URL.createObjectURL(blob)
+      const a    = document.createElement('a')
+      a.href     = url
+      a.download = `${fw.id}-evidence-${new Date().toISOString().split('T')[0]}.zip`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (e) { setError(e.message || 'Evidence export failed') }
+    setExportingEvidence(false)
+  }
+
+  const handleHtmlReport = async () => {
+    setHtmlExporting(true)
+    try {
+      const token = localStorage.getItem('ws_token')
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL || 'https://webshield-backend-api.onrender.com'}/api/compliance/report/html?frameworkId=${encodeURIComponent(fw.id)}`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      )
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const html = await res.text()
+      const blob = new Blob([html], { type: 'text/html' })
+      const blobUrl = URL.createObjectURL(blob)
+      const win = window.open(blobUrl, '_blank', 'noopener,noreferrer')
+      if (!win) throw new Error('Popup blocked — please allow popups for this site')
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000)
+    } catch (e) { setError(e.message || 'HTML export failed') }
+    setHtmlExporting(false)
   }
 
   const handleExport = async () => {
@@ -329,6 +371,16 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
             className="flex items-center gap-1.5 bg-white/5 border border-white/15 hover:bg-white/10 text-gray-300 hover:text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40">
             {fetchingEvidence ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
             {evidenceArtifacts ? 'Refresh Evidence' : 'Fetch Evidence Artifacts'}
+          </button>
+          <button onClick={handleHtmlReport} disabled={htmlExporting || !assessed}
+            className="flex items-center gap-1.5 bg-white/5 border border-white/15 hover:bg-white/10 text-gray-300 hover:text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40">
+            {htmlExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Globe className="w-3.5 h-3.5" />}
+            {htmlExporting ? 'Building…' : 'Export HTML Report'}
+          </button>
+          <button onClick={handleEvidenceExport} disabled={exportingEvidence || !assessed}
+            className="flex items-center gap-1.5 bg-white/5 border border-white/15 hover:bg-white/10 text-gray-300 hover:text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40">
+            {exportingEvidence ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Archive className="w-3.5 h-3.5" />}
+            {exportingEvidence ? 'Packaging…' : 'Download Evidence (.zip)'}
           </button>
         </div>
       </div>
@@ -396,6 +448,7 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
                 const evValue  = evidence ? field(evidence, 'capturedValue', 'CapturedValue') : null
                 const evExpect = evidence ? field(evidence, 'expectedValue', 'ExpectedValue') : null
                 const evTs     = evidence ? field(evidence, 'capturedAt', 'CapturedAt') : null
+                const sha256   = field(item, 'sha256', 'Sha256', 'SHA256', 'hash', 'Hash')
                 return (
                   <div key={i} className="px-4 py-3 space-y-1.5">
                     <div className="flex items-center gap-2">
@@ -412,6 +465,12 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
                       <span className="text-gray-300">{evExpect != null ? String(evExpect) : '—'}</span>
                       <span className="text-gray-400">{evTs ? new Date(evTs).toLocaleString() : '—'}</span>
                     </div>
+                    {sha256 && (
+                      <div className="flex items-center gap-2 pl-2">
+                        <span className="text-[10px] text-gray-600 shrink-0">SHA-256:</span>
+                        <code className="text-[10px] font-mono text-gray-500 truncate">{sha256}</code>
+                      </div>
+                    )}
                   </div>
                 )
               }) : (
@@ -499,7 +558,12 @@ function FrameworkSelector({ onSelect, onDeepScan, agents, agentId, onAgentChang
             >
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <p className={`text-base font-extrabold ${fw.color}`}>{fw.name}</p>
+                  <p className={`text-base font-extrabold ${fw.color}`}>
+                    {fw.name}
+                    {fw.id === 'pci-dss-v4' && (
+                      <span className="text-[9px] font-bold text-amber-400 ml-1.5">v4.0</span>
+                    )}
+                  </p>
                   <p className="text-[10px] text-gray-500 font-mono mt-0.5">{fw.version}</p>
                 </div>
                 <ShieldCheck className={`w-5 h-5 ${fw.color} opacity-60`} />
@@ -576,7 +640,7 @@ export default function CompliancePage() {
               <span className="text-xs font-bold uppercase tracking-widest text-sky-400">Compliance</span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2">Compliance</h1>
-            <p className="text-gray-400">Evaluate your security posture against SOC 2, ISO 27001, PCI DSS, HIPAA, CIS Controls, and GDPR.</p>
+            <p className="text-gray-400">Evaluate your security posture against SOC 2, ISO 27001, PCI DSS v4.0, HIPAA, CIS Controls v8, and GDPR.</p>
           </div>
         </div>
 

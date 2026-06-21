@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams, useParams, Link } from 'react-router-dom'
 import {
   Search, Copy, Check, ChevronLeft, ChevronRight,
-  ExternalLink, AlertCircle, Loader2, Info,
+  ExternalLink, AlertCircle, Loader2, Info, X, Database,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
@@ -34,6 +34,26 @@ const SEV_STROKE = {
   Medium:   '#ca8a04',
   Low:      '#2563eb',
   Info:     '#64748b',
+}
+
+/* ─── CVE severity badge classes ────────────────────────────── */
+const SEV_BADGE_CLS = {
+  Critical: 'bg-red-500/15 text-red-400 border-red-500/30',
+  High:     'bg-orange-500/15 text-orange-400 border-orange-500/30',
+  Medium:   'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  Low:      'bg-blue-500/15 text-blue-400 border-blue-500/30',
+}
+
+/* ─── Relative time helper ───────────────────────────────────── */
+function timeAgo(date) {
+  if (!date) return '—'
+  const diffMs = Date.now() - new Date(date).getTime()
+  const diffD  = Math.floor(diffMs / 86400000)
+  if (diffD < 1)   return 'today'
+  if (diffD < 30)  return `${diffD}d ago`
+  const diffM = Math.floor(diffD / 30)
+  if (diffM < 12)  return `${diffM}mo ago`
+  return `${Math.floor(diffM / 12)}yr ago`
 }
 
 /* ─── Dual-case field accessor ───────────────────────────────── */
@@ -491,12 +511,200 @@ function CheckDetail({ checkId, list, onNavigate }) {
   )
 }
 
+/* ─── CVE Database tab ───────────────────────────────────────── */
+const CVE_LIMIT = 25
+
+function CveSearchTab() {
+  const [query, setQuery]           = useState('')
+  const [sevFilter, setSevFilter]   = useState('')
+  const [minCvss, setMinCvss]       = useState('')
+  const [afterDate, setAfterDate]   = useState('')
+  const [page, setPage]             = useState(1)
+  const [data, setData]             = useState(null)
+  const [loading, setLoading]       = useState(false)
+  const [error, setError]           = useState(null)
+  const debRef = useRef(null)
+
+  const fetchCves = useCallback(async (q, sev, cvss, after, pg) => {
+    setLoading(true); setError(null)
+    const token = localStorage.getItem('ws_token')
+    const hdrs  = token ? { Authorization: `Bearer ${token}` } : {}
+    const params = new URLSearchParams({ page: pg, limit: CVE_LIMIT })
+    if (q)     params.set('q', q)
+    if (sev)   params.set('severity', sev)
+    if (cvss)  params.set('minCvss', cvss)
+    if (after) params.set('publishedAfter', after)
+    try {
+      const res = await fetch(`${BACKEND}/api/cve/search?${params}`, { headers: hdrs })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      setData(await res.json())
+    } catch (e) { setError(e.message) }
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { fetchCves('', '', '', '', 1) }, [fetchCves])
+
+  const handleSearch = (e) => {
+    const q = e.target.value; setQuery(q)
+    if (debRef.current) clearTimeout(debRef.current)
+    debRef.current = setTimeout(() => { setPage(1); fetchCves(q, sevFilter, minCvss, afterDate, 1) }, 300)
+  }
+
+  const handleSev = (s) => {
+    const next = sevFilter === s ? '' : s; setSevFilter(next); setPage(1)
+    fetchCves(query, next, minCvss, afterDate, 1)
+  }
+
+  const goPage = (p) => { setPage(p); fetchCves(query, sevFilter, minCvss, afterDate, p) }
+
+  const items      = data?.items      ?? data?.Items      ?? []
+  const total      = data?.total      ?? data?.Total      ?? 0
+  const totalPages = Math.ceil(total / CVE_LIMIT)
+  const start      = Math.min((page - 1) * CVE_LIMIT + 1, total)
+  const end        = Math.min(page * CVE_LIMIT, total)
+
+  return (
+    <div className="max-w-6xl mx-auto px-6 py-6">
+      {/* Search */}
+      <div className="space-y-3 mb-6">
+        <div className="relative">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+          <input value={query} onChange={handleSearch}
+            placeholder="Search by CVE ID, product, or keyword…"
+            className="w-full bg-white/5 border border-white/10 focus:border-crimson-500 text-white placeholder-gray-500 pl-10 pr-10 py-3 rounded-xl text-sm outline-none transition-colors" />
+          {query && (
+            <button onClick={() => { setQuery(''); setPage(1); fetchCves('', sevFilter, minCvss, afterDate, 1) }}
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors">
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+        {/* Filter row */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex gap-1.5 flex-wrap">
+            {['Critical', 'High', 'Medium', 'Low'].map(s => (
+              <button key={s} onClick={() => handleSev(s)}
+                className={`px-3 py-1 rounded-full text-xs font-semibold border transition-colors ${
+                  sevFilter === s
+                    ? 'bg-crimson-500 text-white border-crimson-500'
+                    : 'bg-transparent text-gray-400 border-white/15 hover:text-white hover:border-white/30'
+                }`}>{s}</button>
+            ))}
+            {sevFilter && (
+              <button onClick={() => { setSevFilter(''); setPage(1); fetchCves(query, '', minCvss, afterDate, 1) }}
+                className="text-xs text-gray-500 hover:text-white transition-colors">Clear</button>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-gray-500">Min CVSS</span>
+            <input type="number" min="0" max="10" step="0.1" value={minCvss}
+              onChange={e => { setMinCvss(e.target.value); setPage(1); fetchCves(query, sevFilter, e.target.value, afterDate, 1) }}
+              placeholder="0.0"
+              className="w-16 bg-white/5 border border-white/10 focus:border-crimson-500 text-white px-2 py-1.5 rounded-lg text-xs outline-none transition-colors" />
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-gray-500">After</span>
+            <input type="date" value={afterDate}
+              onChange={e => { setAfterDate(e.target.value); setPage(1); fetchCves(query, sevFilter, minCvss, e.target.value, 1) }}
+              className="bg-white/5 border border-white/10 focus:border-crimson-500 text-white px-2 py-1.5 rounded-lg text-xs outline-none transition-colors" />
+          </div>
+        </div>
+      </div>
+
+      {error && (
+        <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm mb-4">
+          <AlertCircle className="w-4 h-4 shrink-0" />{error}
+        </div>
+      )}
+
+      {loading && (
+        <div className="space-y-2 mb-4">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="h-12 bg-white/3 border border-white/5 rounded-xl animate-pulse" />
+          ))}
+        </div>
+      )}
+
+      {!loading && items.length > 0 && (
+        <div className="border border-white/10 rounded-2xl overflow-hidden mb-4">
+          <div className="hidden lg:grid grid-cols-[2fr_1.2fr_1.2fr_1fr_70px_90px_90px_55px] gap-3 px-4 py-3 bg-white/3 border-b border-white/10 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+            <span>CVE ID</span>
+            <span>Product</span>
+            <span>Affected Versions</span>
+            <span>Fixed</span>
+            <span>CVSS</span>
+            <span>Severity</span>
+            <span>Published</span>
+            <span>KEV</span>
+          </div>
+          {items.map((cve, i) => {
+            const cveId      = cve.id            ?? cve.Id            ?? cve.cveId         ?? '—'
+            const product    = cve.product       ?? cve.Product       ?? '—'
+            const affected   = cve.affectedVersions ?? cve.AffectedVersions ?? ''
+            const fixed      = cve.fixedVersion  ?? cve.FixedVersion  ?? null
+            const score      = parseFloat(cve.cvssScore ?? cve.CvssScore ?? 0)
+            const severity   = cve.severity      ?? cve.Severity      ?? 'Low'
+            const published  = cve.publishedAt   ?? cve.PublishedAt   ?? null
+            const isKev      = !!(cve.isKev      ?? cve.IsKev)
+            const scoreColor = score >= 9 ? 'text-red-400' : score >= 7 ? 'text-orange-400' : score >= 4 ? 'text-yellow-400' : 'text-blue-400'
+            return (
+              <div key={i} className="grid lg:grid-cols-[2fr_1.2fr_1.2fr_1fr_70px_90px_90px_55px] gap-3 items-center px-4 py-3 border-b border-white/5 last:border-0 hover:bg-white/3 transition-colors">
+                <span className="font-mono text-xs text-crimson-400 font-semibold truncate">{cveId}</span>
+                <span className="text-xs text-gray-300 truncate">{product}</span>
+                <span className="font-mono text-xs text-amber-400 truncate">{affected || '—'}</span>
+                {fixed
+                  ? <span className="inline-flex text-[10px] font-semibold text-green-400 bg-green-500/10 border border-green-500/20 rounded px-1.5 py-0.5 w-fit truncate">{fixed}</span>
+                  : <span className="inline-flex text-[10px] font-semibold text-red-400 bg-red-500/10 border border-red-500/20 rounded px-1.5 py-0.5 w-fit">No fix</span>
+                }
+                <span className={`font-mono text-sm font-bold ${scoreColor}`}>{score.toFixed(1)}</span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border w-fit ${SEV_BADGE_CLS[severity] || SEV_BADGE_CLS.Low}`}>{severity}</span>
+                <span className="text-xs text-gray-500">{timeAgo(published)}</span>
+                {isKev
+                  ? <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-red-400 bg-red-500/10 border border-red-500/30 rounded px-1.5 py-0.5 animate-pulse">⚠ KEV</span>
+                  : <span />
+                }
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {!loading && !error && items.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <Search className="w-10 h-10 text-gray-600 mb-3" />
+          <p className="text-white font-semibold mb-1">No CVEs found</p>
+          <p className="text-gray-500 text-sm">Try a different product name or CVE ID.</p>
+        </div>
+      )}
+
+      {total > CVE_LIMIT && (
+        <div className="flex items-center justify-between text-xs text-gray-400 mt-2">
+          <span>Showing {start}–{end} of {total.toLocaleString()} results</span>
+          <div className="flex items-center gap-3">
+            <button onClick={() => goPage(page - 1)} disabled={page <= 1}
+              className="flex items-center gap-1 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+              <ChevronLeft className="w-4 h-4" /> Previous
+            </button>
+            <button onClick={() => goPage(page + 1)} disabled={page >= totalPages}
+              className="flex items-center gap-1 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+              Next <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 /* ─── Main page ──────────────────────────────────────────────── */
 const SEVS = ['All', 'Critical', 'High', 'Medium', 'Low', 'Info']
 
 export default function CveDatabasePage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { checkId: routeCheckId } = useParams()  // from /cve-database/:checkId
+
+  /* Tab: 'checks' (security knowledge base) | 'cve' (CVE database search) */
+  const [activeTab, setActiveTab] = useState('checks')
 
   /* list state */
   const [allItems, setAllItems]         = useState([])
@@ -623,12 +831,12 @@ export default function CveDatabasePage() {
 
       {/* Marketing page header — sits below fixed Navbar (pt-16 accounts for navbar height) */}
       <div className="pt-16 shrink-0 border-b border-white/10 bg-[#0a0f1a]">
-        <div className="px-6 py-5">
-          <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="px-6 pt-5 pb-0">
+          <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
             <div>
               <h1 className="text-2xl font-extrabold text-white leading-tight">Security Knowledge Base</h1>
               <p className="text-sm text-gray-400 mt-0.5">
-                69 vulnerability checks with framework-specific fix guidance
+                Vulnerability checks, CVE database, and framework-specific fix guidance
               </p>
             </div>
             <Link
@@ -638,11 +846,37 @@ export default function CveDatabasePage() {
               <ChevronLeft className="w-3.5 h-3.5" /> Back to home
             </Link>
           </div>
+          {/* Tab bar */}
+          <div className="flex">
+            <button onClick={() => setActiveTab('checks')}
+              className={`px-5 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors ${
+                activeTab === 'checks'
+                  ? 'border-crimson-500 text-white'
+                  : 'border-transparent text-gray-500 hover:text-gray-300'
+              }`}>
+              Security Checks
+            </button>
+            <button onClick={() => setActiveTab('cve')}
+              className={`flex items-center gap-1.5 px-5 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors ${
+                activeTab === 'cve'
+                  ? 'border-crimson-500 text-white'
+                  : 'border-transparent text-gray-500 hover:text-gray-300'
+              }`}>
+              <Database className="w-3.5 h-3.5" /> CVE Database
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Two-panel split — fills remaining viewport height */}
-      <div className="h-[calc(100vh-65px)] flex overflow-hidden min-h-0">
+      {/* CVE Database tab */}
+      {activeTab === 'cve' && (
+        <div className="flex-1 overflow-y-auto">
+          <CveSearchTab />
+        </div>
+      )}
+
+      {/* Two-panel split — fills remaining viewport height (Security Checks tab) */}
+      {activeTab === 'checks' && <div className="h-[calc(100vh-130px)] flex overflow-hidden min-h-0">
 
         {/* ── Left panel ── */}
         <div className="w-[380px] shrink-0 border-r border-white/10 flex flex-col overflow-hidden">
@@ -762,7 +996,7 @@ export default function CveDatabasePage() {
             onNavigate={selectCheck}
           />
         </div>
-      </div>
+      </div>}
 
       <Footer />
     </div>

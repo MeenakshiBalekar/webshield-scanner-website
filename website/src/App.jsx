@@ -74,6 +74,9 @@ import MsspWhiteLabelPage from './pages/MsspWhiteLabelPage'
 import BizLogicPage from './pages/BizLogicPage'
 import AttackChainsPage from './pages/AttackChainsPage'
 import SecurityCopilot from './pages/SecurityCopilot'
+import ApiSecurityPage from './pages/ApiSecurityPage'
+import SecretsScannerPage from './pages/SecretsScannerPage'
+import IacScannerPage from './pages/IacScannerPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -182,7 +185,10 @@ export default function App() {
           <Route path="/audit"             element={<PrivateRoute><AuditLogPage /></PrivateRoute>} />
           <Route path="/policy"            element={<PrivateRoute><PolicyManagementPage /></PrivateRoute>} />
           <Route path="/bizlogic"       element={<PrivateRoute><BizLogicPage /></PrivateRoute>} />
-          <Route path="/attack-chains"  element={<PrivateRoute><AttackChainsPage /></PrivateRoute>} />
+          <Route path="/attack-chains"       element={<PrivateRoute><AttackChainsPage /></PrivateRoute>} />
+          <Route path="/scanner/api-security" element={<ApiSecurityPage />} />
+          <Route path="/scanner/secrets"      element={<SecretsScannerPage />} />
+          <Route path="/scanner/iac"          element={<IacScannerPage />} />
           {/* MSSP Portal */}
           <Route path="/mssp/dashboard"    element={<PrivateRoute><MsspDashboardPage /></PrivateRoute>} />
           <Route path="/mssp/tenants"      element={<PrivateRoute><MsspTenantsPage /></PrivateRoute>} />

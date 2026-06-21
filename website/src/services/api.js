@@ -466,6 +466,18 @@ export const downloadPentestReport = (payload) =>
 export const deepScanCompliance = (frameworkId, agentId) =>
   request(`/api/compliance/deep-scan/${frameworkId}?agentId=${agentId}`, { method: 'POST' })
 
+// API Security Scanner
+export const runApiSecurityScan = (data) =>
+  request('/api/scanner/api-security', { method: 'POST', body: JSON.stringify(data) })
+
+// Secrets Detection
+export const runSecretsScan = (data) =>
+  request('/api/scanner/secrets', { method: 'POST', body: JSON.stringify(data) })
+
+// IaC Security Scanner
+export const runIacScan = (data) =>
+  request('/api/scanner/iac', { method: 'POST', body: JSON.stringify(data) })
+
 // Compliance evidence — returns JSON artifacts per control
 export const fetchComplianceEvidence = (assessmentId) =>
   request(`/api/compliance/assess/${assessmentId}/evidence`, { method: 'POST' })

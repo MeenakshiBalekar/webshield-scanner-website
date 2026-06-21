@@ -313,7 +313,7 @@ export default function NetworkScanPage() {
                   {
                     id:    'extended',
                     label: 'Extended',
-                    desc:  'Top 10,000 ports — deeper coverage for thorough audits (~2min)',
+                    desc:  'All 65,535 ports — full coverage for comprehensive audits (~5min)',
                     icon:  Shield,
                   },
                 ].map(({ id, label, desc, icon: Icon }) => (

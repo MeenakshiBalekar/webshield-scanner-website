@@ -452,6 +452,16 @@ export const runBizLogicScan = (data) =>
 export const runFuzzScan = (data) =>
   request('/api/fuzz/scan', { method: 'POST', body: JSON.stringify(data) })
 
+// Attack Chains
+export const getAttackChains = () => request('/api/attack-chains')
+
+// Exploit Forecast
+export const getExploitForecast = () => request('/api/exploit-forecast')
+
+// Pentest Report
+export const downloadPentestReport = (payload) =>
+  blobRequest('/api/reports/pentest', { method: 'POST', body: JSON.stringify(payload) })
+
 // Compliance Deep Scan
 export const deepScanCompliance = (frameworkId, agentId) =>
   request(`/api/compliance/deep-scan/${frameworkId}?agentId=${agentId}`, { method: 'POST' })

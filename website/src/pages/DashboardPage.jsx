@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Shield, Plus, AlertCircle, BarChart3, Target,
-  Server, Calendar, TrendingUp, ArrowRight, AlertTriangle,
+  Server, Calendar, TrendingUp, ArrowRight, AlertTriangle, TrendingDown, Minus,
 } from 'lucide-react'
-import { getDashboard, getScans, getRemediations } from '../services/api'
+import { getDashboard, getScans, getRemediations, getExploitForecast } from '../services/api'
 import Navbar from '../components/Navbar'
 
 const SVCVSS_BADGE = {
@@ -95,6 +95,91 @@ function OpenVulnsWidget() {
             <ArrowRight className="w-3.5 h-3.5 text-gray-600 shrink-0" />
           </Link>
         ))}
+      </div>
+    </div>
+  )
+}
+
+function ExploitForecastWidget() {
+  const [data, setData]   = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    getExploitForecast()
+      .then(setData)
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const forecasts = data?.forecast ?? data?.Forecast ?? data?.findings ?? data?.Findings
+    ?? (Array.isArray(data) ? data : [])
+
+  if (loading || forecasts.length === 0) return null
+
+  const probColor = (p) =>
+    p >= 80 ? 'text-red-400' : p >= 50 ? 'text-orange-400' : p >= 25 ? 'text-yellow-400' : 'text-green-400'
+  const probBg = (p) =>
+    p >= 80 ? 'bg-red-500' : p >= 50 ? 'bg-orange-500' : p >= 25 ? 'bg-yellow-500' : 'bg-green-500'
+  const sevBadgeClass = (s) => {
+    const sl = (s ?? '').toLowerCase()
+    return sl === 'critical' ? 'bg-red-600 text-white' : sl === 'high' ? 'bg-orange-500 text-white'
+      : sl === 'medium' ? 'bg-yellow-500 text-black' : 'bg-blue-500 text-white'
+  }
+
+  return (
+    <div className="mb-8">
+      <div className="flex items-center gap-2 mb-4">
+        <h2 className="text-lg font-bold text-white">Exploit Forecast</h2>
+        <span className="text-xs text-gray-500 bg-white/5 border border-white/10 rounded px-2 py-0.5">
+          30-day probability
+        </span>
+      </div>
+      <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-white/10">
+              <th className="text-left px-4 py-2.5 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Finding</th>
+              <th className="text-center px-3 py-2.5 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Sev</th>
+              <th className="text-right px-4 py-2.5 text-[10px] font-bold text-gray-500 uppercase tracking-wider">30d Prob</th>
+              <th className="text-center px-3 py-2.5 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Trend</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {forecasts.slice(0, 8).map((f, i) => {
+              const name  = f.checkName ?? f.CheckName ?? f.name ?? f.Name ?? 'Unknown'
+              const sev   = f.severity  ?? f.Severity  ?? 'Medium'
+              const prob  = Number(f.probability30d ?? f.Probability30d ?? f.probability ?? f.Probability ?? 0)
+              const trend = (f.trend ?? f.Trend ?? 'stable').toLowerCase()
+              const delta = f.trendDelta ?? f.TrendDelta ?? null
+              const TrendIcon = trend === 'rising' ? TrendingUp : trend === 'declining' ? TrendingDown : Minus
+              const trendCls = trend === 'rising' ? 'text-red-400' : trend === 'declining' ? 'text-green-400' : 'text-gray-500'
+              return (
+                <tr key={i} className="hover:bg-white/3 transition-colors">
+                  <td className="px-4 py-2.5 text-xs text-gray-200 font-medium truncate max-w-[200px]">{name}</td>
+                  <td className="px-3 py-2.5 text-center">
+                    <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded ${sevBadgeClass(sev)}`}>{sev}</span>
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <div className="flex items-center justify-end gap-2">
+                      <div className="w-14 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full ${probBg(prob)}`} style={{ width: `${prob}%` }} />
+                      </div>
+                      <span className={`text-xs font-bold w-9 text-right ${probColor(prob)}`}>{prob}%</span>
+                    </div>
+                  </td>
+                  <td className="px-3 py-2.5 text-center">
+                    <div className={`flex items-center justify-center gap-0.5 ${trendCls}`}>
+                      <TrendIcon className="w-3.5 h-3.5" />
+                      {delta != null && (
+                        <span className="text-[10px] font-semibold">{Math.abs(delta)}%</span>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   )
@@ -299,6 +384,9 @@ export default function DashboardPage() {
 
             {/* Open Vulnerabilities widget */}
             <OpenVulnsWidget />
+
+            {/* Exploit Forecast widget */}
+            <ExploitForecastWidget />
 
             {/* Launch scanners */}
             <div>

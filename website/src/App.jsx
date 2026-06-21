@@ -72,6 +72,8 @@ import MsspTenantsPage from './pages/MsspTenantsPage'
 import MsspTenantDetailPage from './pages/MsspTenantDetailPage'
 import MsspWhiteLabelPage from './pages/MsspWhiteLabelPage'
 import BizLogicPage from './pages/BizLogicPage'
+import AttackChainsPage from './pages/AttackChainsPage'
+import SecurityCopilot from './pages/SecurityCopilot'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -83,6 +85,7 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <SecurityCopilot />
         <Routes>
           {/* Marketing */}
           <Route path="/"          element={<LandingPage />} />
@@ -179,6 +182,7 @@ export default function App() {
           <Route path="/audit"             element={<PrivateRoute><AuditLogPage /></PrivateRoute>} />
           <Route path="/policy"            element={<PrivateRoute><PolicyManagementPage /></PrivateRoute>} />
           <Route path="/bizlogic"       element={<PrivateRoute><BizLogicPage /></PrivateRoute>} />
+          <Route path="/attack-chains"  element={<PrivateRoute><AttackChainsPage /></PrivateRoute>} />
           {/* MSSP Portal */}
           <Route path="/mssp/dashboard"    element={<PrivateRoute><MsspDashboardPage /></PrivateRoute>} />
           <Route path="/mssp/tenants"      element={<PrivateRoute><MsspTenantsPage /></PrivateRoute>} />

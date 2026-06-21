@@ -1544,9 +1544,33 @@ function ReportPanel({ scanUrl, scanResult }) {
   const [reportEmail, setReportEmail] = useState('')
   const [downloading, setDownloading] = useState(false)
   const [htmlExporting, setHtmlExporting] = useState(false)
+  const [pentestDownloading, setPentestDownloading] = useState(false)
   const [sending, setSending] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
   const [error, setError] = useState(null)
+
+  const handlePentestReport = async () => {
+    setPentestDownloading(true); setError(null)
+    try {
+      const token = localStorage.getItem('ws_token')
+      const res = await fetch(`${BACKEND}/api/reports/pentest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ url: scanUrl }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const blob = await res.blob()
+      const objUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = objUrl
+      a.download = `pentest-report-${new Date().toISOString().split('T')[0]}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(objUrl)
+    } catch (err) { setError(err.message) }
+    setPentestDownloading(false)
+  }
 
   const handleDownload = async () => {
     setDownloading(true)
@@ -1644,6 +1668,14 @@ function ReportPanel({ scanUrl, scanResult }) {
         >
           {htmlExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
           {htmlExporting ? 'Building report…' : 'Export HTML Report'}
+        </button>
+        <button
+          onClick={handlePentestReport}
+          disabled={pentestDownloading}
+          className="flex items-center gap-2 bg-violet-500/15 hover:bg-violet-500/25 border border-violet-500/30 disabled:opacity-50 text-violet-300 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
+        >
+          {pentestDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
+          {pentestDownloading ? 'Generating…' : 'Download Pentest Report'}
         </button>
       </div>
 

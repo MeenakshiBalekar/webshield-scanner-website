@@ -1024,8 +1024,9 @@ function FuzzPanel({ scanUrl }) {
     } catch (e) { setErr(e.message); setState('error') }
   }
 
-  const results = fuzzData?.fuzzResults ?? fuzzData?.FuzzResults ?? fuzzData?.results ?? fuzzData?.Results
-    ?? (Array.isArray(fuzzData) ? fuzzData : [])
+  const _rawFuzz = fuzzData?.fuzzResults ?? fuzzData?.FuzzResults ?? fuzzData?.results ?? fuzzData?.Results
+    ?? (Array.isArray(fuzzData) ? fuzzData : null)
+  const results = Array.isArray(_rawFuzz) ? _rawFuzz : []
 
   if (state === 'loading') {
     return (
@@ -1860,7 +1861,8 @@ export default function ProductPage() {
     setScheduling(false)
   }
 
-  const results = result?.results || result?.checks || result?.findings || []
+  const _rawResults = result?.results ?? result?.checks ?? result?.findings
+  const results = Array.isArray(_rawResults) ? _rawResults : []
   // Use API's pre-computed fields; fall back to case-insensitive filter
   const passed = result?.passedChecks ?? result?.PassedChecks
     ?? results.filter((r) => (r.passed === true) || (r.status?.toLowerCase() === 'passed') || (r.status?.toLowerCase() === 'pass')).length

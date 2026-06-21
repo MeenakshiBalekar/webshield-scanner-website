@@ -5,14 +5,14 @@ import {
   CheckCircle, XCircle, ChevronDown, ChevronUp,
   LayoutDashboard, FileText, Download, Mail, Send, ArrowRight,
   TrendingUp, TrendingDown, Clock, Wifi, Cpu, Globe, Lock,
-  PlusCircle, MinusCircle, Zap, Sparkles, AlertTriangle, ExternalLink,
+  PlusCircle, MinusCircle, Zap, Sparkles, AlertTriangle, ExternalLink, Code2,
 } from 'lucide-react'
 import axios from 'axios'
 import { useAuth } from '../context/AuthContext'
 
 const API = import.meta.env.VITE_API_URL ?? ''
 const BACKEND = API || 'https://webshield-backend-api.onrender.com'
-import { getRemediation, downloadReportPdf, emailReport, createSchedule, startAuthenticatedScan, startCrawlScan } from '../services/api'
+import { getRemediation, downloadReportPdf, emailReport, createSchedule, startAuthenticatedScan, startCrawlScan, getRemediationCode } from '../services/api'
 import ApiErrorBanner from '../components/ApiErrorBanner'
 import EvidencePanel from '../components/EvidencePanel'
 import Navbar from '../components/Navbar'
@@ -1080,6 +1080,60 @@ function FuzzPanel({ scanUrl }) {
   )
 }
 
+/* ── Per-stack fix code panel ── */
+function FixCodePanel({ data }) {
+  const [active, setActive] = useState(0)
+  const snippets = Array.isArray(data)
+    ? data
+    : (data?.snippets ?? data?.Snippets ?? data?.stacks ?? data?.Stacks ?? [])
+
+  if (snippets.length === 0) {
+    const code = data?.code ?? data?.Code ?? (typeof data === 'string' ? data : null)
+    if (!code) return null
+    return (
+      <div className="mt-2 bg-black/40 border border-green-800/30 rounded-xl overflow-hidden">
+        <div className="px-3 py-2 border-b border-green-800/20 flex items-center gap-1.5">
+          <Code2 className="w-3 h-3 text-green-400" />
+          <span className="text-[10px] font-bold text-green-400 uppercase tracking-wider">Fix Code</span>
+        </div>
+        <pre className="px-4 py-3 text-xs font-mono text-green-300 overflow-x-auto whitespace-pre-wrap max-h-64">{code}</pre>
+      </div>
+    )
+  }
+
+  const cur = snippets[active] ?? snippets[0]
+  const code = cur?.code ?? cur?.Code ?? cur?.snippet ?? cur?.Snippet ?? ''
+  const desc = cur?.description ?? cur?.Description ?? null
+
+  return (
+    <div className="mt-2 bg-black/40 border border-green-800/30 rounded-xl overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-green-800/20">
+        <div className="flex items-center gap-1.5">
+          <Code2 className="w-3 h-3 text-green-400" />
+          <span className="text-[10px] font-bold text-green-400 uppercase tracking-wider">Fix Code</span>
+        </div>
+        <div className="flex gap-1 flex-wrap justify-end">
+          {snippets.map((s, i) => {
+            const lbl = s?.stack ?? s?.Stack ?? s?.language ?? s?.Language ?? s?.framework ?? `Stack ${i + 1}`
+            return (
+              <button key={i} onClick={() => setActive(i)}
+                className={`text-[10px] font-semibold px-2 py-0.5 rounded transition-colors ${
+                  i === active
+                    ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                    : 'text-gray-500 hover:text-gray-300 border border-transparent'
+                }`}>
+                {lbl}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+      <pre className="px-4 py-3 text-xs font-mono text-green-300 overflow-x-auto whitespace-pre-wrap max-h-64">{code}</pre>
+      {desc && <p className="px-4 pb-3 text-xs text-gray-500 leading-relaxed border-t border-white/5 pt-2">{desc}</p>}
+    </div>
+  )
+}
+
 function FindingCard({ item }) {
   const [open, setOpen] = useState(false)
 
@@ -1110,6 +1164,21 @@ function FindingCard({ item }) {
   const lifecycleAssigneeId   = item.assigneeId    ?? item.AssigneeId        ?? null
   const lifecycleAssigneeName = item.assigneeName  ?? item.AssigneeName      ?? null
   const exploitProof          = item.exploitProof  ?? item.ExploitProof  ?? item.proof ?? item.Proof ?? null
+
+  const [fixCode, setFixCode]       = useState(null)
+  const [loadingCode, setLoadingCode] = useState(false)
+  const [codeErr, setCodeErr]       = useState(null)
+
+  const loadFixCode = async (e) => {
+    e.stopPropagation()
+    if (fixCode) { setFixCode(null); return }
+    setLoadingCode(true); setCodeErr(null)
+    try {
+      const data = await getRemediationCode(checkName)
+      setFixCode(data)
+    } catch (err) { setCodeErr(err.message || 'Could not load fix code') }
+    setLoadingCode(false)
+  }
 
   const c = sevTheme(severity)
   const hasDetail = technicalDetails || whyItMatters || whatCanGoWrong || businessImpact || attackScenario || fixSteps || evidenceDetail || isKev || !!findingId || !!exploitProof
@@ -1276,8 +1345,23 @@ function FindingCard({ item }) {
                 severity={severity}
                 recommendation={Array.isArray(fixSteps) ? fixSteps.join(' ') : (fixSteps ?? '')}
               />
+              {checkName && (
+                <button
+                  onClick={loadFixCode}
+                  disabled={loadingCode}
+                  className="flex items-center gap-1 text-[10px] font-semibold text-green-400 hover:text-green-300 border border-green-500/30 bg-green-500/8 hover:bg-green-500/15 px-2 py-1 rounded-lg transition-colors whitespace-nowrap disabled:opacity-50"
+                >
+                  {loadingCode
+                    ? <Loader2 className="w-3 h-3 animate-spin" />
+                    : <Code2 className="w-3 h-3" />}
+                  {fixCode ? 'Hide Code' : 'Show Fix Code'}
+                </button>
+              )}
             </div>
           )}
+
+          {codeErr && <p className="text-xs text-red-400 mt-1">{codeErr}</p>}
+          {fixCode && <FixCodePanel data={fixCode} />}
 
         </div>
       )}

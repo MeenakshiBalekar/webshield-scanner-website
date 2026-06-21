@@ -306,7 +306,9 @@ export const getMe = () => request('/api/auth/me')
 export const updateProfile = (data) =>
   request('/api/user/profile', { method: 'PUT', body: JSON.stringify(data) })
 export const changePassword = (data) =>
-  request('/api/user/password', { method: 'PUT', body: JSON.stringify(data) })
+  request('/api/auth/change-password', { method: 'POST', body: JSON.stringify(data) })
+
+export const exportUserData = () => blobRequest('/api/user/export')
 export const deleteAccount = () =>
   request('/api/user/account', { method: 'DELETE' })
 // Remediation task actions
@@ -481,6 +483,9 @@ export const runApiSecurityScan = (data) =>
 // Secrets Detection
 export const runSecretsScan = (data) =>
   request('/api/scanner/secrets', { method: 'POST', body: JSON.stringify(data) })
+
+export const getRemediationCode = (checkName) =>
+  request(`/api/remediation/code/${encodeURIComponent(checkName)}`)
 
 // IaC Security Scanner
 export const runIacScan = (data) =>

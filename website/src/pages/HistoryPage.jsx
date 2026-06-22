@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { Shield, Plus, AlertCircle, ChevronDown, ChevronUp, Search, X } from 'lucide-react'
-import { getScans, getScanDetail } from '../services/api'
+import { Shield, Plus, AlertCircle, ChevronDown, ChevronUp, Search, X, Upload, CheckCircle2, Database } from 'lucide-react'
+import { getScans, getScanDetail, getSiemConfigs, pushToSiem } from '../services/api'
 import Navbar from '../components/Navbar'
 
 function ScoreRing({ score }) {
@@ -165,9 +165,10 @@ function ScanRow({ scan, findingTab }) {
             <span className="text-gray-500"> / {total} failed</span>
           </div>
         </div>
+        {id && <PushToSiemButton scanId={id} />}
         <button
           onClick={handleToggle}
-          className="ml-2 flex items-center justify-center w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+          className="ml-1 flex items-center justify-center w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
           aria-label="Expand scan findings"
         >
           {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -194,6 +195,111 @@ function ScanRow({ scan, findingTab }) {
               <FindingRow key={f.id ?? f.Id ?? i} finding={f} />
             ))}
           </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Push to SIEM dropdown ──────────────────────────────────────────────────
+function PushToSiemButton({ scanId }) {
+  const [open,     setOpen]    = useState(false)
+  const [configs,  setConfigs] = useState(null)  // null = not loaded yet
+  const [pushing,  setPushing] = useState(null)  // id being pushed
+  const [toast,    setToast]   = useState(null)  // success message
+  const ref = useRef(null)
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  const handleOpen = async () => {
+    setToast(null)
+    if (configs === null) {
+      try {
+        const data = await getSiemConfigs()
+        const list = Array.isArray(data) ? data : (data?.configs ?? data?.Configs ?? data?.items ?? data?.Items ?? [])
+        setConfigs(list.filter(c => c?.enabled !== false && c?.Enabled !== false))
+      } catch { setConfigs([]) }
+    }
+    setOpen(v => !v)
+  }
+
+  const handlePush = async (cfg) => {
+    const cfgId = cfg?.id ?? cfg?.Id ?? ''
+    const cfgName = cfg?.name ?? cfg?.Name ?? cfgId
+    const index = cfg?.index ?? cfg?.Index ?? ''
+    setPushing(cfgId)
+    setOpen(false)
+    try {
+      const data = await pushToSiem({ siemConfigId: cfgId, scanHistoryId: scanId, onlyFindings: true })
+      const count = data?.count ?? data?.Count ?? data?.pushed ?? data?.Pushed ?? ''
+      const dest  = index ? `${cfgName} (${index})` : cfgName
+      setToast(`${count ? `${count} findings` : 'Findings'} pushed to ${dest}`)
+    } catch (e) {
+      setToast(`Push failed: ${e.message}`)
+    }
+    setPushing(null)
+    setTimeout(() => setToast(null), 5000)
+  }
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={handleOpen}
+        disabled={!!pushing}
+        title="Export to SIEM"
+        className="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/15 text-gray-400 hover:text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50"
+      >
+        {pushing ? <span className="w-3.5 h-3.5 border border-white/30 border-t-white rounded-full animate-spin inline-block" /> : <Upload className="w-3.5 h-3.5" />}
+        <span className="hidden sm:inline">SIEM</span>
+        <ChevronDown className="w-3 h-3 opacity-50" />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full mt-1.5 z-30 w-56 bg-[#12121e] border border-white/15 rounded-xl shadow-2xl overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-white/8 flex items-center gap-2">
+            <Database className="w-3.5 h-3.5 text-blue-400" />
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Export to SIEM</span>
+          </div>
+          {configs === null ? (
+            <div className="flex justify-center py-4"><span className="w-4 h-4 border border-white/20 border-t-white rounded-full animate-spin" /></div>
+          ) : configs.length === 0 ? (
+            <div className="px-4 py-4 text-center">
+              <p className="text-xs text-gray-500">No SIEM connections configured</p>
+              <a href="/settings/siem" className="text-xs text-blue-400 hover:underline mt-1 inline-block">Set up a connection →</a>
+            </div>
+          ) : (
+            configs.map(cfg => {
+              const id   = cfg?.id ?? cfg?.Id ?? ''
+              const name = cfg?.name ?? cfg?.Name ?? id
+              const plt  = (cfg?.platform ?? cfg?.Platform ?? '').toLowerCase()
+              return (
+                <button key={id} onClick={() => handlePush(cfg)}
+                  className="w-full flex items-center gap-2.5 px-4 py-3 text-left text-sm text-gray-200 hover:bg-white/5 transition-colors border-b border-white/5 last:border-b-0">
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${plt === 'splunk' ? 'bg-[#00BC00]' : plt === 'sentinel' ? 'bg-[#0078D4]' : 'bg-gray-500'}`} />
+                  <span className="truncate">{name}</span>
+                </button>
+              )
+            })
+          )}
+        </div>
+      )}
+
+      {toast && (
+        <div className={`absolute right-0 top-full mt-1.5 z-30 flex items-center gap-2 text-xs font-semibold px-3.5 py-2.5 rounded-xl border shadow-xl whitespace-nowrap ${
+          toast.startsWith('Push failed')
+            ? 'bg-red-500/15 border-red-500/30 text-red-400'
+            : 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+        }`}>
+          {toast.startsWith('Push failed')
+            ? <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+            : <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />}
+          {toast}
         </div>
       )}
     </div>

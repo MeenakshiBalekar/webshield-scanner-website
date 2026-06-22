@@ -560,3 +560,12 @@ export const importScan = (format, formData) => {
 export const getAlertConfig   = ()     => request('/api/alerts/config')
 export const configSlackAlert = (data) => request('/api/alerts/config/slack', { method: 'POST', body: JSON.stringify(data) })
 export const configTeamsAlert = (data) => request('/api/alerts/config/teams', { method: 'POST', body: JSON.stringify(data) })
+
+// SIEM
+export const getSiemPlatforms = () => fetch(`${BASE}/api/siem/platforms`).then(r => r.json()).catch(() => null)
+export const getSiemConfigs   = ()     => request('/api/siem/configs')
+export const createSiemConfig = (data) => request('/api/siem/configs',         { method: 'POST', body: JSON.stringify(data) })
+export const updateSiemConfig = (id, data) => request(`/api/siem/configs/${encodeURIComponent(id)}`, { method: 'PUT',  body: JSON.stringify(data) })
+export const deleteSiemConfig = (id)   => request(`/api/siem/configs/${encodeURIComponent(id)}`, { method: 'DELETE' })
+export const testSiemConfig   = (id)   => request(`/api/siem/configs/${encodeURIComponent(id)}/test`, { method: 'POST' })
+export const pushToSiem       = (data) => request('/api/siem/push', { method: 'POST', body: JSON.stringify(data) })

@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
   Shield, LogOut, ScanLine, Loader2, AlertCircle,
   CheckCircle, XCircle, ChevronDown, ChevronUp,
-  LayoutDashboard, FileText, Download, Mail, Send, ArrowRight,
+  LayoutDashboard, FileText, Download, Mail, Send, ArrowRight, Upload, Database,
   TrendingUp, TrendingDown, Clock, Wifi, Cpu, Globe, Lock,
   PlusCircle, MinusCircle, Zap, Sparkles, AlertTriangle, ExternalLink, Code2, BarChart3,
 } from 'lucide-react'
@@ -12,7 +12,7 @@ import { useAuth } from '../context/AuthContext'
 
 const API = import.meta.env.VITE_API_URL ?? ''
 const BACKEND = API || 'https://webshield-backend-api.onrender.com'
-import { getRemediation, downloadReportPdf, emailReport, createSchedule, startAuthenticatedScan, startCrawlScan, getRemediationCode, analyzeBenchmark } from '../services/api'
+import { getRemediation, downloadReportPdf, emailReport, createSchedule, startAuthenticatedScan, startCrawlScan, getRemediationCode, analyzeBenchmark, getSiemConfigs, pushToSiem } from '../services/api'
 import ApiErrorBanner from '../components/ApiErrorBanner'
 import EvidencePanel from '../components/EvidencePanel'
 import Navbar from '../components/Navbar'
@@ -1626,7 +1626,103 @@ function RemediationPlanPanel({ scanUrl, result }) {
   )
 }
 
-function ReportPanel({ scanUrl, scanResult }) {
+function SiemExportButton({ scanId }) {
+  const [open,    setOpen]   = useState(false)
+  const [configs, setConfigs] = useState(null)
+  const [pushing, setPushing] = useState(null)
+  const [toast,   setToast]  = useState(null)
+  const ref = React.useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [open])
+
+  const handleOpen = async () => {
+    setToast(null)
+    if (configs === null) {
+      try {
+        const data = await getSiemConfigs()
+        const list = Array.isArray(data) ? data : (data?.configs ?? data?.Configs ?? data?.items ?? data?.Items ?? [])
+        setConfigs(list.filter(c => c?.enabled !== false && c?.Enabled !== false))
+      } catch { setConfigs([]) }
+    }
+    setOpen(v => !v)
+  }
+
+  const handlePush = async (cfg) => {
+    const cfgId  = cfg?.id ?? cfg?.Id ?? ''
+    const cfgName = cfg?.name ?? cfg?.Name ?? cfgId
+    const index   = cfg?.index ?? cfg?.Index ?? ''
+    setPushing(cfgId); setOpen(false)
+    try {
+      const data  = await pushToSiem({ siemConfigId: cfgId, scanHistoryId: scanId, onlyFindings: true })
+      const count = data?.count ?? data?.Count ?? data?.pushed ?? data?.Pushed ?? ''
+      const dest  = index ? `${cfgName} (${index})` : cfgName
+      setToast({ ok: true,  msg: `${count ? `${count} findings` : 'Findings'} pushed to ${dest}` })
+    } catch (e) {
+      setToast({ ok: false, msg: e.message || 'Push failed' })
+    }
+    setPushing(null)
+    setTimeout(() => setToast(null), 6000)
+  }
+
+  return (
+    <div className="relative" ref={ref}>
+      <button onClick={handleOpen} disabled={!!pushing}
+        className="flex items-center gap-2 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 disabled:opacity-50 text-blue-300 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
+        {pushing
+          ? <span className="w-4 h-4 border border-blue-300/30 border-t-blue-300 rounded-full animate-spin inline-block" />
+          : <Upload className="w-4 h-4" />}
+        Export to SIEM
+        <ChevronDown className="w-3.5 h-3.5 opacity-50" />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-full mt-1.5 z-30 w-60 bg-[#12121e] border border-white/15 rounded-xl shadow-2xl overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-white/8 flex items-center gap-2">
+            <Database className="w-3.5 h-3.5 text-blue-400" />
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Select Destination</span>
+          </div>
+          {configs === null ? (
+            <div className="flex justify-center py-5"><span className="w-4 h-4 border border-white/20 border-t-white rounded-full animate-spin" /></div>
+          ) : configs.length === 0 ? (
+            <div className="px-4 py-4 text-center">
+              <p className="text-xs text-gray-500">No SIEM connections configured</p>
+              <a href="/settings/siem" className="text-xs text-blue-400 hover:underline mt-1 inline-block">Set up a connection →</a>
+            </div>
+          ) : configs.map(cfg => {
+            const id  = cfg?.id ?? cfg?.Id ?? ''
+            const nm  = cfg?.name ?? cfg?.Name ?? id
+            const plt = (cfg?.platform ?? cfg?.Platform ?? '').toLowerCase()
+            return (
+              <button key={id} onClick={() => handlePush(cfg)}
+                className="w-full flex items-center gap-2.5 px-4 py-3 text-left text-sm text-gray-200 hover:bg-white/5 border-b border-white/5 last:border-0 transition-colors">
+                <span className={`w-2 h-2 rounded-full shrink-0 ${plt === 'splunk' ? 'bg-[#00BC00]' : plt === 'sentinel' ? 'bg-[#0078D4]' : 'bg-gray-500'}`} />
+                <span className="truncate">{nm}</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {toast && (
+        <div className={`mt-2 flex items-center gap-2 text-xs font-semibold px-3.5 py-2.5 rounded-xl border ${
+          toast.ok
+            ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+            : 'bg-red-500/10 border-red-500/30 text-red-400'
+        }`}>
+          {toast.ok ? <CheckCircle className="w-3.5 h-3.5 shrink-0" /> : <AlertCircle className="w-3.5 h-3.5 shrink-0" />}
+          {toast.msg}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ReportPanel({ scanUrl, scanResult, scanId }) {
   const [reportEmail, setReportEmail] = useState('')
   const [downloading, setDownloading] = useState(false)
   const [htmlExporting, setHtmlExporting] = useState(false)
@@ -1763,6 +1859,7 @@ function ReportPanel({ scanUrl, scanResult }) {
           {pentestDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
           {pentestDownloading ? 'Generating…' : 'Download Pentest Report'}
         </button>
+        {scanId && <SiemExportButton scanId={scanId} />}
       </div>
 
       {emailSent && (
@@ -2716,7 +2813,7 @@ export default function ProductPage() {
             <BenchmarkWidget results={results} />
 
             {/* Report panel */}
-            <ReportPanel scanUrl={url} scanResult={result} />
+            <ReportPanel scanUrl={url} scanResult={result} scanId={result?.id ?? result?.Id ?? result?.scanId ?? result?.ScanId ?? null} />
           </>
         )}
       </main>

@@ -84,6 +84,7 @@ import AssetGraphPage from './pages/AssetGraphPage'
 import SbomPage from './pages/SbomPage'
 import IdentityExposurePage from './pages/IdentityExposurePage'
 import AttackPathPage from './pages/AttackPathPage'
+import SiemPage from './pages/SiemPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -212,6 +213,8 @@ export default function App() {
           <Route path="/sbom"              element={<PrivateRoute><SbomPage /></PrivateRoute>} />
           <Route path="/identity"          element={<PrivateRoute><IdentityExposurePage /></PrivateRoute>} />
           <Route path="/attack-paths"      element={<PrivateRoute><AttackPathPage /></PrivateRoute>} />
+          <Route path="/settings/siem"     element={<PrivateRoute><SiemPage /></PrivateRoute>} />
+          <Route path="/integrations/siem" element={<Navigate to="/settings/siem" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

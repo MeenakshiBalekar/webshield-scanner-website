@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Network, Loader2, AlertCircle, RefreshCw, Globe, Server, Cloud, Database, HardDrive, Monitor, Box, Briefcase } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import PageGuide from '../components/PageGuide'
 
 const BASE = import.meta.env.VITE_API_URL || 'https://webshield-backend-api.onrender.com'
 
@@ -283,6 +284,8 @@ export default function AssetGraphPage() {
         </div>
 
         <div className="max-w-5xl mx-auto px-4 py-8 space-y-4">
+          <PageGuide id="asset-graph" text="Visual map of how your scanned assets — web apps, APIs, cloud resources, and services — relate to each other. Nodes represent assets; edges show connections and data flows. Click any node to see its security score and findings. Use this to understand blast radius and identify critical hub assets that, if compromised, affect the most other systems." />
+
           {error && (
             <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
               <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />

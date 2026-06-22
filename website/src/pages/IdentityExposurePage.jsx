@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Users, AlertCircle, Loader2, RefreshCw, ShieldAlert, ShieldCheck, Clock, Crown, AlertTriangle, Filter } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import PageGuide from '../components/PageGuide'
 
 const BASE = import.meta.env.VITE_API_URL || 'https://webshield-backend-api.onrender.com'
 
@@ -186,6 +187,8 @@ export default function IdentityExposurePage() {
         </div>
 
         <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+          <PageGuide id="identity-exposure" text="Analyzes user accounts, permissions, and authentication posture across your environment. Connects to Microsoft Entra ID or Okta to identify privileged accounts without MFA, stale accounts, excessive permissions, and risky sign-in patterns. Paste your API credentials and click Analyze to get a risk report." />
+
           {loading ? (
             <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 text-crimson-400 animate-spin" /></div>
           ) : error ? (

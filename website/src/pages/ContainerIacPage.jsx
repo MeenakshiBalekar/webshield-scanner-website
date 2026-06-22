@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import PageGuide from '../components/PageGuide'
 import { scanIacFile } from '../services/api'
 
 const FILE_TYPES = [
@@ -192,6 +193,7 @@ export default function ContainerIacPage() {
         </div>
 
         <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+          <PageGuide id="container-iac" text="Scans Dockerfile, Kubernetes manifests, Terraform, CloudFormation, and Bicep files for misconfigurations before they reach production. Upload or paste your file — select the format first, then upload. Findings include the exact line number, severity, and a code-level fix recommendation." />
           {/* File type selector */}
           <div className="grid grid-cols-3 gap-3">
             {FILE_TYPES.map(t => (

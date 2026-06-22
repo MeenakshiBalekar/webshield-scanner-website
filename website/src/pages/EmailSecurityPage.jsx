@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Mail, Search, Loader2, AlertCircle, CheckCircle2, XCircle, AlertTriangle, Shield, Info } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import PageGuide from '../components/PageGuide'
 import { checkEmailSecurity } from '../services/api'
 
 const field = (obj, ...keys) => { for (const k of keys) if (obj?.[k] != null) return obj[k]; return null }
@@ -172,6 +173,7 @@ export default function EmailSecurityPage() {
         </div>
 
         <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+          <PageGuide id="email-security" text="Verifies your domain's email security posture: SPF, DKIM, DMARC, MX record TLS, and BIMI. Enter a domain name and click Check Domain. A spoofing risk rating tells you whether an attacker can send email pretending to be your domain. Fix recommendations are provided inline for each failed check." />
           {/* Input */}
           <div className="flex gap-3">
             <input

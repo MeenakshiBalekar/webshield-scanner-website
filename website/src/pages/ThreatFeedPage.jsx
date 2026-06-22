@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import {
-  Rss, AlertTriangle, ShieldAlert, ChevronDown, ChevronUp,
+  Rss, ShieldAlert, ChevronDown, ChevronUp,
   Loader2, ExternalLink, Zap, Shield, CheckCircle2,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
@@ -130,11 +130,62 @@ function CveCard({ cve }) {
   )
 }
 
+const DEMO_CVES = [
+  {
+    cveId: 'CVE-2024-3400', title: 'PAN-OS Command Injection in GlobalProtect Gateway',
+    cvssScore: 10.0, severity: 'Critical', publishedAt: '2024-04-12T00:00:00Z',
+    exploitAvailable: true, patchAvailable: true,
+    summary: 'A command injection vulnerability in the GlobalProtect feature of Palo Alto Networks PAN-OS allows an unauthenticated attacker to execute arbitrary code with root privileges.',
+    affectedSoftware: ['PAN-OS < 11.1.2-h3', 'PAN-OS < 10.2.9-h1'],
+    references: [{ url: 'https://nvd.nist.gov/vuln/detail/CVE-2024-3400' }],
+  },
+  {
+    cveId: 'CVE-2024-21762', title: 'Fortinet FortiOS SSL-VPN Out-of-Bound Write',
+    cvssScore: 9.6, severity: 'Critical', publishedAt: '2024-02-08T00:00:00Z',
+    exploitAvailable: true, patchAvailable: true,
+    summary: 'An out-of-bounds write vulnerability in FortiOS could allow a remote unauthenticated attacker to execute arbitrary code via specially crafted HTTP requests.',
+    affectedSoftware: ['FortiOS 7.4.0 - 7.4.2', 'FortiOS 7.2.0 - 7.2.6'],
+    references: [],
+  },
+  {
+    cveId: 'CVE-2024-1709', title: 'ConnectWise ScreenConnect Authentication Bypass',
+    cvssScore: 10.0, severity: 'Critical', publishedAt: '2024-02-21T00:00:00Z',
+    exploitAvailable: true, patchAvailable: true,
+    summary: 'An authentication bypass vulnerability allows remote unauthenticated users to access the system through an alternate path.',
+    affectedSoftware: ['ScreenConnect < 23.9.8'],
+    references: [],
+  },
+  {
+    cveId: 'CVE-2023-46805', title: 'Ivanti Connect Secure Authentication Bypass',
+    cvssScore: 8.2, severity: 'High', publishedAt: '2024-01-10T00:00:00Z',
+    exploitAvailable: true, patchAvailable: true,
+    summary: 'An authentication bypass vulnerability allows remote attackers to access restricted resources via a crafted request.',
+    affectedSoftware: ['Ivanti ICS 9.x', 'Ivanti ICS 22.x'],
+    references: [],
+  },
+  {
+    cveId: 'CVE-2024-27198', title: 'JetBrains TeamCity Remote Code Execution',
+    cvssScore: 9.8, severity: 'Critical', publishedAt: '2024-03-04T00:00:00Z',
+    exploitAvailable: true, patchAvailable: true,
+    summary: 'An authentication bypass vulnerability in TeamCity On-Premises allows attackers to take over the server.',
+    affectedSoftware: ['TeamCity < 2023.11.4'],
+    references: [],
+  },
+  {
+    cveId: 'CVE-2024-6387', title: 'OpenSSH regreSSHion Remote Code Execution',
+    cvssScore: 8.1, severity: 'High', publishedAt: '2024-07-01T00:00:00Z',
+    exploitAvailable: false, patchAvailable: true,
+    summary: 'A signal handler race condition in OpenSSH\'s server (sshd) allows unauthenticated remote code execution as root on glibc-based Linux systems.',
+    affectedSoftware: ['OpenSSH < 9.8p1'],
+    references: [],
+  },
+]
+
 export default function ThreatFeedPage() {
   const [cves, setCves]       = useState([])
   const [genAt, setGenAt]     = useState(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError]     = useState(null)
+  const [isDemo, setIsDemo]   = useState(false)
   const [sevFilter, setSevFilter] = useState('All')
   const [mappedOnly, setMappedOnly] = useState(false)
 
@@ -142,10 +193,15 @@ export default function ThreatFeedPage() {
     getThreatFeed()
       .then((data) => {
         const list = Array.isArray(data) ? data : (data?.cves ?? data?.items ?? [])
-        setCves(list)
-        setGenAt(data?.generatedAt ?? data?.GeneratedAt ?? null)
+        if (list.length > 0) {
+          setCves(list)
+          setGenAt(data?.generatedAt ?? data?.GeneratedAt ?? null)
+        } else {
+          setCves(DEMO_CVES)
+          setIsDemo(true)
+        }
       })
-      .catch((e) => setError(e.message || 'Failed to load threat feed'))
+      .catch(() => { setCves(DEMO_CVES); setIsDemo(true) })
       .finally(() => setLoading(false))
   }, [])
 
@@ -178,7 +234,9 @@ export default function ThreatFeedPage() {
             </h1>
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <p className="text-gray-400">Live CVE intelligence mapped to your scan findings.</p>
-              {genAt && <p className="text-xs text-gray-500">Updated {new Date(genAt).toLocaleString()}</p>}
+              {genAt
+                ? <p className="text-xs text-gray-500">Updated {new Date(genAt).toLocaleString()}</p>
+                : isDemo && <p className="text-xs text-gray-500 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full">Sample CVEs — connect your API for live feed</p>}
             </div>
           </div>
 
@@ -211,12 +269,6 @@ export default function ThreatFeedPage() {
               Affects my scan findings
             </label>
           </div>
-
-          {error && (
-            <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm mb-6">
-              <AlertTriangle className="w-4 h-4 shrink-0" />{error}
-            </div>
-          )}
 
           {loading ? (
             <div className="flex items-center gap-2 text-gray-400 py-12 justify-center text-sm">

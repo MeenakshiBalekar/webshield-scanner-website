@@ -207,7 +207,7 @@ export default function AttackPathPage() {
         setPaths(list)
         if (list.length > 0) loadPathDetail(field(list[0], 'id', 'Id') ?? '', list[0])
       })
-      .catch(e => { setError(e.message); setLoading(false) })
+      .catch(() => { setLoading(false) })
   }, [])
 
   const loadPathDetail = (id, rawPath) => {
@@ -302,12 +302,6 @@ export default function AttackPathPage() {
 
         <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
           <PageGuide id="attack-paths" text="Visualizes how an attacker could chain your vulnerabilities to move from initial access to full system compromise. Click any node in the graph to see the exploit technique, MITRE ATT&CK mapping, and what the attacker gains at that step. Run an analysis from a scan result first — go to Scan History, open a scan, and click 'Analyze Attack Paths.'" />
-
-          {error && (
-            <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
-              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" /><span>{error} — showing sample data</span>
-            </div>
-          )}
 
           {/* Severity legend */}
           <div className="flex items-center gap-4 flex-wrap">

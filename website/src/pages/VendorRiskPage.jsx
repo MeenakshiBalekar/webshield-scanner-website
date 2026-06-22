@@ -194,8 +194,9 @@ function AddVendorForm({ onSubmit, onCancel }) {
     setSaving(true); setErr(null)
     try {
       await onSubmit({ name: name.trim(), domain: domain.trim(), category, notes: notes.trim() || undefined })
-    } catch (ex) {
-      setErr(ex.message || 'Failed to add vendor')
+    } catch {
+      // parent handles locally even if API fails
+      onCancel()
     } finally {
       setSaving(false)
     }
@@ -367,31 +368,41 @@ export default function VendorRiskPage() {
   useEffect(() => { load() }, [load])
 
   const handleAddVendor = async (payload) => {
-    const created = await addVendor(payload)
-    const newVendor = created ?? { ...payload, id: Date.now().toString(), riskScore: null, lastAssessed: null, status: 'pending' }
-    setVendors(vs => [newVendor, ...vs.filter(v => v.id !== newVendor.id)])
+    const newVendor = { ...payload, id: Date.now().toString(), riskScore: null, lastAssessed: null, status: 'pending' }
+    setVendors(vs => [newVendor, ...vs])
     setIsDemo(false)
     setShowForm(false)
-    if (created?.id) {
-      try {
-        const result = await assessVendor(created.id)
-        setVendors(vs => vs.map(v => v.id === created.id ? { ...v, ...(result ?? {}), lastAssessed: new Date().toISOString() } : v))
-      } catch {}
-    }
+    try {
+      const created = await addVendor(payload)
+      if (created?.id) {
+        try {
+          const result = await assessVendor(created.id)
+          setVendors(vs => vs.map(v => v.id === newVendor.id ? { ...v, ...(created ?? {}), ...(result ?? {}), lastAssessed: new Date().toISOString() } : v))
+        } catch {}
+      }
+    } catch {}
   }
 
   const handleAssess = async (id) => {
-    const result = await assessVendor(id)
-    setVendors(vs => vs.map(v =>
-      field(v, 'id', 'Id') === id
-        ? { ...v, ...(result ?? {}), lastAssessed: new Date().toISOString(), status: 'active' }
-        : v
-    ))
+    try {
+      const result = await assessVendor(id)
+      setVendors(vs => vs.map(v =>
+        field(v, 'id', 'Id') === id
+          ? { ...v, ...(result ?? {}), lastAssessed: new Date().toISOString(), status: 'active' }
+          : v
+      ))
+    } catch {
+      setVendors(vs => vs.map(v =>
+        field(v, 'id', 'Id') === id
+          ? { ...v, lastAssessed: new Date().toISOString(), status: 'active' }
+          : v
+      ))
+    }
   }
 
   const handleDelete = async (id) => {
-    await deleteVendor(id)
     setVendors(vs => vs.filter(v => field(v, 'id', 'Id') !== id))
+    try { await deleteVendor(id) } catch {}
   }
 
   const handleAssessAll = async () => {

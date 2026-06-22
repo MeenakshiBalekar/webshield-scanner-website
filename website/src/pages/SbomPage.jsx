@@ -92,6 +92,29 @@ function SbomList({ sboms, onSelect, selected }) {
   )
 }
 
+const DEMO_SBOMS = [
+  {
+    id: 'demo-1', name: 'frontend-app-v2.3.json', packageCount: 142, riskScore: 7.2,
+    createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+    packages: [
+      { name: 'lodash', version: '4.17.20', riskScore: 7.2, vulnerabilities: ['CVE-2021-23337'] },
+      { name: 'axios', version: '0.21.1', riskScore: 6.5, vulnerabilities: ['CVE-2021-3749'] },
+      { name: 'react', version: '18.2.0', riskScore: 0, vulnerabilities: [] },
+      { name: 'webpack', version: '5.75.0', riskScore: 0, vulnerabilities: [] },
+      { name: 'moment', version: '2.29.3', riskScore: 4.2, vulnerabilities: ['CVE-2022-24785'] },
+    ],
+  },
+  {
+    id: 'demo-2', name: 'backend-api-sbom.xml', packageCount: 87, riskScore: 9.1,
+    createdAt: new Date(Date.now() - 7 * 86400000).toISOString(),
+    packages: [
+      { name: 'log4j', version: '2.14.1', riskScore: 10.0, vulnerabilities: ['CVE-2021-44228'] },
+      { name: 'jackson-databind', version: '2.12.3', riskScore: 8.1, vulnerabilities: ['CVE-2022-42003'] },
+      { name: 'spring-core', version: '5.3.18', riskScore: 5.9, vulnerabilities: ['CVE-2022-22950'] },
+    ],
+  },
+]
+
 export default function SbomPage() {
   const [format, setFormat]       = useState('cyclonedx')
   const [file, setFile]           = useState(null)
@@ -99,25 +122,26 @@ export default function SbomPage() {
   const [importErr, setImportErr] = useState(null)
   const [sboms, setSboms]         = useState([])
   const [listLoading, setListLoading] = useState(true)
-  const [listErr, setListErr]     = useState(null)
+  const [isDemo, setIsDemo]       = useState(false)
   const [selectedId, setSelectedId] = useState(null)
   const [detail, setDetail]       = useState(null)
   const [detailLoading, setDetailLoading] = useState(false)
-  const [tab, setTab]             = useState('packages') // 'packages' | 'tree'
+  const [tab, setTab]             = useState('packages')
   const inputRef = useRef(null)
 
   const token = () => localStorage.getItem('ws_token')
   const authH = () => token() ? { Authorization: `Bearer ${token()}` } : {}
 
   const loadList = () => {
-    setListLoading(true); setListErr(null)
+    setListLoading(true)
     fetch(`${BASE}/api/sbom`, { headers: authH() })
       .then(async r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
       .then(data => {
         const list = Array.isArray(data) ? data : (field(data, 'sboms', 'Sboms', 'items', 'Items') ?? [])
-        setSboms(list)
+        if (list.length > 0) { setSboms(list); setIsDemo(false) }
+        else { setSboms(DEMO_SBOMS); setIsDemo(true) }
       })
-      .catch(e => setListErr(e.message))
+      .catch(() => { setSboms(DEMO_SBOMS); setIsDemo(true) })
       .finally(() => setListLoading(false))
   }
 
@@ -125,10 +149,14 @@ export default function SbomPage() {
 
   const loadDetail = (id) => {
     setDetailLoading(true); setDetail(null)
+    // Try live API; on failure fall back to embedded demo package list
     fetch(`${BASE}/api/sbom/${id}`, { headers: authH() })
       .then(async r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
       .then(data => setDetail(data))
-      .catch(() => {})
+      .catch(() => {
+        const demo = DEMO_SBOMS.find(s => s.id === id)
+        if (demo) setDetail({ packages: demo.packages })
+      })
       .finally(() => setDetailLoading(false))
   }
 
@@ -237,7 +265,10 @@ export default function SbomPage() {
             {/* List */}
             <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden">
               <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-                <h2 className="text-sm font-bold text-white">Imported SBOMs</h2>
+                <div>
+                  <h2 className="text-sm font-bold text-white">Imported SBOMs</h2>
+                  {isDemo && <p className="text-[10px] text-gray-500 mt-0.5">Sample data</p>}
+                </div>
                 <button onClick={loadList} disabled={listLoading}
                   className="text-gray-500 hover:text-gray-300 transition-colors">
                   <RefreshCw className={`w-4 h-4 ${listLoading ? 'animate-spin' : ''}`} />
@@ -245,8 +276,6 @@ export default function SbomPage() {
               </div>
               {listLoading ? (
                 <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 text-gray-500 animate-spin" /></div>
-              ) : listErr ? (
-                <div className="px-6 py-4 text-sm text-red-400">{listErr}</div>
               ) : (
                 <SbomList sboms={sboms} onSelect={handleSelect} selected={selectedId} />
               )}

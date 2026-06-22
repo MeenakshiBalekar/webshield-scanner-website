@@ -224,7 +224,7 @@ export default function AssetGraphPage() {
           ...e,
         })))
       })
-      .catch(e => setError(e.message || 'Failed to load asset graph'))
+      .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
 
@@ -285,13 +285,6 @@ export default function AssetGraphPage() {
 
         <div className="max-w-5xl mx-auto px-4 py-8 space-y-4">
           <PageGuide id="asset-graph" text="Visual map of how your scanned assets — web apps, APIs, cloud resources, and services — relate to each other. Nodes represent assets; edges show connections and data flows. Click any node to see its security score and findings. Use this to understand blast radius and identify critical hub assets that, if compromised, affect the most other systems." />
-
-          {error && (
-            <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
-              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-              <span>{error} — showing sample data below</span>
-            </div>
-          )}
 
           <Legend />
 

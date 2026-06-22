@@ -115,9 +115,19 @@ function SummaryCard({ label, value, sub, color = 'text-white' }) {
   )
 }
 
+const DEMO_USERS = [
+  { email: 'admin@example.com',   mfaEnabled: false, isAdmin: true,  excessivePermissions: true,  riskScore: 9.2, lastLogin: new Date(Date.now() - 120 * 86400000).toISOString(), permissions: ['GlobalAdmin', 'BillingAdmin', 'UserAdmin'] },
+  { email: 'devops@example.com',  mfaEnabled: true,  isAdmin: false, excessivePermissions: true,  riskScore: 6.1, lastLogin: new Date(Date.now() - 2 * 86400000).toISOString(), permissions: ['ProdDeploy', 'SecretsRead', 'DBAdmin'] },
+  { email: 'alice@example.com',   mfaEnabled: false, isAdmin: false, excessivePermissions: false, riskScore: 5.0, lastLogin: new Date(Date.now() - 1 * 86400000).toISOString(), permissions: [] },
+  { email: 'bob@example.com',     mfaEnabled: true,  isAdmin: false, excessivePermissions: false, riskScore: 1.2, lastLogin: new Date(Date.now() - 3 * 86400000).toISOString(), permissions: [] },
+  { email: 'svc-deploy@example.com', mfaEnabled: false, isAdmin: true, excessivePermissions: true, riskScore: 8.7, lastLogin: new Date(Date.now() - 95 * 86400000).toISOString(), permissions: ['GlobalAdmin', 'NetworkWrite', 'StorageAdmin'] },
+  { email: 'carol@example.com',   mfaEnabled: true,  isAdmin: false, excessivePermissions: false, riskScore: 0.5, lastLogin: new Date(Date.now() - 1 * 86400000).toISOString(), permissions: [] },
+]
+const DEMO_RISKS = { avgRisk: 5.1, noMfa: 3, excessPerms: 3, staleAccounts: 1 }
+
 export default function IdentityExposurePage() {
   const [loading, setLoading]   = useState(true)
-  const [error, setError]       = useState(null)
+  const [isDemo, setIsDemo]     = useState(false)
   const [risks, setRisks]       = useState(null)
   const [users, setUsers]       = useState([])
   const [filterMfa, setFilterMfa] = useState(false)
@@ -128,19 +138,21 @@ export default function IdentityExposurePage() {
   const authH = () => token() ? { Authorization: `Bearer ${token()}` } : {}
 
   const load = () => {
-    setLoading(true); setError(null)
+    setLoading(true); setIsDemo(false)
     const risksReq = fetch(`${BASE}/api/identity/risks`, { headers: authH() })
       .then(r => r.ok ? r.json() : null).catch(() => null)
     const usersReq = fetch(`${BASE}/api/identity/users`, { headers: authH() })
       .then(r => r.ok ? r.json() : null).catch(() => null)
 
     Promise.all([risksReq, usersReq]).then(([rData, uData]) => {
-      setRisks(rData)
       const list = uData
         ? (Array.isArray(uData) ? uData : (field(uData, 'users', 'Users', 'items', 'Items') ?? []))
         : []
-      setUsers(list)
-      if (!rData && !uData) setError('Could not load identity data')
+      if (!rData && list.length === 0) {
+        setRisks(DEMO_RISKS); setUsers(DEMO_USERS); setIsDemo(true)
+      } else {
+        setRisks(rData); setUsers(list)
+      }
     }).finally(() => setLoading(false))
   }
 
@@ -189,12 +201,13 @@ export default function IdentityExposurePage() {
         <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
           <PageGuide id="identity-exposure" text="Analyzes user accounts, permissions, and authentication posture across your environment. Connects to Microsoft Entra ID or Okta to identify privileged accounts without MFA, stale accounts, excessive permissions, and risky sign-in patterns. Paste your API credentials and click Analyze to get a risk report." />
 
+          {isDemo && !loading && (
+            <div className="text-xs text-gray-500 bg-white/3 border border-white/10 rounded-xl px-4 py-2.5">
+              Sample identity data — connect your Entra ID / Okta integration for live posture analysis.
+            </div>
+          )}
           {loading ? (
             <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 text-crimson-400 animate-spin" /></div>
-          ) : error ? (
-            <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
-              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" /><span>{error}</span>
-            </div>
           ) : (
             <>
               {/* Summary cards */}

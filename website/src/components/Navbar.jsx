@@ -4,28 +4,47 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 const PRODUCTS_NAV = {
-  label: 'Products',
+  label: 'Scanners',
   dropdown: [
-    { label: 'Web Scanner',     href: '/products/web' },
-    { label: 'API Scanner',     href: '/scanner/api' },
-    { label: 'Network Scanner', href: '/scanner/network' },
-    { label: 'Host Scanner',    href: '/scanner/host' },
-    { label: 'Cloud Scanner',   href: '/scanner/cloud' },
-    { label: 'Code Scanner',    href: '/scanner/code' },
+    { label: 'Web Scanner',       href: '/products/web' },
+    { label: 'API Scanner',       href: '/scanner/api' },
+    { label: 'Network Scanner',   href: '/scanner/network' },
+    { label: 'Host Scanner',      href: '/scanner/host' },
+    { label: 'Cloud Scanner',     href: '/scanner/cloud' },
+    { label: 'Code Scanner',      href: '/scanner/code' },
+    { label: 'Email Security',    href: '/scanner/email-security' },
+    { label: 'Container & IaC',   href: '/scanner/container-iac' },
+    { label: 'All Scanners',      href: '/scanner' },
   ],
 }
 
 const SCANNERS_NAV = {
   label: 'Scanners',
   dropdown: [
+    // Web & App
     { label: 'Web Scanner',        href: '/products/web' },
     { label: 'Authenticated Scan', href: '/products/web' },
+    { label: 'API Scanner',        href: '/scanner/api' },
+    { label: 'API Security',       href: '/scanner/api-security' },
+    { label: 'Email Security',     href: '/scanner/email-security' },
+    { label: 'Crawl Scanner',      href: '/crawl-scan' },
+    { label: 'Subdomain Scanner',  href: '/subdomain-scan' },
+    { label: 'DNS Scanner',        href: '/dns-scan' },
+    // Infrastructure
     { label: 'Network Scanner',    href: '/scanner/network' },
     { label: 'Host Scanner',       href: '/scanner/host' },
     { label: 'Cloud Scanner',      href: '/scanner/cloud' },
+    { label: 'VMDR',               href: '/scanner/vmdr' },
+    { label: 'EASM Scan',          href: '/easm' },
+    // Code & IaC
     { label: 'Code Scanner',       href: '/scanner/code' },
+    { label: 'Secrets Scanner',    href: '/scanner/secrets' },
+    { label: 'IaC Scanner',        href: '/scanner/iac' },
+    { label: 'Container & IaC',    href: '/scanner/container-iac' },
+    // Platform
     { label: 'CI/CD Setup',        href: '/scanner/cicd' },
     { label: 'SSPM Scanner',       href: '/scanner/sspm' },
+    { label: 'Shadow AI Scanner',  href: '/scanner/shadow-ai' },
     { label: 'Agent Scanner',      href: '/scanner/agent' },
     { label: 'All Scanners',       href: '/scanner' },
   ],
@@ -43,46 +62,77 @@ const COMMON_NAV = [
     ],
   },
   {
-    label: 'Agent',
+    label: 'Platform',
     dropdown: [
-      { label: 'Udyo360 Agent',     href: '/agent' },
-      { label: 'Auto Scan',         href: '/autoscan' },
-      { label: 'Remediation Tasks', href: '/remediation-tasks' },
-      { label: 'Server Monitor',    href: '/servermonitor' },
-      { label: 'EASM Scan',         href: '/easm' },
-      { label: 'Container Scan',    href: '/container-scan' },
+      { label: 'Dashboard',            href: '/dashboard' },
+      { label: 'Executive Dashboard',  href: '/executive-dashboard' },
+      { label: 'Portfolio',            href: '/portfolio' },
+      { label: 'Assets',               href: '/assets' },
+      { label: 'Asset Graph',          href: '/asset-graph' },
+      { label: 'Scan History',         href: '/scanner/history' },
+      { label: 'Monitoring',           href: '/monitoring' },
+      { label: 'Trends',               href: '/trends' },
+      { label: 'Remediation',          href: '/remediation' },
+      { label: 'Remediation Tasks',    href: '/remediation-tasks' },
+      { label: 'Schedules',            href: '/schedule' },
+      { label: 'Discover',             href: '/discover' },
     ],
   },
   {
     label: 'Intelligence',
     dropdown: [
-      { label: 'AI Report',         href: '/ai-report' },
-      { label: 'Alert Triage',      href: '/alert-triage' },
-      { label: 'Threat Feed',       href: '/threat-feed' },
-      { label: 'Shadow AI Scanner', href: '/scanner/shadow-ai' },
-      { label: 'Patch Management',  href: '/patch' },
-      { label: 'Scheduled Reports', href: '/reports/schedule' },
-      { label: 'Attack Surface',    href: '/discover' },
-      { label: 'Compliance Report', href: '/compliance' },
+      { label: 'AI Report',          href: '/ai-report' },
+      { label: 'Alert Triage',       href: '/alert-triage' },
+      { label: 'Threat Feed',        href: '/threat-feed' },
+      { label: 'Threat Intel',       href: '/threat' },
+      { label: 'Attack Paths',       href: '/attack-paths' },
+      { label: 'Attack Chains',      href: '/attack-chains' },
+      { label: 'Identity Exposure',  href: '/identity' },
+      { label: 'SBOM',               href: '/sbom' },
+      { label: 'Compliance Report',  href: '/compliance' },
+      { label: 'Biz Logic Scan',     href: '/bizlogic' },
+      { label: 'Patch Management',   href: '/patch' },
+      { label: 'EDR',                href: '/edr' },
+    ],
+  },
+  {
+    label: 'Security Ops',
+    dropdown: [
+      { label: 'SIEM Integrations',  href: '/settings/siem' },
+      { label: 'Monitoring',         href: '/monitoring' },
+      { label: 'Alert Config',       href: '/alerts/config' },
+      { label: 'Integrations',       href: '/integrations' },
+      { label: 'Import Scan',        href: '/import' },
+      { label: 'Scheduled Reports',  href: '/reports/schedule' },
+      { label: 'Policy Management',  href: '/policy' },
+      { label: 'Audit Log',          href: '/audit' },
+      { label: 'Organization',       href: '/org' },
+    ],
+  },
+  {
+    label: 'Agent',
+    dropdown: [
+      { label: 'Udyo360 Agent',     href: '/agent' },
+      { label: 'Auto Scan',         href: '/autoscan' },
+      { label: 'Server Monitor',    href: '/servermonitor' },
+      { label: 'Agent Management',  href: '/agents' },
+      { label: 'Container Scan',    href: '/container-scan' },
+      { label: 'EASM Scan',         href: '/easm' },
     ],
   },
   {
     label: 'Resources',
     dropdown: [
-      { label: 'Dashboard',    href: '/dashboard' },
-      { label: 'Billing',      href: '/billing' },
-      { label: 'Assets',       href: '/assets' },
-      { label: 'Remediation',  href: '/remediation' },
-      { label: 'Scan History', href: '/scanner/history' },
-      { label: 'Schedules',    href: '/schedule' },
-      { label: 'Integrations', href: '/integrations' },
-      { label: 'Trust Badge',  href: '/trust' },
-      { label: 'Blog',         href: '/blog' },
-      { label: 'CVE Database', href: '/cve-database' },
+      { label: 'Billing',       href: '/billing' },
+      { label: 'White Label',   href: '/whitelabel' },
+      { label: 'Trust Badge',   href: '/trust' },
+      { label: 'CVE Database',  href: '/cve-database' },
+      { label: 'Blog',          href: '/blog' },
+      { label: 'Help',          href: '/help' },
+      { label: 'Pricing',       href: '/pricing' },
+      { label: 'Company',       href: '/company' },
     ],
   },
-  { label: 'Pricing', href: '/pricing' },
-  { label: 'Company', href: '/company' },
 ]
 
 /* ── Avatar helpers ── */
@@ -277,7 +327,7 @@ export default function Navbar({ banner }) {
                   {link.dropdown && <ChevronDown className="w-3.5 h-3.5" />}
                 </button>
                 {link.dropdown && activeDropdown === link.label && (
-                  <div className="absolute top-full left-0 mt-1 w-56 bg-navy-900 border border-white/10 rounded-xl shadow-2xl py-2 animate-fade-up">
+                  <div className="absolute top-full left-0 mt-1 w-56 bg-navy-900 border border-white/10 rounded-xl shadow-2xl py-2 animate-fade-up max-h-[70vh] overflow-y-auto">
                     {link.dropdown.map((item) => renderItem(item))}
                   </div>
                 )}

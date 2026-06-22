@@ -569,3 +569,30 @@ export const updateSiemConfig = (id, data) => request(`/api/siem/configs/${encod
 export const deleteSiemConfig = (id)   => request(`/api/siem/configs/${encodeURIComponent(id)}`, { method: 'DELETE' })
 export const testSiemConfig   = (id)   => request(`/api/siem/configs/${encodeURIComponent(id)}/test`, { method: 'POST' })
 export const pushToSiem       = (data) => request('/api/siem/push', { method: 'POST', body: JSON.stringify(data) })
+
+// Container & IaC scan (multipart)
+export const scanIacFile = (formData) => {
+  const token = localStorage.getItem('ws_token')
+  const headers = token ? { Authorization: `Bearer ${token}` } : {}
+  return fetch(`${BASE}/api/iac/scan`, { method: 'POST', headers, body: formData })
+    .then(async (res) => {
+      if (!res.ok) {
+        let msg = `HTTP ${res.status}`
+        try { const b = await res.json(); msg = b.error || b.message || msg } catch {}
+        throw new Error(msg)
+      }
+      return res.json()
+    })
+}
+
+// Email security
+export const checkEmailSecurity = (domain) => request(`/api/email-security?domain=${encodeURIComponent(domain)}`)
+
+// Cloud Marketplace
+export const getMarketplaceStatus    = ()     => request('/api/billing/marketplace')
+export const connectAwsMarketplace   = (data) => request('/api/billing/marketplace/aws',   { method: 'POST', body: JSON.stringify(data ?? {}) })
+export const connectAzureMarketplace = (data) => request('/api/billing/marketplace/azure', { method: 'POST', body: JSON.stringify(data ?? {}) })
+
+// Monitoring — per-domain alert config
+export const getDomainAlertConfig  = (domain) => request(`/api/alerts/config?domain=${encodeURIComponent(domain)}`)
+export const saveDomainAlertConfig = (domain, data) => request(`/api/alerts/config/${encodeURIComponent(domain)}`, { method: 'POST', body: JSON.stringify(data) })

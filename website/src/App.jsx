@@ -89,6 +89,7 @@ import AttackPathPage from './pages/AttackPathPage'
 import SiemPage from './pages/SiemPage'
 import ContainerIacPage from './pages/ContainerIacPage'
 import EmailSecurityPage from './pages/EmailSecurityPage'
+import ErrorBoundary from './components/ErrorBoundary'
 import DarkWebPage from './pages/DarkWebPage'
 
 function PrivateRoute({ children }) {
@@ -102,6 +103,7 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <SecurityCopilot />
+        <ErrorBoundary>
         <Routes>
           {/* Marketing */}
           <Route path="/"          element={<LandingPage />} />
@@ -226,6 +228,7 @@ export default function App() {
           <Route path="/scanner/email-security" element={<EmailSecurityPage />} />
           <Route path="/dark-web" element={<PrivateRoute><DarkWebPage /></PrivateRoute>} />
         </Routes>
+        </ErrorBoundary>
       </BrowserRouter>
     </AuthProvider>
   )

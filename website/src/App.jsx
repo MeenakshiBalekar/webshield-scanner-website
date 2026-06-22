@@ -80,6 +80,10 @@ import IacScannerPage from './pages/IacScannerPage'
 import WhiteLabelPage from './pages/WhiteLabelPage'
 import ImportPage from './pages/ImportPage'
 import AlertConfigPage from './pages/AlertConfigPage'
+import AssetGraphPage from './pages/AssetGraphPage'
+import SbomPage from './pages/SbomPage'
+import IdentityExposurePage from './pages/IdentityExposurePage'
+import AttackPathPage from './pages/AttackPathPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -202,6 +206,12 @@ export default function App() {
           <Route path="/whitelabel"        element={<PrivateRoute><WhiteLabelPage /></PrivateRoute>} />
           <Route path="/import"            element={<PrivateRoute><ImportPage /></PrivateRoute>} />
           <Route path="/alerts/config"     element={<PrivateRoute><AlertConfigPage /></PrivateRoute>} />
+
+          {/* Phase 7 */}
+          <Route path="/asset-graph"       element={<PrivateRoute><AssetGraphPage /></PrivateRoute>} />
+          <Route path="/sbom"              element={<PrivateRoute><SbomPage /></PrivateRoute>} />
+          <Route path="/identity"          element={<PrivateRoute><IdentityExposurePage /></PrivateRoute>} />
+          <Route path="/attack-paths"      element={<PrivateRoute><AttackPathPage /></PrivateRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

@@ -167,7 +167,7 @@ const SCANNERS = [
 const STATS = [
   { value: '18',  label: 'Host checks',       icon: Server },
   { value: '13',  label: 'Cloud controls',    icon: Cloud },
-  { value: '50+', label: 'Web checks',        icon: Globe },
+  { value: '70+', label: 'Web checks',        icon: Globe },
   { value: '5',   label: 'CI/CD platforms',   icon: GitBranch },
 ]
 

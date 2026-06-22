@@ -67,12 +67,14 @@ import EdrPage from './pages/EdrPage'
 import VmdrPage from './pages/VmdrPage'
 import EasmPage from './pages/EasmPage'
 import PolicyManagementPage from './pages/PolicyManagementPage'
+import VendorRiskPage from './pages/VendorRiskPage'
 import MsspDashboardPage from './pages/MsspDashboardPage'
 import MsspTenantsPage from './pages/MsspTenantsPage'
 import MsspTenantDetailPage from './pages/MsspTenantDetailPage'
 import MsspWhiteLabelPage from './pages/MsspWhiteLabelPage'
 import BizLogicPage from './pages/BizLogicPage'
 import AttackChainsPage from './pages/AttackChainsPage'
+import PhishingPage from './pages/PhishingPage'
 import SecurityCopilot from './pages/SecurityCopilot'
 import ApiSecurityPage from './pages/ApiSecurityPage'
 import SecretsScannerPage from './pages/SecretsScannerPage'
@@ -87,6 +89,7 @@ import AttackPathPage from './pages/AttackPathPage'
 import SiemPage from './pages/SiemPage'
 import ContainerIacPage from './pages/ContainerIacPage'
 import EmailSecurityPage from './pages/EmailSecurityPage'
+import DarkWebPage from './pages/DarkWebPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -194,8 +197,10 @@ export default function App() {
           <Route path="/org/:id/apikeys"   element={<PrivateRoute><ApiKeysPage /></PrivateRoute>} />
           <Route path="/audit"             element={<PrivateRoute><AuditLogPage /></PrivateRoute>} />
           <Route path="/policy"            element={<PrivateRoute><PolicyManagementPage /></PrivateRoute>} />
+          <Route path="/vendor-risk"       element={<PrivateRoute><VendorRiskPage /></PrivateRoute>} />
           <Route path="/bizlogic"       element={<PrivateRoute><BizLogicPage /></PrivateRoute>} />
           <Route path="/attack-chains"       element={<PrivateRoute><AttackChainsPage /></PrivateRoute>} />
+          <Route path="/phishing"            element={<PrivateRoute><PhishingPage /></PrivateRoute>} />
           <Route path="/scanner/api-security" element={<ApiSecurityPage />} />
           <Route path="/scanner/secrets"      element={<SecretsScannerPage />} />
           <Route path="/scanner/iac"          element={<IacScannerPage />} />
@@ -219,6 +224,7 @@ export default function App() {
           <Route path="/integrations/siem"   element={<Navigate to="/settings/siem" replace />} />
           <Route path="/scanner/container-iac" element={<ContainerIacPage />} />
           <Route path="/scanner/email-security" element={<EmailSecurityPage />} />
+          <Route path="/dark-web" element={<PrivateRoute><DarkWebPage /></PrivateRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

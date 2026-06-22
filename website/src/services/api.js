@@ -525,6 +525,12 @@ export const createBillingCheckout  = (data) => request('/api/billing/checkout',
 export const getTrend           = (url) => request(`/api/trend?url=${encodeURIComponent(url)}`)
 export const getPortfolioTrend  = ()    => request('/api/trend/portfolio')
 
+// Vendor Risk Management
+export const getVendors   = ()         => request('/api/vendors')
+export const addVendor    = (data)     => request('/api/vendors', { method: 'POST', body: JSON.stringify(data) })
+export const assessVendor = (id)       => request(`/api/vendors/${id}/assess`, { method: 'POST' })
+export const deleteVendor = (id)       => request(`/api/vendors/${id}`, { method: 'DELETE' })
+
 // Industry benchmark analysis
 export const analyzeBenchmark = (data) =>
   request('/api/benchmark/analyze', { method: 'POST', body: JSON.stringify(data) })
@@ -588,6 +594,9 @@ export const scanIacFile = (formData) => {
 // Email security
 export const checkEmailSecurity = (domain) => request(`/api/email-security?domain=${encodeURIComponent(domain)}`)
 
+// Dark web breach intelligence
+export const checkDarkWeb = (domain) => request(`/api/dark-web?domain=${encodeURIComponent(domain)}`)
+
 // Cloud Marketplace
 export const getMarketplaceStatus    = ()     => request('/api/billing/marketplace')
 export const connectAwsMarketplace   = (data) => request('/api/billing/marketplace/aws',   { method: 'POST', body: JSON.stringify(data ?? {}) })
@@ -596,3 +605,8 @@ export const connectAzureMarketplace = (data) => request('/api/billing/marketpla
 // Monitoring — per-domain alert config
 export const getDomainAlertConfig  = (domain) => request(`/api/alerts/config?domain=${encodeURIComponent(domain)}`)
 export const saveDomainAlertConfig = (domain, data) => request(`/api/alerts/config/${encodeURIComponent(domain)}`, { method: 'POST', body: JSON.stringify(data) })
+
+// Phishing simulation
+export const getPhishingCampaigns   = ()           => request('/api/phishing/campaigns')
+export const createPhishingCampaign = (data)       => request('/api/phishing/campaigns', { method: 'POST', body: JSON.stringify(data) })
+export const getPhishingResults     = (id)         => request(`/api/phishing/campaigns/${encodeURIComponent(id)}/results`)

@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import PageGuide from '../components/PageGuide'
 import { getThreatFeed } from '../services/api'
 
 const SEV_STYLE = {
@@ -180,6 +181,8 @@ export default function ThreatFeedPage() {
               {genAt && <p className="text-xs text-gray-500">Updated {new Date(genAt).toLocaleString()}</p>}
             </div>
           </div>
+
+          <PageGuide id="threat-feed" text="Live vulnerability intelligence from CISA KEV, EPSS, and NVD mapped to your scan findings. Use the severity filters to focus on Critical or High CVEs. Toggle 'Affects my scan findings' to see only CVEs that match vulnerabilities found in your scans. Refresh feeds manually from the status panel." />
 
           {/* Summary pills */}
           {cves.length > 0 && (

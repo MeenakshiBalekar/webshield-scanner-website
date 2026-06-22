@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import PageGuide from '../components/PageGuide'
 import {
   getSiemPlatforms, getSiemConfigs, createSiemConfig,
   deleteSiemConfig, testSiemConfig, updateSiemConfig,
@@ -334,6 +335,8 @@ export default function SiemPage() {
         </div>
 
         <div className="max-w-2xl mx-auto px-4 py-8 space-y-4">
+          <PageGuide id="siem" text="Connects Udyo360 to your Splunk or Microsoft Sentinel environment so scan findings flow directly into your SOC. Click 'Add Connection,' choose Splunk or Sentinel, enter your HEC URL + token (Splunk) or Workspace ID + shared key (Sentinel), then click Test Connection. Once connected, use the 'Push to SIEM' button on any scan result to send findings instantly." />
+
           {loadErr && (
             <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
               <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" /><span>{loadErr}</span>

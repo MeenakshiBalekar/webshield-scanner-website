@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { Server, Globe, Database, Wifi, Shield, ChevronDown, ChevronUp, RefreshCw, Loader2, AlertCircle, Filter, Tag, Check, X, CheckSquare, Square } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import PageGuide from '../components/PageGuide'
 import { bulkTagAssets } from '../services/api'
 
 const BASE = import.meta.env.VITE_API_URL || 'https://webshield-backend-api.onrender.com'
@@ -605,6 +606,7 @@ export default function AssetsPage() {
         </div>
 
         <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
+          <PageGuide id="assets" text="Inventory of all assets discovered across your scans — web apps, domains, IP addresses, cloud resources, and APIs. Filter by type, risk level, or last scan date. Click any asset to view its full scan history and current security score. Use tags to group assets by team, environment (prod/staging), or compliance scope." />
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
             <SummaryCard label="Total Assets" value={total}    color="text-violet-400" />
             <SummaryCard label="Critical"     value={critical} color="text-red-400"    />

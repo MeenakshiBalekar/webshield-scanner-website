@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Globe, Server, Cloud, Bot, FileCode2, GitBranch, Network, Layers, Cpu, Target, ShieldAlert, ShieldCheck, ArrowRight, Lock, Shield, Zap, CheckCircle2 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import PageGuide from '../components/PageGuide'
 import { useAuth } from '../context/AuthContext'
 
 const SCANNERS = [
@@ -225,6 +226,7 @@ export default function ScannerHubPage() {
 
         {/* Scanner cards */}
         <div className="max-w-5xl mx-auto px-4 py-12">
+          <PageGuide id="scanner-hub" text="Run security scans across web, host, cloud, and network targets from one place. Pick the scanner that matches your target — Web for URLs, Cloud for AWS/Azure/GCP, Host for IIS/Windows Server, Network for ports and DNS. Results appear in under 90 seconds with a security score and actionable findings." />
           <div className="grid sm:grid-cols-2 gap-6">
             {SCANNERS.map((s) => {
               const Icon = s.icon

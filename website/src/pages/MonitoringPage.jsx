@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import PageGuide from '../components/PageGuide'
 import {
   getMonitoringTimeline, getMonitoringRegressions,
   getSchedules, toggleSchedule, deleteSchedule,
@@ -370,6 +371,7 @@ export default function MonitoringPage() {
               <Activity className="w-8 h-8 text-crimson-400" /> Monitoring
             </h1>
             <p className="text-gray-400">Track security score over time and catch regressions early.</p>
+            <PageGuide id="monitoring" text="Set up scheduled scans (hourly/daily/weekly) on any target and get alerted when the security score drops or new Critical/High findings appear. Create a schedule from the Schedules tab, configure your alert channels (Slack, Teams, email, or webhook), and Udyo360 will monitor the target automatically. The Regressions tab shows what changed between consecutive scans." />
           </div>
 
           {/* Tabs */}

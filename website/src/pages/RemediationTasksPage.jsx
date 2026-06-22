@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext'
 import Footer from '../components/Footer'
 import EvidencePanel from '../components/EvidencePanel'
 import { createJiraIssue, createServiceNowTicket, alertPagerDuty, createAdoWorkItem, getIntegrations } from '../services/api'
+import PageGuide from '../components/PageGuide'
 import Navbar from '../components/Navbar'
 
 const API     = import.meta.env.VITE_API_URL ?? ''
@@ -412,6 +413,7 @@ export default function RemediationTasksPage() {
       <Navbar />
 
       <main className="flex-1 max-w-3xl mx-auto w-full px-4 pt-24 pb-10">
+        <PageGuide id="remediation-tasks" text="Tracks the lifecycle of every open security finding from discovery to resolution. Filter by severity, status (Open/In Progress/Resolved), or assignee. Click a finding to view technical details, the fix recommendation, and push it to Jira, GitHub Issues, ServiceNow, PagerDuty, or Azure DevOps with one click. Use the SLA column to prioritize overdue items." />
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-white">Remediation Tasks</h1>

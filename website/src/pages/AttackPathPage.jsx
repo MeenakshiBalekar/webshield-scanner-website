@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { GitBranch, AlertCircle, Loader2, RefreshCw, ChevronDown, Zap, Shield, Database, Server, Globe } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import PageGuide from '../components/PageGuide'
 
 const BASE = import.meta.env.VITE_API_URL || 'https://webshield-backend-api.onrender.com'
 
@@ -300,6 +301,8 @@ export default function AttackPathPage() {
         </div>
 
         <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+          <PageGuide id="attack-paths" text="Visualizes how an attacker could chain your vulnerabilities to move from initial access to full system compromise. Click any node in the graph to see the exploit technique, MITRE ATT&CK mapping, and what the attacker gains at that step. Run an analysis from a scan result first — go to Scan History, open a scan, and click 'Analyze Attack Paths.'" />
+
           {error && (
             <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
               <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" /><span>{error} — showing sample data</span>

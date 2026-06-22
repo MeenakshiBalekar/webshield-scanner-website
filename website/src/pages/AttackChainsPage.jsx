@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Network, Loader2, AlertCircle, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import PageGuide from '../components/PageGuide'
 import { getAttackChains } from '../services/api'
 
 const field = (obj, ...keys) => { for (const k of keys) if (obj?.[k] != null) return obj[k]; return null }
@@ -28,6 +29,8 @@ const NW = 190, NH = 60, COL_X = [0, 280, 560], ROW_H = 82, TOP = 28, PAD = 16
 function ChainGraph({ nodes, edges }) {
   const [sel, setSel] = useState(null)
 
+  if (!Array.isArray(nodes) || !nodes.length) return null
+
   // Sort nodes into columns
   const cols = [[], [], []]
   for (const n of nodes) {
@@ -49,7 +52,7 @@ function ChainGraph({ nodes, edges }) {
   }
 
   // Auto-generate linear edges if none provided
-  const resolvedEdges = edges.length > 0 ? edges : (() => {
+  const resolvedEdges = Array.isArray(edges) && edges.length > 0 ? edges : (() => {
     const all = [...cols[0], ...cols[1], ...cols[2]]
     return all.slice(0, -1).map((n, i) => ({
       from: field(n, 'id', 'Id') ?? i,
@@ -296,6 +299,8 @@ export default function AttackChainsPage() {
         </div>
 
         <div className="max-w-5xl mx-auto px-4 py-8">
+          <PageGuide id="attack-chains" text="AI-generated attack chain simulations based on your actual scan findings. Each chain shows the sequence of exploit steps an attacker would take, the blast radius (how much of your system is at risk), and the overall risk level. Generate a chain from a scan result by clicking 'Simulate Attack Chain' on any scan." />
+
           {error && (
             <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm mb-6">
               <AlertCircle className="w-4 h-4 shrink-0" /> {error}

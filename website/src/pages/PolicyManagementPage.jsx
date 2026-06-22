@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import PageGuide from '../components/PageGuide'
 import {
   getPolicies, createPolicy, updatePolicy, patchPolicy, deletePolicy,
   getExceptions, createException, approveException, rejectException,
@@ -531,6 +532,7 @@ export default function PolicyManagementPage() {
               <div>
                 <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2">Scan Policies</h1>
                 <p className="text-gray-400">Define security baselines, manage compliance exceptions, and review approval requests.</p>
+                <PageGuide id="policy-management" text="Define reusable security baselines for your scans — which checks to run, minimum severity thresholds, and which findings to auto-ignore. The Exceptions tab lets you request risk acceptances for findings you've decided to live with. The Approvals tab shows pending exception requests for security leads to review and approve or reject." />
               </div>
               {tab === 'policies' && (
                 <button

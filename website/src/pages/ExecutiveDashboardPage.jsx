@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import PageGuide from '../components/PageGuide'
 import { getExecutiveDashboard } from '../services/api'
 
 const field = (obj, ...keys) => { for (const k of keys) if (obj?.[k] != null) return obj[k]; return null }
@@ -172,7 +173,7 @@ function OWASPDonut({ categories }) {
       </div>
 
       {/* Categories grid — up to 10 */}
-      {categories.length > 0 && (
+      {Array.isArray(categories) && categories.length > 0 && (
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 w-full mt-1">
           {categories.slice(0, 10).map((cat, i) => (
             <div key={i} className="flex items-center gap-1.5 text-xs">
@@ -251,6 +252,7 @@ export default function ExecutiveDashboardPage() {
         </div>
 
         <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+          <PageGuide id="executive-dashboard" text="High-level security overview designed for leadership and board reporting. Shows your overall security score trend, compliance posture across SOC 2/ISO 27001/PCI-DSS, open critical findings count, and mean time to remediate. Data is automatically sourced from your scan history — no configuration needed." />
 
           {error && (
             <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">

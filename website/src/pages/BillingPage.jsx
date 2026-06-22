@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import PageGuide from '../components/PageGuide'
 import { getSubscription, getBillingPortalUrl, getInvoices, getMarketplaceStatus, connectAwsMarketplace, connectAzureMarketplace } from '../services/api'
 
 /* ── helpers ── */
@@ -246,6 +247,7 @@ export default function BillingPage() {
         </div>
 
         <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+          <PageGuide id="billing" text="Manage your Udyo360 subscription, payment method, and invoices here. Click 'Manage Subscription' to open the billing portal to upgrade, downgrade, or cancel your plan. The Marketplace tab connects your AWS or Azure Marketplace subscription. Invoices are available for download in the Invoices section below." />
 
           {loading && (
             <div className="flex items-center justify-center py-16 gap-3">

@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import PageGuide from '../components/PageGuide'
 import ApiErrorBanner from '../components/ApiErrorBanner'
 import {
   getCloudChecksAws,
@@ -538,6 +539,7 @@ export default function CloudScanPage() {
         </div>
 
         <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+          <PageGuide id="cloud-scanner" text="Audits your AWS, Azure, GCP, or OCI environment against CIS security best practices. Paste your credentials, select the platform, and run. Results cover IAM, storage, networking, databases, and logging — 55+ checks with pass/fail status and step-by-step remediation for every finding." />
 
           {/* Provider tabs */}
           <div className="flex gap-1 bg-white/3 border border-white/10 rounded-xl p-1">

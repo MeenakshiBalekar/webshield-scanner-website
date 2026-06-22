@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Package, Upload, FileText, AlertCircle, Loader2, ChevronRight, ChevronDown, Shield, RefreshCw } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import PageGuide from '../components/PageGuide'
 
 const BASE = import.meta.env.VITE_API_URL || 'https://webshield-backend-api.onrender.com'
 
@@ -186,6 +187,7 @@ export default function SbomPage() {
         </div>
 
         <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+          <PageGuide id="sbom" text="Import and analyze CycloneDX or SPDX SBOM files to identify vulnerable, outdated, or license-risky components in your software. Click Import, select the format, and upload your SBOM file. The report shows component risk scores, known CVEs per package, license compliance flags (GPL, AGPL), and a prioritized list of packages to update." />
           {/* Import */}
           <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden">
             <div className="flex items-center gap-2.5 px-6 py-4 border-b border-white/10">

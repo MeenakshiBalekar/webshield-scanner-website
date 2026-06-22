@@ -3,16 +3,17 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
   Shield, LogOut, ScanLine, Loader2, AlertCircle,
   CheckCircle, XCircle, ChevronDown, ChevronUp,
-  LayoutDashboard, FileText, Download, Mail, Send, ArrowRight,
+  LayoutDashboard, FileText, Download, Mail, Send, ArrowRight, Upload, Database,
   TrendingUp, TrendingDown, Clock, Wifi, Cpu, Globe, Lock,
-  PlusCircle, MinusCircle, Zap, Sparkles, AlertTriangle, ExternalLink,
+  PlusCircle, MinusCircle, Zap, Sparkles, AlertTriangle, ExternalLink, Code2, BarChart3,
 } from 'lucide-react'
 import axios from 'axios'
 import { useAuth } from '../context/AuthContext'
 
 const API = import.meta.env.VITE_API_URL ?? ''
 const BACKEND = API || 'https://webshield-backend-api.onrender.com'
-import { getRemediation, downloadReportPdf, emailReport, createSchedule, startAuthenticatedScan, startCrawlScan } from '../services/api'
+import { getRemediation, downloadReportPdf, emailReport, createSchedule, startAuthenticatedScan, startCrawlScan, getRemediationCode, analyzeBenchmark, getSiemConfigs, pushToSiem } from '../services/api'
+import ApiErrorBanner from '../components/ApiErrorBanner'
 import EvidencePanel from '../components/EvidencePanel'
 import Navbar from '../components/Navbar'
 
@@ -1079,6 +1080,60 @@ function FuzzPanel({ scanUrl }) {
   )
 }
 
+/* ── Per-stack fix code panel ── */
+function FixCodePanel({ data }) {
+  const [active, setActive] = useState(0)
+  const snippets = Array.isArray(data)
+    ? data
+    : (data?.snippets ?? data?.Snippets ?? data?.stacks ?? data?.Stacks ?? [])
+
+  if (snippets.length === 0) {
+    const code = data?.code ?? data?.Code ?? (typeof data === 'string' ? data : null)
+    if (!code) return null
+    return (
+      <div className="mt-2 bg-black/40 border border-green-800/30 rounded-xl overflow-hidden">
+        <div className="px-3 py-2 border-b border-green-800/20 flex items-center gap-1.5">
+          <Code2 className="w-3 h-3 text-green-400" />
+          <span className="text-[10px] font-bold text-green-400 uppercase tracking-wider">Fix Code</span>
+        </div>
+        <pre className="px-4 py-3 text-xs font-mono text-green-300 overflow-x-auto whitespace-pre-wrap max-h-64">{code}</pre>
+      </div>
+    )
+  }
+
+  const cur = snippets[active] ?? snippets[0]
+  const code = cur?.code ?? cur?.Code ?? cur?.snippet ?? cur?.Snippet ?? ''
+  const desc = cur?.description ?? cur?.Description ?? null
+
+  return (
+    <div className="mt-2 bg-black/40 border border-green-800/30 rounded-xl overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-green-800/20">
+        <div className="flex items-center gap-1.5">
+          <Code2 className="w-3 h-3 text-green-400" />
+          <span className="text-[10px] font-bold text-green-400 uppercase tracking-wider">Fix Code</span>
+        </div>
+        <div className="flex gap-1 flex-wrap justify-end">
+          {snippets.map((s, i) => {
+            const lbl = s?.stack ?? s?.Stack ?? s?.language ?? s?.Language ?? s?.framework ?? `Stack ${i + 1}`
+            return (
+              <button key={i} onClick={() => setActive(i)}
+                className={`text-[10px] font-semibold px-2 py-0.5 rounded transition-colors ${
+                  i === active
+                    ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                    : 'text-gray-500 hover:text-gray-300 border border-transparent'
+                }`}>
+                {lbl}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+      <pre className="px-4 py-3 text-xs font-mono text-green-300 overflow-x-auto whitespace-pre-wrap max-h-64">{code}</pre>
+      {desc && <p className="px-4 pb-3 text-xs text-gray-500 leading-relaxed border-t border-white/5 pt-2">{desc}</p>}
+    </div>
+  )
+}
+
 function FindingCard({ item }) {
   const [open, setOpen] = useState(false)
 
@@ -1109,6 +1164,21 @@ function FindingCard({ item }) {
   const lifecycleAssigneeId   = item.assigneeId    ?? item.AssigneeId        ?? null
   const lifecycleAssigneeName = item.assigneeName  ?? item.AssigneeName      ?? null
   const exploitProof          = item.exploitProof  ?? item.ExploitProof  ?? item.proof ?? item.Proof ?? null
+
+  const [fixCode, setFixCode]       = useState(null)
+  const [loadingCode, setLoadingCode] = useState(false)
+  const [codeErr, setCodeErr]       = useState(null)
+
+  const loadFixCode = async (e) => {
+    e.stopPropagation()
+    if (fixCode) { setFixCode(null); return }
+    setLoadingCode(true); setCodeErr(null)
+    try {
+      const data = await getRemediationCode(checkName)
+      setFixCode(data)
+    } catch (err) { setCodeErr(err.message || 'Could not load fix code') }
+    setLoadingCode(false)
+  }
 
   const c = sevTheme(severity)
   const hasDetail = technicalDetails || whyItMatters || whatCanGoWrong || businessImpact || attackScenario || fixSteps || evidenceDetail || isKev || !!findingId || !!exploitProof
@@ -1275,8 +1345,23 @@ function FindingCard({ item }) {
                 severity={severity}
                 recommendation={Array.isArray(fixSteps) ? fixSteps.join(' ') : (fixSteps ?? '')}
               />
+              {checkName && (
+                <button
+                  onClick={loadFixCode}
+                  disabled={loadingCode}
+                  className="flex items-center gap-1 text-[10px] font-semibold text-green-400 hover:text-green-300 border border-green-500/30 bg-green-500/8 hover:bg-green-500/15 px-2 py-1 rounded-lg transition-colors whitespace-nowrap disabled:opacity-50"
+                >
+                  {loadingCode
+                    ? <Loader2 className="w-3 h-3 animate-spin" />
+                    : <Code2 className="w-3 h-3" />}
+                  {fixCode ? 'Hide Code' : 'Show Fix Code'}
+                </button>
+              )}
             </div>
           )}
+
+          {codeErr && <p className="text-xs text-red-400 mt-1">{codeErr}</p>}
+          {fixCode && <FixCodePanel data={fixCode} />}
 
         </div>
       )}
@@ -1541,7 +1626,103 @@ function RemediationPlanPanel({ scanUrl, result }) {
   )
 }
 
-function ReportPanel({ scanUrl, scanResult }) {
+function SiemExportButton({ scanId }) {
+  const [open,    setOpen]   = useState(false)
+  const [configs, setConfigs] = useState(null)
+  const [pushing, setPushing] = useState(null)
+  const [toast,   setToast]  = useState(null)
+  const ref = React.useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [open])
+
+  const handleOpen = async () => {
+    setToast(null)
+    if (configs === null) {
+      try {
+        const data = await getSiemConfigs()
+        const list = Array.isArray(data) ? data : (data?.configs ?? data?.Configs ?? data?.items ?? data?.Items ?? [])
+        setConfigs(list.filter(c => c?.enabled !== false && c?.Enabled !== false))
+      } catch { setConfigs([]) }
+    }
+    setOpen(v => !v)
+  }
+
+  const handlePush = async (cfg) => {
+    const cfgId  = cfg?.id ?? cfg?.Id ?? ''
+    const cfgName = cfg?.name ?? cfg?.Name ?? cfgId
+    const index   = cfg?.index ?? cfg?.Index ?? ''
+    setPushing(cfgId); setOpen(false)
+    try {
+      const data  = await pushToSiem({ siemConfigId: cfgId, scanHistoryId: scanId, onlyFindings: true })
+      const count = data?.count ?? data?.Count ?? data?.pushed ?? data?.Pushed ?? ''
+      const dest  = index ? `${cfgName} (${index})` : cfgName
+      setToast({ ok: true,  msg: `${count ? `${count} findings` : 'Findings'} pushed to ${dest}` })
+    } catch (e) {
+      setToast({ ok: false, msg: e.message || 'Push failed' })
+    }
+    setPushing(null)
+    setTimeout(() => setToast(null), 6000)
+  }
+
+  return (
+    <div className="relative" ref={ref}>
+      <button onClick={handleOpen} disabled={!!pushing}
+        className="flex items-center gap-2 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 disabled:opacity-50 text-blue-300 font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
+        {pushing
+          ? <span className="w-4 h-4 border border-blue-300/30 border-t-blue-300 rounded-full animate-spin inline-block" />
+          : <Upload className="w-4 h-4" />}
+        Export to SIEM
+        <ChevronDown className="w-3.5 h-3.5 opacity-50" />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-full mt-1.5 z-30 w-60 bg-[#12121e] border border-white/15 rounded-xl shadow-2xl overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-white/8 flex items-center gap-2">
+            <Database className="w-3.5 h-3.5 text-blue-400" />
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Select Destination</span>
+          </div>
+          {configs === null ? (
+            <div className="flex justify-center py-5"><span className="w-4 h-4 border border-white/20 border-t-white rounded-full animate-spin" /></div>
+          ) : configs.length === 0 ? (
+            <div className="px-4 py-4 text-center">
+              <p className="text-xs text-gray-500">No SIEM connections configured</p>
+              <a href="/settings/siem" className="text-xs text-blue-400 hover:underline mt-1 inline-block">Set up a connection →</a>
+            </div>
+          ) : configs.map(cfg => {
+            const id  = cfg?.id ?? cfg?.Id ?? ''
+            const nm  = cfg?.name ?? cfg?.Name ?? id
+            const plt = (cfg?.platform ?? cfg?.Platform ?? '').toLowerCase()
+            return (
+              <button key={id} onClick={() => handlePush(cfg)}
+                className="w-full flex items-center gap-2.5 px-4 py-3 text-left text-sm text-gray-200 hover:bg-white/5 border-b border-white/5 last:border-0 transition-colors">
+                <span className={`w-2 h-2 rounded-full shrink-0 ${plt === 'splunk' ? 'bg-[#00BC00]' : plt === 'sentinel' ? 'bg-[#0078D4]' : 'bg-gray-500'}`} />
+                <span className="truncate">{nm}</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {toast && (
+        <div className={`mt-2 flex items-center gap-2 text-xs font-semibold px-3.5 py-2.5 rounded-xl border ${
+          toast.ok
+            ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+            : 'bg-red-500/10 border-red-500/30 text-red-400'
+        }`}>
+          {toast.ok ? <CheckCircle className="w-3.5 h-3.5 shrink-0" /> : <AlertCircle className="w-3.5 h-3.5 shrink-0" />}
+          {toast.msg}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ReportPanel({ scanUrl, scanResult, scanId }) {
   const [reportEmail, setReportEmail] = useState('')
   const [downloading, setDownloading] = useState(false)
   const [htmlExporting, setHtmlExporting] = useState(false)
@@ -1678,6 +1859,7 @@ function ReportPanel({ scanUrl, scanResult }) {
           {pentestDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
           {pentestDownloading ? 'Generating…' : 'Download Pentest Report'}
         </button>
+        {scanId && <SiemExportButton scanId={scanId} />}
       </div>
 
       {emailSent && (
@@ -1686,12 +1868,7 @@ function ReportPanel({ scanUrl, scanResult }) {
           Report sent to <span className="font-semibold">{reportEmail}</span>
         </div>
       )}
-      {error && (
-        <div className="flex items-start gap-2 mt-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-3 py-2.5 text-xs">
-          <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
+      {error && <ApiErrorBanner error={error} className="mt-3" />}
     </div>
   )
 }
@@ -1764,6 +1941,121 @@ function ScoreBreakdownPanel({ bkd }) {
               </tr>
             </tfoot>
           </table>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ── "How you compare" benchmark widget ── */
+const INDUSTRIES = ['SaaS', 'Finance', 'Healthcare', 'E-commerce', 'Education', 'Government', 'Media', 'Other']
+
+function BenchmarkWidget({ results }) {
+  const [industry, setIndustry] = useState('SaaS')
+  const [loading, setLoading]   = useState(false)
+  const [data, setData]         = useState(null)
+  const [err, setErr]           = useState(null)
+  const [ran, setRan]           = useState(false)
+
+  const failingChecks = (Array.isArray(results) ? results : [])
+    .filter(r => r.passed === false || (r.status ?? '').toLowerCase() === 'failed' || (r.status ?? '').toLowerCase() === 'fail')
+    .map(r => r.checkName ?? r.name ?? r.header ?? '')
+    .filter(Boolean)
+
+  const handleAnalyze = async () => {
+    setLoading(true); setErr(null); setData(null)
+    try {
+      const res = await analyzeBenchmark({ checks: failingChecks, industry })
+      setData(res); setRan(true)
+    } catch (e) { setErr(e.message || 'Analysis failed') }
+    setLoading(false)
+  }
+
+  const percentile = data?.percentile ?? data?.Percentile ?? null
+  const avgFailed  = data?.industryAvgFailed  ?? data?.IndustryAvgFailed  ?? data?.average ?? null
+  const comparison = data?.comparison ?? data?.Comparison ?? null
+  const topIssues  = data?.commonIssues ?? data?.CommonIssues ?? data?.topIssues ?? []
+
+  const compareColor = comparison === 'better' ? 'text-green-400' : comparison === 'worse' ? 'text-red-400' : 'text-yellow-400'
+  const compareLabel = comparison === 'better' ? 'Better than average' : comparison === 'worse' ? 'Below average' : 'About average'
+
+  return (
+    <div className="mt-6 bg-white/3 border border-white/10 rounded-2xl p-5">
+      <div className="flex items-center gap-2 mb-1">
+        <BarChart3 className="w-4 h-4 text-sky-400" />
+        <h2 className="text-sm font-semibold text-white">How You Compare</h2>
+      </div>
+      <p className="text-xs text-gray-400 mb-4">
+        See how your security posture stacks up against peers in your industry.
+      </p>
+
+      <div className="flex gap-3 mb-4 flex-wrap">
+        <select
+          value={industry}
+          onChange={e => setIndustry(e.target.value)}
+          className="bg-white/5 border border-white/15 focus:border-sky-500 text-white text-sm px-3 py-2 rounded-xl outline-none transition-colors"
+          style={{ colorScheme: 'dark' }}
+        >
+          {INDUSTRIES.map(ind => (
+            <option key={ind} value={ind} className="bg-[#0d1f3c]">{ind}</option>
+          ))}
+        </select>
+        <button
+          onClick={handleAnalyze}
+          disabled={loading || failingChecks.length === 0}
+          className="flex items-center gap-2 bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-300 font-semibold px-4 py-2 rounded-xl text-sm transition-colors disabled:opacity-40"
+        >
+          {loading
+            ? <><span className="w-4 h-4 border-2 border-sky-400/30 border-t-sky-400 rounded-full animate-spin" /> Analyzing…</>
+            : <><BarChart3 className="w-4 h-4" /> Analyze</>}
+        </button>
+        {failingChecks.length === 0 && (
+          <span className="text-xs text-gray-500 self-center">No failing checks to analyze.</span>
+        )}
+      </div>
+
+      {err && <p className="text-xs text-red-400 mb-3">{err}</p>}
+
+      {ran && data && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {percentile != null && (
+              <div className="bg-white/3 border border-white/10 rounded-xl p-3 text-center">
+                <p className="text-2xl font-extrabold text-white">{Math.round(percentile)}<span className="text-sm text-gray-500">th</span></p>
+                <p className="text-[10px] text-gray-500 mt-0.5">Percentile</p>
+              </div>
+            )}
+            {avgFailed != null && (
+              <div className="bg-white/3 border border-white/10 rounded-xl p-3 text-center">
+                <p className="text-2xl font-extrabold text-gray-300">{Math.round(avgFailed)}</p>
+                <p className="text-[10px] text-gray-500 mt-0.5">Industry avg failed</p>
+              </div>
+            )}
+            <div className="bg-white/3 border border-white/10 rounded-xl p-3 text-center">
+              <p className="text-2xl font-extrabold text-orange-400">{failingChecks.length}</p>
+              <p className="text-[10px] text-gray-500 mt-0.5">Your failed checks</p>
+            </div>
+          </div>
+
+          {comparison && (
+            <div className={`flex items-center gap-2 px-4 py-3 rounded-xl border bg-white/3 border-white/10`}>
+              <span className={`text-sm font-bold ${compareColor}`}>{compareLabel}</span>
+              <span className="text-xs text-gray-500">vs. {industry} industry peers</span>
+            </div>
+          )}
+
+          {topIssues.length > 0 && (
+            <div>
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Common issues in {industry}</p>
+              <div className="flex flex-wrap gap-2">
+                {topIssues.slice(0, 8).map((issue, i) => (
+                  <span key={i} className="text-[10px] px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-gray-400">
+                    {typeof issue === 'string' ? issue : (issue?.name ?? issue?.checkName ?? JSON.stringify(issue))}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -1847,7 +2139,13 @@ export default function ProductPage() {
         .then((d) => { if (d) setTrend(Array.isArray(d) ? d : d?.scores ?? d?.trend ?? d?.data ?? []) })
         .catch(() => {})
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Scan failed. Check the URL and try again.')
+      const body = err.response?.data
+      const msg  = body?.error || body?.message || err.message || 'Scan failed. Check the URL and try again.'
+      const rich = new Error(msg)
+      if (body?.howToFix)       rich.howToFix       = body.howToFix
+      if (body?.azureErrorCode) rich.azureErrorCode  = body.azureErrorCode
+      if (body?.details)        rich.details         = body.details
+      setError(rich)
     }
     setLoading(false)
   }
@@ -2194,12 +2492,7 @@ export default function ProductPage() {
         </form>
 
         {/* Scan error */}
-        {error && (
-          <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm mb-6">
-            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
+        {error && <ApiErrorBanner error={error} className="mb-6" />}
 
         {/* Results */}
         {result && (
@@ -2516,8 +2809,11 @@ export default function ProductPage() {
             {/* Remediation plan panel */}
             <RemediationPlanPanel scanUrl={url} result={result} />
 
+            {/* How you compare — benchmark widget */}
+            <BenchmarkWidget results={results} />
+
             {/* Report panel */}
-            <ReportPanel scanUrl={url} scanResult={result} />
+            <ReportPanel scanUrl={url} scanResult={result} scanId={result?.id ?? result?.Id ?? result?.scanId ?? result?.ScanId ?? null} />
           </>
         )}
       </main>

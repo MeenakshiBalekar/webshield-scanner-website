@@ -2,11 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Shield, CreditCard, Calendar, CheckCircle2, AlertCircle,
-  Loader2, ExternalLink, RefreshCw, XCircle, Clock, Zap,
+  Loader2, ExternalLink, RefreshCw, XCircle, Clock, Zap, ShoppingBag,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-import { getSubscription, getBillingPortalUrl, getInvoices } from '../services/api'
+import { getSubscription, getBillingPortalUrl, getInvoices, getMarketplaceStatus, connectAwsMarketplace, connectAzureMarketplace } from '../services/api'
 
 /* ── helpers ── */
 const STATUS_CONFIG = {
@@ -61,6 +61,110 @@ function InvoiceRow({ invoice }) {
             <ExternalLink className="w-3.5 h-3.5" />
           </a>
         )}
+      </div>
+    </div>
+  )
+}
+
+/* ── Cloud Marketplace section ── */
+function MarketplaceSection() {
+  const [status,       setStatus]       = useState(null)
+  const [statusLoad,   setStatusLoad]   = useState(true)
+  const [awsLoading,   setAwsLoading]   = useState(false)
+  const [azureLoading, setAzureLoading] = useState(false)
+  const [awsErr,       setAwsErr]       = useState(null)
+  const [azureErr,     setAzureErr]     = useState(null)
+  const [awsDone,      setAwsDone]      = useState(false)
+  const [azureDone,    setAzureDone]    = useState(false)
+
+  useEffect(() => {
+    getMarketplaceStatus()
+      .then(d => setStatus(d))
+      .catch(() => {})
+      .finally(() => setStatusLoad(false))
+  }, [])
+
+  const awsStatus   = field(status, 'awsStatus',   'AwsStatus',   'aws',   'Aws')
+  const azureStatus = field(status, 'azureStatus', 'AzureStatus', 'azure', 'Azure')
+  const awsConnected   = awsStatus   && !['disconnected', 'none', 'not_connected', ''].includes(String(awsStatus).toLowerCase())
+  const azureConnected = azureStatus && !['disconnected', 'none', 'not_connected', ''].includes(String(azureStatus).toLowerCase())
+
+  const handleAws = async () => {
+    setAwsLoading(true); setAwsErr(null); setAwsDone(false)
+    try {
+      const data = await connectAwsMarketplace()
+      const url  = field(data, 'redirectUrl', 'RedirectUrl', 'url', 'Url')
+      if (url) { window.location.href = url }
+      else setAwsDone(true)
+    } catch (e) { setAwsErr(e.message || 'Failed to connect AWS Marketplace') }
+    setAwsLoading(false)
+  }
+
+  const handleAzure = async () => {
+    setAzureLoading(true); setAzureErr(null); setAzureDone(false)
+    try {
+      const data = await connectAzureMarketplace()
+      const url  = field(data, 'redirectUrl', 'RedirectUrl', 'url', 'Url')
+      if (url) { window.location.href = url }
+      else setAzureDone(true)
+    } catch (e) { setAzureErr(e.message || 'Failed to connect Azure Marketplace') }
+    setAzureLoading(false)
+  }
+
+  return (
+    <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden">
+      <div className="flex items-center gap-2.5 px-6 py-4 border-b border-white/10">
+        <ShoppingBag className="w-4 h-4 text-gray-400" />
+        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Cloud Marketplace</h2>
+      </div>
+      <div className="px-6 py-5 grid sm:grid-cols-2 gap-4">
+        {/* AWS */}
+        <div className="bg-white/3 border border-white/10 rounded-xl p-4">
+          <div className="flex items-center gap-2.5 mb-3">
+            <div className="w-7 h-7 bg-[#FF9900]/15 border border-[#FF9900]/30 rounded-lg flex items-center justify-center text-sm">☁️</div>
+            <div>
+              <p className="text-sm font-semibold text-white">AWS Marketplace</p>
+              {!statusLoad && awsConnected && (
+                <p className="text-xs text-emerald-400 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" />Connected · {awsStatus}</p>
+              )}
+            </div>
+          </div>
+          <button onClick={handleAws} disabled={awsLoading || awsConnected}
+            className={`w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-colors ${
+              awsConnected
+                ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 cursor-default'
+                : 'bg-[#FF9900]/15 hover:bg-[#FF9900]/25 border border-[#FF9900]/30 text-[#FF9900] disabled:opacity-50'
+            }`}>
+            {awsLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : awsConnected ? <CheckCircle2 className="w-3.5 h-3.5" /> : <ExternalLink className="w-3.5 h-3.5" />}
+            {awsLoading ? 'Connecting…' : awsConnected ? 'Connected' : 'Connect AWS Marketplace'}
+          </button>
+          {awsDone  && <p className="text-xs text-emerald-400 mt-2 text-center">Successfully connected!</p>}
+          {awsErr   && <p className="text-xs text-red-400 mt-2">{awsErr}</p>}
+        </div>
+
+        {/* Azure */}
+        <div className="bg-white/3 border border-white/10 rounded-xl p-4">
+          <div className="flex items-center gap-2.5 mb-3">
+            <div className="w-7 h-7 bg-[#0078D4]/15 border border-[#0078D4]/30 rounded-lg flex items-center justify-center text-sm">🔷</div>
+            <div>
+              <p className="text-sm font-semibold text-white">Azure Marketplace</p>
+              {!statusLoad && azureConnected && (
+                <p className="text-xs text-emerald-400 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" />Connected · {azureStatus}</p>
+              )}
+            </div>
+          </div>
+          <button onClick={handleAzure} disabled={azureLoading || azureConnected}
+            className={`w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-colors ${
+              azureConnected
+                ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 cursor-default'
+                : 'bg-[#0078D4]/15 hover:bg-[#0078D4]/25 border border-[#0078D4]/30 text-[#0078D4] disabled:opacity-50'
+            }`}>
+            {azureLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : azureConnected ? <CheckCircle2 className="w-3.5 h-3.5" /> : <ExternalLink className="w-3.5 h-3.5" />}
+            {azureLoading ? 'Connecting…' : azureConnected ? 'Connected' : 'Connect Azure Marketplace'}
+          </button>
+          {azureDone && <p className="text-xs text-emerald-400 mt-2 text-center">Successfully connected!</p>}
+          {azureErr  && <p className="text-xs text-red-400 mt-2">{azureErr}</p>}
+        </div>
       </div>
     </div>
   )
@@ -283,6 +387,9 @@ export default function BillingPage() {
                   </Link>
                 </div>
               )}
+
+              {/* Cloud Marketplace */}
+              <MarketplaceSection />
             </>
           )}
         </div>

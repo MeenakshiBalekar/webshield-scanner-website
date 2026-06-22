@@ -2,13 +2,13 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import {
   User, Mail, Lock, Trash2, Loader2, CheckCircle2, AlertCircle,
-  Camera, Github, ExternalLink, Shield, CreditCard, ChevronRight, Plug, Bell,
+  Camera, Github, ExternalLink, Shield, CreditCard, ChevronRight, Plug, Bell, Download,
 } from 'lucide-react'
 import axios from 'axios'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
-import { getMe, updateProfile, changePassword, deleteAccount, uploadProfilePicture, getNotificationPrefs, updateNotificationPrefs } from '../services/api'
+import { getMe, updateProfile, changePassword, deleteAccount, uploadProfilePicture, getNotificationPrefs, updateNotificationPrefs, exportUserData, getBillingPortalUrl } from '../services/api'
 
 const SETTINGS_TABS = [
   { label: 'Profile & Settings', href: '/settings/profile' },
@@ -201,6 +201,12 @@ export default function SettingsProfilePage() {
   const [savingPw, setSavingPw] = useState(false)
   const [pwFb, setPwFb]       = useState(null)
 
+  // Export data
+  const [exporting, setExporting]     = useState(false)
+
+  // Manage subscription portal
+  const [portalLoading, setPortalLoading] = useState(false)
+
   // Delete modal
   const [showDelete, setShowDelete]   = useState(false)
   const [deleting, setDeleting]       = useState(false)
@@ -302,6 +308,34 @@ export default function SettingsProfilePage() {
       setPwFb({ ok: false, msg: e.message || 'Failed to change password.' })
     }
     setSavingPw(false)
+  }
+
+  /* Manage subscription */
+  const handleManageSubscription = async () => {
+    setPortalLoading(true)
+    try {
+      const data = await getBillingPortalUrl()
+      const portalUrl = data?.url ?? data?.Url ?? data?.portalUrl ?? data?.PortalUrl
+      if (portalUrl) window.location.href = portalUrl
+    } catch (e) {
+      alert(e.message || 'Could not open billing portal. Please try again.')
+    }
+    setPortalLoading(false)
+  }
+
+  /* Export user data */
+  const handleExportData = async () => {
+    setExporting(true)
+    try {
+      const blob = await exportUserData()
+      const url  = URL.createObjectURL(blob)
+      const a    = document.createElement('a')
+      a.href     = url
+      a.download = `webshield-data-${new Date().toISOString().split('T')[0]}.json`
+      document.body.appendChild(a); a.click(); a.remove()
+      URL.revokeObjectURL(url)
+    } catch (e) { alert(e.message || 'Export failed') }
+    setExporting(false)
   }
 
   /* Delete account */
@@ -429,15 +463,25 @@ export default function SettingsProfilePage() {
                 {/* Feature list */}
                 {limits && <FeatureList limits={limits} />}
 
-                {/* Upgrade button */}
-                {((plan.type ?? plan.Type ?? '').toLowerCase() !== 'enterprise') && (
+                {/* Manage subscription + upgrade */}
+                <div className="flex flex-wrap gap-3 mt-5">
                   <button
-                    onClick={() => navigate('/billing')}
-                    className="mt-5 flex items-center gap-2 bg-crimson-500 hover:bg-crimson-600 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
+                    onClick={handleManageSubscription}
+                    disabled={portalLoading}
+                    className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/15 text-gray-300 font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors disabled:opacity-50"
                   >
-                    Upgrade to Pro <ChevronRight className="w-4 h-4" />
+                    {portalLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
+                    {portalLoading ? 'Opening…' : 'Manage Subscription'}
                   </button>
-                )}
+                  {((plan.type ?? plan.Type ?? '').toLowerCase() !== 'enterprise') && (
+                    <button
+                      onClick={() => navigate('/billing')}
+                      className="flex items-center gap-2 bg-crimson-500 hover:bg-crimson-600 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
+                    >
+                      Upgrade to Pro <ChevronRight className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               </>
             ) : (
               <div className="text-center py-6">
@@ -490,6 +534,22 @@ export default function SettingsProfilePage() {
                 You signed in with {oauthProvider ? <OAuthBadge provider={oauthProvider} /> : 'SSO'} — no password is set.
               </div>
             )}
+
+            {/* Download my data */}
+            <div className="border-t border-white/10 pt-6 mb-6">
+              <h3 className="text-sm font-semibold text-white mb-1">Your Data</h3>
+              <p className="text-xs text-gray-500 mb-4">
+                Download a copy of your account data, scan history, and settings as a JSON file.
+              </p>
+              <button
+                onClick={handleExportData}
+                disabled={exporting}
+                className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/15 text-gray-300 font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors disabled:opacity-40"
+              >
+                {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                {exporting ? 'Preparing…' : 'Download my data (.json)'}
+              </button>
+            </div>
 
             {/* Danger zone */}
             <div className="border-t border-white/10 pt-6">

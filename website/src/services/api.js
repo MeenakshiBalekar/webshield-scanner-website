@@ -12,11 +12,19 @@ async function request(path, options = {}) {
   })
   if (!res.ok) {
     let msg = `HTTP ${res.status}`
+    let howToFix = null, azureErrorCode = null, details = null
     try {
       const body = await res.json()
-      msg = body.error || body.details || body.message || body.title || msg
+      msg = body.error || body.message || body.title || msg
+      howToFix      = body.howToFix      ?? body.HowToFix      ?? null
+      azureErrorCode = body.azureErrorCode ?? body.AzureErrorCode ?? null
+      details        = body.details        ?? body.Details        ?? null
     } catch {}
-    throw new Error(msg)
+    const err = new Error(msg)
+    if (howToFix)       err.howToFix       = howToFix
+    if (azureErrorCode) err.azureErrorCode  = azureErrorCode
+    if (details && details !== msg) err.details = details
+    throw err
   }
   return res.json()
 }
@@ -298,7 +306,9 @@ export const getMe = () => request('/api/auth/me')
 export const updateProfile = (data) =>
   request('/api/user/profile', { method: 'PUT', body: JSON.stringify(data) })
 export const changePassword = (data) =>
-  request('/api/user/password', { method: 'PUT', body: JSON.stringify(data) })
+  request('/api/auth/change-password', { method: 'POST', body: JSON.stringify(data) })
+
+export const exportUserData = () => blobRequest('/api/user/export')
 export const deleteAccount = () =>
   request('/api/user/account', { method: 'DELETE' })
 // Remediation task actions
@@ -474,6 +484,9 @@ export const runApiSecurityScan = (data) =>
 export const runSecretsScan = (data) =>
   request('/api/scanner/secrets', { method: 'POST', body: JSON.stringify(data) })
 
+export const getRemediationCode = (checkName) =>
+  request(`/api/remediation/code/${encodeURIComponent(checkName)}`)
+
 // IaC Security Scanner
 export const runIacScan = (data) =>
   request('/api/scanner/iac', { method: 'POST', body: JSON.stringify(data) })
@@ -499,6 +512,87 @@ export const getEasmDiff    = (domain, fromScanId) => request(`/api/easm/diff/${
 // Compliance
 export const getComplianceFrameworks = ()    => request('/api/compliance/frameworks')
 export const getFrameworkControls    = (id)  => request(`/api/compliance/frameworks/${id}`)
-export const assessCompliance        = (id)  => request(`/api/compliance/assess/${id}`, { method: 'POST' })
+export const assessCompliance        = (id, targetUrl) =>
+  request(`/api/compliance/assess/${id}`, { method: 'POST', body: JSON.stringify({ targetUrl, profile: id }) })
 export const exportComplianceReport  = (id)  => blobRequest(`/api/compliance/report/${id}?format=csv`)
 export const getComplianceSummary    = ()    => request('/api/compliance/summary')
+
+// Billing plans & checkout
+export const getBillingPlans        = ()     => request('/api/billing/plans')
+export const createBillingCheckout  = (data) => request('/api/billing/checkout', { method: 'POST', body: JSON.stringify(data) })
+
+// Security score trend
+export const getTrend           = (url) => request(`/api/trend?url=${encodeURIComponent(url)}`)
+export const getPortfolioTrend  = ()    => request('/api/trend/portfolio')
+
+// Industry benchmark analysis
+export const analyzeBenchmark = (data) =>
+  request('/api/benchmark/analyze', { method: 'POST', body: JSON.stringify(data) })
+
+// Compliance report from scan findings (returns blob — PDF/document)
+export const generateComplianceReport = (data) =>
+  blobRequest('/api/compliance/report', { method: 'POST', body: JSON.stringify(data) })
+
+// SSO
+export const getSsoProviders = () => request('/api/sso/providers')
+export const ssoCallback     = (data) => request('/api/sso/callback', { method: 'POST', body: JSON.stringify(data) })
+
+// White-label (non-MSSP; org-level)
+export const getWhiteLabel  = ()     => request('/api/whitelabel')
+export const saveWhiteLabel = (data) => request('/api/whitelabel', { method: 'POST', body: JSON.stringify(data) })
+
+// Scan import (multipart — Nessus / Burp / ZAP)
+export const importScan = (format, formData) => {
+  const token   = localStorage.getItem('ws_token')
+  const headers = token ? { Authorization: `Bearer ${token}` } : {}
+  return fetch(`${BASE}/api/import/${encodeURIComponent(format)}`, { method: 'POST', headers, body: formData })
+    .then(async (res) => {
+      if (!res.ok) {
+        let msg = `HTTP ${res.status}`
+        try { const b = await res.json(); msg = b.error || b.message || msg } catch {}
+        throw new Error(msg)
+      }
+      return res.json()
+    })
+}
+
+// Alert config (Slack / Teams webhooks)
+export const getAlertConfig   = ()     => request('/api/alerts/config')
+export const configSlackAlert = (data) => request('/api/alerts/config/slack', { method: 'POST', body: JSON.stringify(data) })
+export const configTeamsAlert = (data) => request('/api/alerts/config/teams', { method: 'POST', body: JSON.stringify(data) })
+
+// SIEM
+export const getSiemPlatforms = () => fetch(`${BASE}/api/siem/platforms`).then(r => r.json()).catch(() => null)
+export const getSiemConfigs   = ()     => request('/api/siem/configs')
+export const createSiemConfig = (data) => request('/api/siem/configs',         { method: 'POST', body: JSON.stringify(data) })
+export const updateSiemConfig = (id, data) => request(`/api/siem/configs/${encodeURIComponent(id)}`, { method: 'PUT',  body: JSON.stringify(data) })
+export const deleteSiemConfig = (id)   => request(`/api/siem/configs/${encodeURIComponent(id)}`, { method: 'DELETE' })
+export const testSiemConfig   = (id)   => request(`/api/siem/configs/${encodeURIComponent(id)}/test`, { method: 'POST' })
+export const pushToSiem       = (data) => request('/api/siem/push', { method: 'POST', body: JSON.stringify(data) })
+
+// Container & IaC scan (multipart)
+export const scanIacFile = (formData) => {
+  const token = localStorage.getItem('ws_token')
+  const headers = token ? { Authorization: `Bearer ${token}` } : {}
+  return fetch(`${BASE}/api/iac/scan`, { method: 'POST', headers, body: formData })
+    .then(async (res) => {
+      if (!res.ok) {
+        let msg = `HTTP ${res.status}`
+        try { const b = await res.json(); msg = b.error || b.message || msg } catch {}
+        throw new Error(msg)
+      }
+      return res.json()
+    })
+}
+
+// Email security
+export const checkEmailSecurity = (domain) => request(`/api/email-security?domain=${encodeURIComponent(domain)}`)
+
+// Cloud Marketplace
+export const getMarketplaceStatus    = ()     => request('/api/billing/marketplace')
+export const connectAwsMarketplace   = (data) => request('/api/billing/marketplace/aws',   { method: 'POST', body: JSON.stringify(data ?? {}) })
+export const connectAzureMarketplace = (data) => request('/api/billing/marketplace/azure', { method: 'POST', body: JSON.stringify(data ?? {}) })
+
+// Monitoring — per-domain alert config
+export const getDomainAlertConfig  = (domain) => request(`/api/alerts/config?domain=${encodeURIComponent(domain)}`)
+export const saveDomainAlertConfig = (domain, data) => request(`/api/alerts/config/${encodeURIComponent(domain)}`, { method: 'POST', body: JSON.stringify(data) })

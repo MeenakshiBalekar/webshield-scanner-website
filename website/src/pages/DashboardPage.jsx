@@ -4,7 +4,7 @@ import {
   Shield, Plus, AlertCircle, BarChart3, Target,
   Server, Calendar, TrendingUp, ArrowRight, AlertTriangle, TrendingDown, Minus,
 } from 'lucide-react'
-import { getDashboard, getScans, getRemediations, getExploitForecast } from '../services/api'
+import { getDashboard, getScans, getRemediations, getExploitForecast, getTrend, getPortfolioTrend } from '../services/api'
 import Navbar from '../components/Navbar'
 
 const SVCVSS_BADGE = {
@@ -180,6 +180,175 @@ function ExploitForecastWidget() {
             })}
           </tbody>
         </table>
+      </div>
+    </div>
+  )
+}
+
+/* ── Score trend line chart ── */
+function ScoreTrendWidget() {
+  const [trendUrl, setTrendUrl] = useState('')
+  const [data, setData]   = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [err, setErr]     = useState(null)
+
+  const handleFetch = async () => {
+    if (!trendUrl.trim()) return
+    setLoading(true); setErr(null); setData(null)
+    try { setData(await getTrend(trendUrl.trim())) }
+    catch (e) { setErr(e.message || 'Failed to load trend') }
+    setLoading(false)
+  }
+
+  const raw = data?.scores ?? data?.Scores ?? data?.trend ?? data?.Trend ?? (Array.isArray(data) ? data : [])
+  const points = raw.map((p, i) => ({
+    score: Number(p?.score ?? p?.Score ?? p?.value ?? p?.Value ?? p ?? 0),
+    label: p?.date ?? p?.Date ?? p?.label ?? p?.Label ?? `#${i + 1}`,
+  }))
+
+  const W = 600, H = 100, padX = 4, padY = 6
+  const scores = points.map(p => p.score)
+  const minS = Math.min(...scores, 0), maxS = Math.max(...scores, 100)
+  const rangeS = maxS - minS || 1
+  const toX = (i) => padX + (i / Math.max(points.length - 1, 1)) * (W - padX * 2)
+  const toY = (s) => H - padY - ((s - minS) / rangeS) * (H - padY * 2)
+
+  return (
+    <div className="mb-8">
+      <h2 className="text-lg font-bold text-white mb-4">Score Trend</h2>
+      <div className="bg-white/3 border border-white/10 rounded-2xl p-5">
+        <div className="flex gap-3 mb-4">
+          <input
+            type="url"
+            value={trendUrl}
+            onChange={e => setTrendUrl(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleFetch()}
+            placeholder="https://yoursite.com — enter URL to load trend"
+            className="flex-1 bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-4 py-2.5 rounded-xl text-sm outline-none transition-colors"
+          />
+          <button
+            onClick={handleFetch}
+            disabled={loading || !trendUrl.trim()}
+            className="flex items-center gap-2 bg-crimson-500 hover:bg-crimson-600 disabled:opacity-40 text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors shrink-0"
+          >
+            {loading ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <TrendingUp className="w-4 h-4" />}
+            Load
+          </button>
+        </div>
+
+        {err && <p className="text-xs text-red-400 mb-3">{err}</p>}
+
+        {points.length >= 2 ? (
+          <div>
+            <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 120 }}>
+              {/* Grid lines */}
+              {[0, 25, 50, 75, 100].map(v => (
+                <line key={v} x1={padX} y1={toY(v)} x2={W - padX} y2={toY(v)}
+                  stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+              ))}
+              {/* Line */}
+              <polyline
+                points={points.map((p, i) => `${toX(i).toFixed(1)},${toY(p.score).toFixed(1)}`).join(' ')}
+                fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+              />
+              {/* Dots */}
+              {points.map((p, i) => (
+                <circle key={i} cx={toX(i)} cy={toY(p.score)} r="3.5" fill="#ef4444" />
+              ))}
+            </svg>
+            <div className="flex justify-between mt-1">
+              {points.map((p, i) => (
+                <span key={i} className="text-[10px] text-gray-600" style={{ flex: 1, textAlign: i === 0 ? 'left' : i === points.length - 1 ? 'right' : 'center' }}>
+                  {typeof p.label === 'string' && p.label.match(/^\d{4}-\d{2}-\d{2}/)
+                    ? new Date(p.label).toLocaleDateString('en', { month: 'short', day: 'numeric' })
+                    : p.label}
+                </span>
+              ))}
+            </div>
+          </div>
+        ) : data ? (
+          <p className="text-sm text-gray-500 text-center py-6">Not enough data points to draw a chart.</p>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
+/* ── Portfolio summary ── */
+function PortfolioSummaryWidget() {
+  const [data, setData]   = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    getPortfolioTrend()
+      .then(setData)
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) return <div className="bg-white/3 border border-white/10 rounded-2xl p-5 animate-pulse h-32 mb-8" />
+  if (!data) return null
+
+  const assets    = data?.assets    ?? data?.Assets    ?? (Array.isArray(data) ? data : [])
+  const avgScore  = data?.avgScore  ?? data?.AvgScore  ?? data?.averageScore ?? null
+  const improved  = data?.improved  ?? data?.Improved  ?? null
+  const declined  = data?.declined  ?? data?.Declined  ?? null
+  const unchanged = data?.unchanged ?? data?.Unchanged ?? null
+
+  if (!assets.length && avgScore == null) return null
+
+  return (
+    <div className="mb-8">
+      <h2 className="text-lg font-bold text-white mb-4">Portfolio Summary</h2>
+      <div className="bg-white/3 border border-white/10 rounded-2xl p-5">
+        {avgScore != null && (
+          <div className="flex flex-wrap gap-6 mb-5">
+            <div>
+              <p className="text-3xl font-extrabold text-white">{Math.round(avgScore)}<span className="text-sm text-gray-500 font-normal">/100</span></p>
+              <p className="text-xs text-gray-500 mt-0.5">Portfolio avg score</p>
+            </div>
+            {improved != null && (
+              <div>
+                <p className="text-2xl font-extrabold text-green-400">{improved}</p>
+                <p className="text-xs text-gray-500 mt-0.5">Improved</p>
+              </div>
+            )}
+            {declined != null && (
+              <div>
+                <p className="text-2xl font-extrabold text-red-400">{declined}</p>
+                <p className="text-xs text-gray-500 mt-0.5">Declined</p>
+              </div>
+            )}
+            {unchanged != null && (
+              <div>
+                <p className="text-2xl font-extrabold text-gray-400">{unchanged}</p>
+                <p className="text-xs text-gray-500 mt-0.5">Unchanged</p>
+              </div>
+            )}
+          </div>
+        )}
+        {assets.length > 0 && (
+          <div className="space-y-2">
+            {assets.slice(0, 6).map((a, i) => {
+              const url   = a.url ?? a.Url ?? a.targetUrl ?? a.TargetUrl ?? '—'
+              const score = a.score ?? a.Score ?? a.securityScore ?? a.SecurityScore ?? null
+              const trend = a.trend ?? a.Trend ?? null
+              const TIcon = trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : Minus
+              const tCls  = trend === 'up' ? 'text-green-400' : trend === 'down' ? 'text-red-400' : 'text-gray-500'
+              return (
+                <div key={i} className="flex items-center gap-3 bg-white/3 border border-white/8 rounded-xl px-3 py-2.5">
+                  <p className="flex-1 text-xs text-white truncate">{url}</p>
+                  {score != null && (
+                    <span className={`text-sm font-bold shrink-0 ${score >= 80 ? 'text-green-400' : score >= 60 ? 'text-yellow-400' : 'text-red-400'}`}>
+                      {score}/100
+                    </span>
+                  )}
+                  <TIcon className={`w-3.5 h-3.5 shrink-0 ${tCls}`} />
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -387,6 +556,12 @@ export default function DashboardPage() {
 
             {/* Exploit Forecast widget */}
             <ExploitForecastWidget />
+
+            {/* Score Trend chart */}
+            <ScoreTrendWidget />
+
+            {/* Portfolio Summary */}
+            <PortfolioSummaryWidget />
 
             {/* Launch scanners */}
             <div>

@@ -57,6 +57,13 @@ export function AuthProvider({ children }) {
   }
 
   const logout = () => {
+    const token = localStorage.getItem('ws_token')
+    if (token) {
+      fetch(`${BACKEND}/api/auth/logout`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(() => {})
+    }
     localStorage.removeItem('ws_token')
     localStorage.removeItem('ws_name')
     delete axios.defaults.headers.common['Authorization']

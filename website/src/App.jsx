@@ -77,6 +77,16 @@ import SecurityCopilot from './pages/SecurityCopilot'
 import ApiSecurityPage from './pages/ApiSecurityPage'
 import SecretsScannerPage from './pages/SecretsScannerPage'
 import IacScannerPage from './pages/IacScannerPage'
+import WhiteLabelPage from './pages/WhiteLabelPage'
+import ImportPage from './pages/ImportPage'
+import AlertConfigPage from './pages/AlertConfigPage'
+import AssetGraphPage from './pages/AssetGraphPage'
+import SbomPage from './pages/SbomPage'
+import IdentityExposurePage from './pages/IdentityExposurePage'
+import AttackPathPage from './pages/AttackPathPage'
+import SiemPage from './pages/SiemPage'
+import ContainerIacPage from './pages/ContainerIacPage'
+import EmailSecurityPage from './pages/EmailSecurityPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -194,6 +204,21 @@ export default function App() {
           <Route path="/mssp/tenants"      element={<PrivateRoute><MsspTenantsPage /></PrivateRoute>} />
           <Route path="/mssp/tenants/:id"  element={<PrivateRoute><MsspTenantDetailPage /></PrivateRoute>} />
           <Route path="/mssp/white-label"  element={<PrivateRoute><MsspWhiteLabelPage /></PrivateRoute>} />
+
+          {/* Phase 6 */}
+          <Route path="/whitelabel"        element={<PrivateRoute><WhiteLabelPage /></PrivateRoute>} />
+          <Route path="/import"            element={<PrivateRoute><ImportPage /></PrivateRoute>} />
+          <Route path="/alerts/config"     element={<PrivateRoute><AlertConfigPage /></PrivateRoute>} />
+
+          {/* Phase 7 */}
+          <Route path="/asset-graph"       element={<PrivateRoute><AssetGraphPage /></PrivateRoute>} />
+          <Route path="/sbom"              element={<PrivateRoute><SbomPage /></PrivateRoute>} />
+          <Route path="/identity"          element={<PrivateRoute><IdentityExposurePage /></PrivateRoute>} />
+          <Route path="/attack-paths"      element={<PrivateRoute><AttackPathPage /></PrivateRoute>} />
+          <Route path="/settings/siem"        element={<PrivateRoute><SiemPage /></PrivateRoute>} />
+          <Route path="/integrations/siem"   element={<Navigate to="/settings/siem" replace />} />
+          <Route path="/scanner/container-iac" element={<ContainerIacPage />} />
+          <Route path="/scanner/email-security" element={<EmailSecurityPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

@@ -3,6 +3,7 @@ import { Server, Upload, ScanLine, Loader2, AlertCircle, ChevronDown, ChevronUp,
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { runIacScan } from '../services/api'
+import ApiErrorBanner from '../components/ApiErrorBanner'
 
 const field = (obj, ...keys) => { for (const k of keys) if (obj?.[k] != null) return obj[k]; return null }
 
@@ -110,7 +111,7 @@ export default function IacScannerPage() {
     try {
       const data = await runIacScan({ code: code.trim(), format })
       setResults(data)
-    } catch (e) { setError(e.message) }
+    } catch (e) { setError(e) }
     finally { setLoading(false) }
   }
 
@@ -221,11 +222,7 @@ export default function IacScannerPage() {
             </button>
           </div>
 
-          {error && (
-            <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
-              <AlertCircle className="w-4 h-4 shrink-0" /> {error}
-            </div>
-          )}
+          {error && <ApiErrorBanner error={error} />}
 
           {results && (
             <div className="space-y-5">

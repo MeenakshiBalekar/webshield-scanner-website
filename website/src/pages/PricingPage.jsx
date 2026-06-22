@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Shield, CheckCircle2, ChevronDown, ChevronUp, Zap, Building, AlertCircle, Loader2 } from 'lucide-react'
-import { initializePaddle } from '@paddle/paddle-js'
-import { getPricing } from '../services/api'
+import { getPricing, getBillingPlans, createBillingCheckout } from '../services/api'
 import Footer from '../components/Footer'
 import Navbar from '../components/Navbar'
 
@@ -124,41 +123,41 @@ function FaqRow({ item }) {
 
 export default function PricingPage() {
   const navigate = useNavigate()
-  const [paddle, setPaddle]               = useState(null)
   const [annual, setAnnual]               = useState(true)
-
-  useEffect(() => {
-    initializePaddle({
-      environment: 'sandbox',
-      token: 'test_08a537e4556462f374577ae2bae',
-    }).then(setPaddle)
-  }, [])
   const [plans, setPlans]                 = useState([])
   const [faqs, setFaqs]                   = useState([])
   const [error, setError]                 = useState(null)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
 
-  const PRICE_IDS = {
-    monthly: 'pri_01kstdc47q3e0q15p2gpxg2aee',
-    annual:  'pri_01kstddrj0gtxc6d4at0x59ma0',
-  }
-
   useEffect(() => {
-    getPricing()
-      .then((d) => {
-        setPlans(d?.Plans ?? d?.plans ?? [])
-        setFaqs(d?.Faqs  ?? d?.faqs  ?? [])
-      })
-      .catch((e) => setError(e.message))
+    // Try new billing/plans endpoint first; fall back to pricing for FAQs
+    Promise.allSettled([getBillingPlans(), getPricing()]).then(([billingRes, pricingRes]) => {
+      const billingPlans = billingRes.status === 'fulfilled'
+        ? (billingRes.value?.plans ?? billingRes.value?.Plans ?? (Array.isArray(billingRes.value) ? billingRes.value : null))
+        : null
+      const pricingData = pricingRes.status === 'fulfilled' ? pricingRes.value : null
+      const pricingPlans = pricingData?.Plans ?? pricingData?.plans ?? []
+
+      setPlans(billingPlans ?? pricingPlans)
+      setFaqs(pricingData?.Faqs ?? pricingData?.faqs ?? [])
+    })
   }, [])
 
-  const handleCheckout = (annual = false) => {
+  const handleCheckout = async (plan, isAnnual) => {
     const token = localStorage.getItem('ws_token')
     if (!token) { navigate('/login'); return }
-    const priceId = annual ? PRICE_IDS.annual : PRICE_IDS.monthly
-    paddle?.Checkout.open({
-      items: [{ priceId }],
-    })
+    setCheckoutLoading(true)
+    try {
+      const data = await createBillingCheckout({
+        planId: plan?.Id ?? plan?.id ?? plan?.Name ?? plan?.name,
+        annual: isAnnual,
+      })
+      const redirectUrl = data?.url ?? data?.Url ?? data?.checkoutUrl ?? data?.CheckoutUrl
+      if (redirectUrl) window.location.href = redirectUrl
+    } catch (e) {
+      setError(e.message || 'Checkout failed. Please try again.')
+    }
+    setCheckoutLoading(false)
   }
 
   return (
@@ -206,7 +205,7 @@ export default function PricingPage() {
                 key={i}
                 plan={plan}
                 annual={annual}
-                onProClick={() => handleCheckout(annual)}
+                onProClick={() => handleCheckout(plan, annual)}
                 checkoutLoading={checkoutLoading}
               />
             ))}

@@ -1,11 +1,231 @@
 import React, { useState, useEffect } from 'react'
 import {
   Activity, Loader2, AlertTriangle, TrendingDown, TrendingUp,
-  Minus, Search, ChevronDown, ChevronUp,
+  Minus, Search, ChevronDown, ChevronUp, Calendar, Bell,
+  ToggleLeft, ToggleRight, Trash2, CheckCircle2, AlertCircle, RefreshCw,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-import { getMonitoringTimeline, getMonitoringRegressions } from '../services/api'
+import {
+  getMonitoringTimeline, getMonitoringRegressions,
+  getSchedules, toggleSchedule, deleteSchedule,
+  getDomainAlertConfig, saveDomainAlertConfig,
+} from '../services/api'
+
+const field = (obj, ...keys) => { for (const k of keys) if (obj?.[k] != null) return obj[k]; return null }
+
+// ── Schedule list ────────────────────────────────────────────────────────────
+function SchedulesTab() {
+  const [schedules, setSchedules] = useState([])
+  const [loading,   setLoading]   = useState(true)
+  const [error,     setError]     = useState(null)
+  const [toggling,  setToggling]  = useState({})
+  const [deleting,  setDeleting]  = useState({})
+
+  const load = () => {
+    setLoading(true); setError(null)
+    getSchedules()
+      .then(data => {
+        const list = Array.isArray(data) ? data : (field(data, 'schedules', 'Schedules', 'items', 'Items') ?? [])
+        setSchedules(list)
+      })
+      .catch(e => setError(e.message || 'Failed to load schedules'))
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => { load() }, [])
+
+  const handleToggle = async (id, currentEnabled) => {
+    setToggling(t => ({ ...t, [id]: true }))
+    try {
+      await toggleSchedule(id)
+      setSchedules(prev => prev.map(s =>
+        (field(s,'id','Id') ?? '') === id
+          ? { ...s, enabled: !currentEnabled, Enabled: !currentEnabled, active: !currentEnabled, Active: !currentEnabled }
+          : s
+      ))
+    } catch {}
+    setToggling(t => ({ ...t, [id]: false }))
+  }
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this schedule?')) return
+    setDeleting(d => ({ ...d, [id]: true }))
+    try {
+      await deleteSchedule(id)
+      setSchedules(prev => prev.filter(s => (field(s,'id','Id') ?? '') !== id))
+    } catch { setDeleting(d => ({ ...d, [id]: false })) }
+  }
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-gray-500" /></div>
+  if (error) return (
+    <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
+      <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" /><span>{error}</span>
+    </div>
+  )
+  if (!schedules.length) return (
+    <div className="text-center py-16 bg-white/3 border border-white/10 rounded-2xl text-gray-500">
+      <Calendar className="w-10 h-10 mx-auto mb-3 opacity-40" />
+      <p className="font-semibold text-white">No schedules configured</p>
+      <p className="text-sm mt-1">Set up scheduled scans from the <a href="/schedule" className="text-crimson-400 hover:underline">Schedule page</a>.</p>
+    </div>
+  )
+
+  return (
+    <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
+        <h2 className="text-sm font-bold text-white">Scheduled Scans</h2>
+        <button onClick={load} className="text-gray-500 hover:text-gray-300 transition-colors">
+          <RefreshCw className="w-4 h-4" />
+        </button>
+      </div>
+      <div className="divide-y divide-white/5">
+        {schedules.map((s) => {
+          const id      = field(s, 'id', 'Id') ?? ''
+          const url     = field(s, 'url', 'Url', 'targetUrl', 'TargetUrl') ?? '—'
+          const cron    = field(s, 'cron', 'Cron', 'interval', 'Interval', 'frequency', 'Frequency')
+          const enabled = field(s, 'enabled', 'Enabled', 'active', 'Active') ?? true
+          const nextRun = field(s, 'nextRunAt', 'NextRunAt', 'nextRun', 'NextRun')
+          const lastRun = field(s, 'lastRunAt', 'LastRunAt', 'lastRun', 'LastRun')
+          return (
+            <div key={id} className="flex items-center gap-4 px-5 py-4">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-white font-medium truncate">{url}</p>
+                <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500">
+                  {cron && <span className="font-mono">{cron}</span>}
+                  {nextRun && <span>Next: {new Date(nextRun).toLocaleString()}</span>}
+                  {lastRun && !nextRun && <span>Last: {new Date(lastRun).toLocaleString()}</span>}
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button onClick={() => handleToggle(id, enabled)} disabled={toggling[id]}
+                  className="transition-colors disabled:opacity-50">
+                  {toggling[id]
+                    ? <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                    : enabled
+                      ? <ToggleRight className="w-6 h-6 text-emerald-400" />
+                      : <ToggleLeft  className="w-6 h-6 text-gray-500" />}
+                </button>
+                <button onClick={() => handleDelete(id)} disabled={deleting[id]}
+                  className="text-gray-600 hover:text-red-400 transition-colors disabled:opacity-50">
+                  {deleting[id] ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ── Per-domain alert config ──────────────────────────────────────────────────
+function AlertConfigTab() {
+  const [domain,    setDomain]    = useState('')
+  const [config,    setConfig]    = useState(null)
+  const [loadErr,   setLoadErr]   = useState(null)
+  const [fetching,  setFetching]  = useState(false)
+  const [threshold, setThreshold] = useState(5)
+  const [slackUrl,  setSlackUrl]  = useState('')
+  const [teamsUrl,  setTeamsUrl]  = useState('')
+  const [saving,    setSaving]    = useState(false)
+  const [saved,     setSaved]     = useState(false)
+  const [saveErr,   setSaveErr]   = useState(null)
+
+  const INPUT = 'w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-4 py-2.5 rounded-xl text-sm font-mono outline-none transition-colors'
+
+  const fetchConfig = async () => {
+    const d = domain.trim().replace(/^https?:\/\//i, '').replace(/\/.*/, '')
+    if (!d) return
+    setFetching(true); setLoadErr(null); setConfig(null)
+    try {
+      const data = await getDomainAlertConfig(d)
+      setConfig(data)
+      setThreshold(field(data, 'threshold', 'Threshold', 'scoreDrop', 'ScoreDrop') ?? 5)
+      setSlackUrl(field(data, 'slackWebhookUrl', 'SlackWebhookUrl', 'slack', 'Slack') ?? '')
+      setTeamsUrl(field(data, 'teamsWebhookUrl', 'TeamsWebhookUrl', 'teams', 'Teams') ?? '')
+    } catch (e) { setLoadErr(e.message || 'No config found for this domain') }
+    setFetching(false)
+  }
+
+  const handleSave = async (e) => {
+    e.preventDefault()
+    const d = domain.trim().replace(/^https?:\/\//i, '').replace(/\/.*/, '')
+    if (!d) return
+    setSaving(true); setSaveErr(null); setSaved(false)
+    try {
+      await saveDomainAlertConfig(d, { threshold, slackWebhookUrl: slackUrl, teamsWebhookUrl: teamsUrl })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    } catch (e) { setSaveErr(e.message || 'Save failed') }
+    setSaving(false)
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Domain lookup */}
+      <div className="bg-white/3 border border-white/10 rounded-2xl p-5">
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Load config for domain</p>
+        <div className="flex gap-3">
+          <input type="text" value={domain}
+            onChange={e => { setDomain(e.target.value); setConfig(null) }}
+            onKeyDown={e => e.key === 'Enter' && fetchConfig()}
+            placeholder="example.com"
+            className="flex-1 bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-4 py-2.5 rounded-xl text-sm font-mono outline-none transition-colors" />
+          <button onClick={fetchConfig} disabled={fetching || !domain.trim()}
+            className="flex items-center gap-2 bg-crimson-500 hover:bg-crimson-600 disabled:opacity-40 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors shrink-0">
+            {fetching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+            {fetching ? 'Loading…' : 'Load'}
+          </button>
+        </div>
+        {loadErr && <p className="text-xs text-amber-400 mt-2">{loadErr} — you can still configure alerts below</p>}
+      </div>
+
+      {/* Config form */}
+      {(config !== null || loadErr) && domain.trim() && (
+        <form onSubmit={handleSave} className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2.5 px-5 py-4 border-b border-white/10">
+            <Bell className="w-4 h-4 text-amber-400" />
+            <h2 className="text-sm font-bold text-white">Alert Config — {domain.trim()}</h2>
+          </div>
+          <div className="px-5 py-5 space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                Score Drop Threshold
+              </label>
+              <div className="flex items-center gap-3">
+                <input type="number" min={1} max={50} value={threshold}
+                  onChange={e => setThreshold(Number(e.target.value))}
+                  className="w-24 bg-white/5 border border-white/15 focus:border-crimson-500 text-white px-4 py-2.5 rounded-xl text-sm outline-none transition-colors" />
+                <span className="text-xs text-gray-500">points — alert when score drops by this much</span>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Slack Webhook URL</label>
+              <input type="url" value={slackUrl} onChange={e => setSlackUrl(e.target.value)}
+                placeholder="https://hooks.slack.com/services/…" className={INPUT} />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Teams Webhook URL</label>
+              <input type="url" value={teamsUrl} onChange={e => setTeamsUrl(e.target.value)}
+                placeholder="https://yourorg.webhook.office.com/…" className={INPUT} />
+            </div>
+            {saveErr && (
+              <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-2.5 text-sm">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" /><span>{saveErr}</span>
+              </div>
+            )}
+            <button type="submit" disabled={saving}
+              className="flex items-center gap-2 bg-crimson-500 hover:bg-crimson-600 disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <CheckCircle2 className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+              {saving ? 'Saving…' : saved ? 'Saved!' : 'Save Alert Config'}
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  )
+}
 
 const SEV_STYLE = {
   Critical: 'bg-red-500/15 text-red-400 border-red-500/30',
@@ -153,8 +373,8 @@ export default function MonitoringPage() {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-1 bg-white/5 border border-white/10 rounded-xl p-1 mb-6 w-fit">
-            {[['timeline', 'Score Timeline'], ['regressions', 'Regressions']].map(([val, label]) => (
+          <div className="flex gap-1 bg-white/5 border border-white/10 rounded-xl p-1 mb-6 w-fit flex-wrap">
+            {[['timeline', 'Score Timeline'], ['regressions', 'Regressions'], ['schedules', 'Schedules'], ['alerts', 'Alert Config']].map(([val, label]) => (
               <button key={val} onClick={() => setTab(val)}
                 className={`text-sm font-semibold px-5 py-2 rounded-lg transition-colors ${tab === val ? 'bg-crimson-500 text-white' : 'text-gray-400 hover:text-white'}`}>
                 {label}
@@ -239,6 +459,9 @@ export default function MonitoringPage() {
               ))}
             </div>
           )}
+
+          {tab === 'schedules' && <SchedulesTab />}
+          {tab === 'alerts'    && <AlertConfigTab />}
 
         </div>
       </main>

@@ -8,8 +8,9 @@ import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import {
   getFrameworkControls, assessCompliance, exportComplianceReport,
-  deepScanCompliance, getAgents, fetchComplianceEvidence,
+  deepScanCompliance, getAgents, fetchComplianceEvidence, generateComplianceReport,
 } from '../services/api'
+import ApiErrorBanner from '../components/ApiErrorBanner'
 
 const field = (obj, ...keys) => { for (const k of keys) if (obj?.[k] != null) return obj[k]; return null }
 
@@ -213,12 +214,14 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
   const [exporting, setExporting]           = useState(false)
   const [htmlExporting, setHtmlExporting]       = useState(false)
   const [exportingEvidence, setExportingEvidence] = useState(false)
+  const [generatingReport, setGeneratingReport]   = useState(false)
   const [fetchingEvidence, setFetchingEvidence] = useState(false)
   const [evidenceArtifacts, setEvidenceArtifacts] = useState(null)
   const [evidenceOpen, setEvidenceOpen]     = useState(false)
   const [error, setError]                   = useState(null)
   const [assessed, setAssessed]             = useState(false)
   const [scanId, setScanId]                 = useState(null)
+  const [targetUrl, setTargetUrl]           = useState('')
 
   const loadControls = useCallback(async () => {
     setLoading(true); setError(null)
@@ -250,13 +253,13 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
   const runAssessment = async () => {
     setAssessing(true); setError(null)
     try {
-      const data = await assessCompliance(fw.id)
+      const data = await assessCompliance(fw.id, targetUrl.trim() || undefined)
       const list = Array.isArray(data) ? data : (data?.controls ?? data?.Controls ?? data?.results ?? data?.Results ?? data?.items ?? data?.Items ?? [])
       if (list.length > 0) setControls(list)
       const sid = field(data, 'scanId', 'ScanId', 'scan_id', 'id', 'Id')
       if (sid) setScanId(String(sid))
       setAssessed(true)
-    } catch (e) { setError(e.message || 'Assessment failed') }
+    } catch (e) { setError(e) }
     setAssessing(false)
   }
 
@@ -309,6 +312,20 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
       setTimeout(() => URL.revokeObjectURL(blobUrl), 60000)
     } catch (e) { setError(e.message || 'HTML export failed') }
     setHtmlExporting(false)
+  }
+
+  const handleComplianceReport = async () => {
+    setGeneratingReport(true)
+    try {
+      const blob = await generateComplianceReport({ frameworkId: fw.id, controls, targetUrl: targetUrl || undefined })
+      const url  = URL.createObjectURL(blob)
+      const a    = document.createElement('a')
+      a.href = url
+      a.download = `${fw.id}-compliance-report-${new Date().toISOString().split('T')[0]}.pdf`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (e) { setError(e.message || 'Report generation failed') }
+    setGeneratingReport(false)
   }
 
   const handleExport = async () => {
@@ -382,7 +399,24 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
             {exportingEvidence ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Archive className="w-3.5 h-3.5" />}
             {exportingEvidence ? 'Packaging…' : 'Download Evidence (.zip)'}
           </button>
+          <button onClick={handleComplianceReport} disabled={generatingReport || !assessed}
+            className="flex items-center gap-1.5 bg-sky-500/10 border border-sky-500/30 hover:bg-sky-500/20 text-sky-400 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40">
+            {generatingReport ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+            {generatingReport ? 'Generating…' : 'Generate Report (PDF)'}
+          </button>
         </div>
+      </div>
+
+      {/* Target URL */}
+      <div className="flex items-center gap-3 bg-white/3 border border-white/10 rounded-xl px-4 py-3">
+        <Globe className="w-4 h-4 text-gray-500 shrink-0" />
+        <input
+          type="url"
+          value={targetUrl}
+          onChange={e => setTargetUrl(e.target.value)}
+          placeholder="https://yoursite.com — target URL required to run assessment"
+          className="flex-1 bg-transparent text-sm text-white placeholder:text-gray-600 outline-none"
+        />
       </div>
 
       {/* Score header */}
@@ -416,11 +450,7 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
         </div>
       </div>
 
-      {error && (
-        <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
-          <AlertCircle className="w-4 h-4 shrink-0" />{error}
-        </div>
-      )}
+      {error && <ApiErrorBanner error={error} />}
 
       {/* Evidence artifacts panel */}
       {evidenceArtifacts && (

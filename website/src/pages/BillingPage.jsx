@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Shield, CreditCard, Calendar, CheckCircle2, AlertCircle,
+  Shield, CreditCard, Calendar, CheckCircle2,
   Loader2, ExternalLink, RefreshCw, XCircle, Clock, Zap, ShoppingBag,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
@@ -176,7 +176,6 @@ export default function BillingPage() {
   const [sub, setSub]             = useState(null)
   const [invoices, setInvoices]   = useState([])
   const [loading, setLoading]     = useState(true)
-  const [error, setError]         = useState(null)
   const [portalLoading, setPortal] = useState(false)
   const [portalError, setPortalError] = useState(null)
 
@@ -194,7 +193,6 @@ export default function BillingPage() {
           : invData.value?.invoices ?? invData.value?.Invoices ?? []
         setInvoices(arr)
       }
-      if (subData.status === 'rejected') setError(subData.reason?.message || 'Failed to load subscription')
     } finally {
       setLoading(false)
     }
@@ -253,18 +251,6 @@ export default function BillingPage() {
             <div className="flex items-center justify-center py-16 gap-3">
               <Loader2 className="w-6 h-6 text-crimson-400 animate-spin" />
               <span className="text-gray-400 text-sm">Loading subscription…</span>
-            </div>
-          )}
-
-          {!loading && error && (
-            <div className="flex items-start justify-between gap-4 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                <span>{error}</span>
-              </div>
-              <button onClick={fetchData} className="shrink-0 flex items-center gap-1 text-xs hover:text-white transition-colors">
-                <RefreshCw className="w-3.5 h-3.5" /> Retry
-              </button>
             </div>
           )}
 

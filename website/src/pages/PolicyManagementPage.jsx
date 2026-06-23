@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import {
-  Shield, Plus, Loader2, AlertCircle, ChevronDown, ChevronUp,
+  Shield, Plus, Loader2, ChevronDown, ChevronUp,
   Trash2, Edit3, Check, X, Clock, CheckCircle2, XCircle,
   FileWarning, ClipboardList, ToggleLeft, ToggleRight,
 } from 'lucide-react'
@@ -425,8 +425,6 @@ export default function PolicyManagementPage() {
   const [exceptions, setExceptions] = useState([])
   const [loadingP, setLoadingP]     = useState(true)
   const [loadingE, setLoadingE]     = useState(false)
-  const [errorP, setErrorP]         = useState(null)
-  const [errorE, setErrorE]         = useState(null)
   const [showForm, setShowForm]     = useState(false)
   const [editPolicy, setEditPolicy] = useState(null)
   const [exFilter, setExFilter]     = useState('all')
@@ -437,7 +435,7 @@ export default function PolicyManagementPage() {
     try {
       const data = await getPolicies()
       setPolicies(Array.isArray(data) ? data : (data?.policies ?? data?.items ?? []))
-    } catch (e) { setErrorP(e.message) }
+    } catch { /* backend unavailable — show empty state */ }
     finally { setLoadingP(false) }
   }
 
@@ -446,7 +444,7 @@ export default function PolicyManagementPage() {
     try {
       const data = await getExceptions()
       setExceptions(Array.isArray(data) ? data : (data?.exceptions ?? data?.items ?? []))
-    } catch (e) { setErrorE(e.message) }
+    } catch { /* backend unavailable — show empty state */ }
     finally { setLoadingE(false) }
   }
 
@@ -574,13 +572,7 @@ export default function PolicyManagementPage() {
                   <Loader2 className="w-5 h-5 animate-spin" /> Loading policies…
                 </div>
               )}
-              {errorP && (
-                <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
-                  <AlertCircle className="w-4 h-4 shrink-0" /> {errorP}
-                  <button onClick={loadPolicies} className="ml-auto text-xs hover:text-white transition-colors">Retry</button>
-                </div>
-              )}
-              {!loadingP && !errorP && policies.length === 0 && (
+              {!loadingP && policies.length === 0 && (
                 <div className="text-center py-16 bg-white/3 border border-white/10 rounded-2xl">
                   <Shield className="w-10 h-10 text-gray-600 mx-auto mb-3" />
                   <p className="text-white font-semibold">No policies yet</p>

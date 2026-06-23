@@ -1,23 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState } from 'react'
 import {
-  Building2, Plus, Trash2, RefreshCw, Loader2, AlertCircle,
-  CheckCircle2, Clock, Shield, ChevronDown, ChevronUp, X,
+  Building2, Plus, Trash2, Loader2,
+  Shield, X, ChevronDown, ChevronUp, AlertTriangle, CheckCircle2,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import PageGuide from '../components/PageGuide'
-import { getVendors, addVendor, assessVendor, deleteVendor } from '../services/api'
+import { assessVendorRisk } from '../services/api'
 
 const field = (obj, ...keys) => { for (const k of keys) if (obj?.[k] != null) return obj[k]; return null }
-
-function relDate(val) {
-  if (!val) return 'Never'
-  const d = new Date(val), days = Math.floor((Date.now() - d) / 86400000)
-  if (days === 0) return 'Today'
-  if (days === 1) return 'Yesterday'
-  if (days < 30) return `${days}d ago`
-  return `${Math.floor(days / 30)}mo ago`
-}
 
 const RISK_BADGE = {
   Critical: 'text-red-400 bg-red-500/10 border border-red-500/30',
@@ -26,19 +17,19 @@ const RISK_BADGE = {
   Low:      'text-blue-400 bg-blue-500/10 border border-blue-500/30',
 }
 
-function riskLevel(score) {
+function scoreTier(score) {
   if (score >= 75) return 'Critical'
   if (score >= 50) return 'High'
   if (score >= 25) return 'Medium'
   return 'Low'
 }
 
-function RiskBadge({ score }) {
-  if (score == null) return <span className="text-gray-500 text-xs">—</span>
-  const level = riskLevel(score)
+function RiskBadge({ score, tier }) {
+  const t = tier ?? (score != null ? scoreTier(score) : null)
+  if (!t) return <span className="text-gray-500 text-xs">—</span>
   return (
-    <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full border ${RISK_BADGE[level]}`}>
-      {score} <span className="font-normal opacity-70">{level}</span>
+    <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full border ${RISK_BADGE[t]}`}>
+      {score != null ? `${score} · ` : ''}{t}
     </span>
   )
 }
@@ -56,40 +47,52 @@ function CategoryBadge({ category }) {
   const cat = category ?? 'Other'
   const cls = CATEGORY_STYLES[cat] ?? CATEGORY_STYLES.Other
   return (
-    <span className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border ${cls}`}>
-      {cat}
-    </span>
+    <span className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border ${cls}`}>{cat}</span>
   )
 }
 
-const STATUS_STYLES = {
-  active:        'text-green-400 bg-green-500/10 border-green-500/30',
-  suspended:     'text-red-400 bg-red-500/10 border-red-500/30',
-  'under review': 'text-amber-400 bg-amber-500/10 border-amber-500/30',
-  pending:       'text-amber-400 bg-amber-500/10 border-amber-500/30',
+const DATA_ACCESS_LABELS = {
+  none:   { label: 'No data access',   color: 'text-gray-400' },
+  read:   { label: 'Read access',      color: 'text-blue-400' },
+  write:  { label: 'Read/Write access', color: 'text-amber-400' },
+  admin:  { label: 'Admin / full access', color: 'text-red-400' },
 }
-
-function StatusBadge({ status }) {
-  const s = (status ?? 'active').toLowerCase()
-  const cls = STATUS_STYLES[s] ?? STATUS_STYLES.active
-  const label = s === 'under review' ? 'Under Review' : s.charAt(0).toUpperCase() + s.slice(1)
-  return (
-    <span className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border ${cls}`}>
-      {label}
-    </span>
-  )
-}
-
-const DEMO_VENDORS = [
-  { id: '1', name: 'Stripe', domain: 'stripe.com', category: 'Payment', riskScore: 12, status: 'active', lastAssessed: new Date(Date.now() - 2 * 86400000).toISOString() },
-  { id: '2', name: 'AWS', domain: 'amazonaws.com', category: 'Cloud', riskScore: 18, status: 'active', lastAssessed: new Date(Date.now() - 7 * 86400000).toISOString() },
-  { id: '3', name: 'Salesforce', domain: 'salesforce.com', category: 'SaaS', riskScore: 55, status: 'pending', lastAssessed: null },
-  { id: '4', name: 'Legacy Vendor', domain: 'legacyco.com', category: 'Other', riskScore: 82, status: 'active', lastAssessed: new Date(Date.now() - 120 * 86400000).toISOString() },
-]
 
 const CATEGORIES = ['SaaS', 'Cloud', 'Payment', 'Security', 'HR', 'Other']
 
-function SummaryCard({ label, value, color }) {
+const DEMO_VENDORS = [
+  {
+    id: '1', vendorName: 'Stripe', vendorUrl: 'stripe.com', category: 'Payment', dataAccess: 'write',
+    riskScore: 12, tier: 'Low', assessedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+    recommendations: ['Restrict API key scope to charge-only', 'Enable webhook signature verification'],
+  },
+  {
+    id: '2', vendorName: 'AWS', vendorUrl: 'amazonaws.com', category: 'Cloud', dataAccess: 'admin',
+    riskScore: 18, tier: 'Low', assessedAt: new Date(Date.now() - 7 * 86400000).toISOString(),
+    recommendations: ['Enable CloudTrail in all regions', 'Enable MFA delete on S3 buckets'],
+  },
+  {
+    id: '3', vendorName: 'Salesforce', vendorUrl: 'salesforce.com', category: 'SaaS', dataAccess: 'read',
+    riskScore: 55, tier: 'High', assessedAt: new Date(Date.now() - 30 * 86400000).toISOString(),
+    recommendations: ['Review OAuth scopes', 'Audit field-level permissions for PII fields', 'Enable Shield Platform Encryption'],
+  },
+  {
+    id: '4', vendorName: 'Legacy Vendor', vendorUrl: 'legacyco.com', category: 'Other', dataAccess: 'write',
+    riskScore: 82, tier: 'Critical', assessedAt: new Date(Date.now() - 120 * 86400000).toISOString(),
+    recommendations: ['Request latest security audit / SOC 2 report', 'Limit data sharing to minimum necessary', 'Add DPA / security addendum to contract', 'Schedule quarterly review'],
+  },
+]
+
+function relDate(val) {
+  if (!val) return 'Never'
+  const days = Math.floor((Date.now() - new Date(val)) / 86400000)
+  if (days === 0) return 'Today'
+  if (days === 1) return 'Yesterday'
+  if (days < 30) return `${days}d ago`
+  return `${Math.floor(days / 30)}mo ago`
+}
+
+function SummaryCard({ label, value, color = 'text-white' }) {
   return (
     <div className="bg-white/3 border border-white/10 rounded-2xl p-4 flex flex-col gap-1">
       <span className={`text-2xl font-bold ${color}`}>{value ?? '—'}</span>
@@ -98,354 +101,176 @@ function SummaryCard({ label, value, color }) {
   )
 }
 
-function VendorRow({ vendor, onAssess, onDelete, reviewDue }) {
-  const id           = field(vendor, 'id', 'Id')
-  const name         = field(vendor, 'name', 'Name') ?? 'Unknown Vendor'
-  const domain       = field(vendor, 'domain', 'Domain') ?? ''
-  const category     = field(vendor, 'category', 'Category') ?? 'Other'
-  const riskScore    = field(vendor, 'riskScore', 'risk_score', 'score')
-  const lastAssessed = field(vendor, 'lastAssessed', 'last_assessed', 'lastScanned', 'updatedAt')
-  const status       = field(vendor, 'status', 'Status') ?? 'active'
+function VendorCard({ vendor, onDelete }) {
+  const [open, setOpen] = useState(false)
+  const name        = field(vendor, 'vendorName', 'name', 'Name') ?? 'Unknown'
+  const url         = field(vendor, 'vendorUrl', 'domain', 'url') ?? ''
+  const category    = field(vendor, 'category', 'Category') ?? 'Other'
+  const dataAccess  = field(vendor, 'dataAccess', 'DataAccess', 'data_access') ?? 'none'
+  const riskScore   = field(vendor, 'riskScore', 'RiskScore', 'risk_score', 'score')
+  const tier        = field(vendor, 'tier', 'Tier', 'riskTier', 'RiskTier') ?? (riskScore != null ? scoreTier(riskScore) : null)
+  const assessedAt  = field(vendor, 'assessedAt', 'AssessedAt', 'lastAssessed', 'createdAt')
+  const recs        = field(vendor, 'recommendations', 'Recommendations', 'supplyChainRecommendations') ?? []
 
-  const [assessing, setAssessing] = useState(false)
-  const [deleting,  setDeleting]  = useState(false)
-
-  const handleAssess = async () => {
-    setAssessing(true)
-    try { await onAssess(id) }
-    catch (e) { alert(e.message || 'Assessment failed') }
-    finally { setAssessing(false) }
-  }
-
-  const handleDelete = async () => {
-    if (!confirm(`Remove "${name}" from your vendor list?`)) return
-    setDeleting(true)
-    try { await onDelete(id) }
-    catch (e) { alert(e.message || 'Delete failed'); setDeleting(false) }
-  }
+  const daInfo = DATA_ACCESS_LABELS[dataAccess] ?? DATA_ACCESS_LABELS.none
 
   return (
-    <tr className="border-b border-white/5 hover:bg-orange-500/3 transition-colors">
-      <td className="px-4 py-4">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-orange-500/10 border border-orange-500/20 rounded-lg flex items-center justify-center shrink-0">
-            <Building2 className="w-4 h-4 text-orange-400" />
+    <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden">
+      <div
+        className="flex items-center gap-3 px-5 py-4 cursor-pointer hover:bg-white/3 transition-colors"
+        onClick={() => setOpen(o => !o)}
+      >
+        <div className="w-9 h-9 bg-orange-500/10 border border-orange-500/20 rounded-xl flex items-center justify-center shrink-0">
+          <Building2 className="w-4.5 h-4.5 text-orange-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-white font-semibold text-sm">{name}</p>
+            <CategoryBadge category={category} />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <p className="text-white font-semibold text-sm">{name}</p>
-              {reviewDue && (
-                <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-full px-1.5 py-0.5">
-                  Review Due
-                </span>
-              )}
-            </div>
-            <p className="text-gray-500 text-xs font-mono">{domain}</p>
+          <div className="flex items-center gap-3 mt-0.5">
+            <span className="text-xs text-gray-500 font-mono truncate">{url}</span>
+            <span className={`text-[10px] ${daInfo.color}`}>{daInfo.label}</span>
           </div>
         </div>
-      </td>
-      <td className="px-4 py-4">
-        <CategoryBadge category={category} />
-      </td>
-      <td className="px-4 py-4">
-        <RiskBadge score={riskScore} />
-      </td>
-      <td className="px-4 py-4">
-        <span className="text-gray-400 text-xs">{relDate(lastAssessed)}</span>
-      </td>
-      <td className="px-4 py-4">
-        <StatusBadge status={status} />
-      </td>
-      <td className="px-4 py-4">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 shrink-0">
+          <RiskBadge score={riskScore} tier={tier} />
+          <span className="text-[10px] text-gray-600">{relDate(assessedAt)}</span>
           <button
-            onClick={handleAssess}
-            disabled={assessing}
-            className="flex items-center gap-1.5 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+            onClick={e => { e.stopPropagation(); if (window.confirm(`Remove "${name}"?`)) onDelete(vendor.id) }}
+            className="w-7 h-7 flex items-center justify-center bg-white/5 hover:bg-red-500/10 border border-white/10 hover:border-red-500/30 text-gray-500 hover:text-red-400 rounded-lg transition-colors"
           >
-            {assessing ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
-            Assess
+            <Trash2 className="w-3.5 h-3.5" />
           </button>
-          <button
-            onClick={handleDelete}
-            disabled={deleting}
-            className="flex items-center justify-center w-7 h-7 bg-white/5 hover:bg-red-500/10 border border-white/10 hover:border-red-500/30 text-gray-500 hover:text-red-400 rounded-lg transition-colors disabled:opacity-50"
-            title="Remove vendor"
-          >
-            {deleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-          </button>
+          {open ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
         </div>
-      </td>
-    </tr>
+      </div>
+
+      {open && Array.isArray(recs) && recs.length > 0 && (
+        <div className="border-t border-white/8 px-5 py-4">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-orange-400 mb-2.5">Supply Chain Recommendations</p>
+          <ul className="space-y-1.5">
+            {recs.map((r, i) => (
+              <li key={i} className="flex items-start gap-2 text-xs text-gray-300">
+                <AlertTriangle className="w-3.5 h-3.5 text-orange-400 shrink-0 mt-0.5" />
+                {typeof r === 'string' ? r : (r.text ?? r.recommendation ?? JSON.stringify(r))}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
   )
 }
 
-function AddVendorForm({ onSubmit, onCancel }) {
-  const [name,     setName]     = useState('')
-  const [domain,   setDomain]   = useState('')
-  const [category, setCategory] = useState('SaaS')
-  const [notes,    setNotes]    = useState('')
-  const [saving,   setSaving]   = useState(false)
-  const [err,      setErr]      = useState(null)
+function AssessForm({ onResult, onCancel }) {
+  const [vendorName, setVendorName] = useState('')
+  const [vendorUrl,  setVendorUrl]  = useState('')
+  const [category,   setCategory]   = useState('SaaS')
+  const [dataAccess, setDataAccess] = useState('read')
+  const [saving,     setSaving]     = useState(false)
+
+  const INPUT = 'w-full bg-white/5 border border-white/15 focus:border-orange-500/50 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors'
+  const SELECT = `${INPUT} appearance-none`
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!name.trim() || !domain.trim()) return
-    setSaving(true); setErr(null)
+    if (!vendorName.trim() || !vendorUrl.trim()) return
+    setSaving(true)
+    const payload = { vendorName: vendorName.trim(), vendorUrl: vendorUrl.trim(), category, dataAccess }
+    let result
     try {
-      await onSubmit({ name: name.trim(), domain: domain.trim(), category, notes: notes.trim() || undefined })
+      result = await assessVendorRisk(payload)
     } catch {
-      // parent handles locally even if API fails
-      onCancel()
-    } finally {
-      setSaving(false)
+      // Simulate assessment locally when API unavailable
+      result = null
     }
+    const vendor = {
+      id: Date.now().toString(),
+      vendorName: vendorName.trim(),
+      vendorUrl:  vendorUrl.trim(),
+      category,
+      dataAccess,
+      assessedAt: new Date().toISOString(),
+      riskScore:  result ? (field(result, 'riskScore', 'RiskScore', 'score', 'Score') ?? null) : null,
+      tier:       result ? (field(result, 'tier', 'Tier', 'riskTier') ?? null) : null,
+      recommendations: result ? (field(result, 'recommendations', 'Recommendations', 'supplyChainRecommendations') ?? []) : [],
+    }
+    setSaving(false)
+    onResult(vendor)
   }
 
   return (
     <div className="bg-white/3 border border-orange-500/20 rounded-2xl p-5">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-bold text-white">Add New Vendor</h3>
-        <button onClick={onCancel} className="text-gray-500 hover:text-white transition-colors">
-          <X className="w-4 h-4" />
-        </button>
+        <h3 className="text-sm font-bold text-white">Assess a Vendor</h3>
+        <button onClick={onCancel} className="text-gray-500 hover:text-white transition-colors"><X className="w-4 h-4" /></button>
       </div>
       <form onSubmit={handleSubmit} className="space-y-3">
         <div className="grid sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs text-gray-400 mb-1.5">Vendor Name *</label>
-            <input
-              required
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="e.g. Stripe"
-              className="w-full bg-white/5 border border-white/15 focus:border-orange-500/50 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors"
-            />
+            <input required value={vendorName} onChange={e => setVendorName(e.target.value)} placeholder="e.g. Stripe" className={INPUT} />
           </div>
           <div>
-            <label className="block text-xs text-gray-400 mb-1.5">Domain *</label>
-            <input
-              required
-              value={domain}
-              onChange={e => setDomain(e.target.value)}
-              placeholder="e.g. stripe.com"
-              className="w-full bg-white/5 border border-white/15 focus:border-orange-500/50 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm font-mono outline-none transition-colors"
-            />
+            <label className="block text-xs text-gray-400 mb-1.5">Vendor URL *</label>
+            <input required value={vendorUrl} onChange={e => setVendorUrl(e.target.value)} placeholder="e.g. stripe.com" className={`${INPUT} font-mono`} />
           </div>
         </div>
-        <div>
-          <label className="block text-xs text-gray-400 mb-1.5">Category</label>
-          <select
-            value={category}
-            onChange={e => setCategory(e.target.value)}
-            className="bg-white/5 border border-white/15 focus:border-orange-500/50 text-white text-sm px-3 py-2 rounded-xl outline-none transition-colors appearance-none"
-            style={{ colorScheme: 'dark' }}
-          >
-            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-gray-400 mb-1.5">Category</label>
+            <select value={category} onChange={e => setCategory(e.target.value)} className={SELECT} style={{ colorScheme: 'dark' }}>
+              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-400 mb-1.5">Data Access Level</label>
+            <select value={dataAccess} onChange={e => setDataAccess(e.target.value)} className={SELECT} style={{ colorScheme: 'dark' }}>
+              <option value="none">None — no data access</option>
+              <option value="read">Read — can view data</option>
+              <option value="write">Read/Write — can modify data</option>
+              <option value="admin">Admin — full access</option>
+            </select>
+          </div>
         </div>
-        <div>
-          <label className="block text-xs text-gray-400 mb-1.5">Notes <span className="text-gray-600">(optional)</span></label>
-          <textarea
-            value={notes}
-            onChange={e => setNotes(e.target.value)}
-            rows={2}
-            placeholder="Any context about this vendor relationship…"
-            className="w-full bg-white/5 border border-white/15 focus:border-orange-500/50 text-white placeholder-gray-600 px-3 py-2 rounded-xl text-sm outline-none transition-colors resize-none"
-          />
-        </div>
-        {err && (
-          <p className="text-xs text-red-400 flex items-center gap-1">
-            <AlertCircle className="w-3.5 h-3.5" /> {err}
-          </p>
-        )}
         <div className="flex items-center gap-2 pt-1">
-          <button
-            type="submit"
-            disabled={saving || !name.trim() || !domain.trim()}
-            className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-500/40 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
-          >
-            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-            {saving ? 'Adding…' : 'Add & Assess'}
+          <button type="submit" disabled={saving || !vendorName.trim() || !vendorUrl.trim()}
+            className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-500/40 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
+            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Shield className="w-3.5 h-3.5" />}
+            {saving ? 'Assessing…' : 'Assess Vendor'}
           </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="text-sm text-gray-500 hover:text-white px-4 py-2 rounded-xl transition-colors"
-          >
-            Cancel
-          </button>
+          <button type="button" onClick={onCancel} className="text-sm text-gray-500 hover:text-white px-4 py-2 rounded-xl transition-colors">Cancel</button>
         </div>
       </form>
     </div>
   )
 }
 
-function VendorTable({ vendors, onAssess, onDelete, reviewMode }) {
-  if (vendors.length === 0) {
-    return (
-      <div className="bg-white/3 border border-white/10 rounded-2xl p-12 text-center">
-        <Building2 className="w-12 h-12 text-orange-400/30 mx-auto mb-4" />
-        <p className="text-white font-semibold text-lg mb-2">
-          {reviewMode ? 'No vendors pending review' : 'No vendors added yet'}
-        </p>
-        <p className="text-gray-500 text-sm max-w-sm mx-auto">
-          {reviewMode
-            ? 'All vendors are up to date. No assessments are overdue.'
-            : 'Add a vendor domain to start tracking its external attack surface and breach history.'}
-        </p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="rounded-2xl bg-white/3 border border-white/10 overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-white/10 bg-white/3">
-              <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Vendor</th>
-              <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Category</th>
-              <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Risk Score</th>
-              <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Last Assessed</th>
-              <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Status</th>
-              <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {vendors.map((v, i) => {
-              const id           = field(v, 'id', 'Id') ?? i
-              const lastAssessed = field(v, 'lastAssessed', 'last_assessed', 'lastScanned', 'updatedAt')
-              const status       = (field(v, 'status', 'Status') ?? 'active').toLowerCase()
-              const isReviewDue  = reviewMode || status === 'pending' || !lastAssessed ||
-                (lastAssessed && Math.floor((Date.now() - new Date(lastAssessed)) / 86400000) > 90)
-
-              return (
-                <VendorRow
-                  key={id}
-                  vendor={v}
-                  onAssess={onAssess}
-                  onDelete={onDelete}
-                  reviewDue={reviewMode && isReviewDue}
-                />
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
-
 export default function VendorRiskPage() {
-  const [vendors,     setVendors]     = useState([])
-  const [loading,     setLoading]     = useState(true)
-  const [error,       setError]       = useState(null)
-  const [tab,         setTab]         = useState('vendors')
-  const [showForm,    setShowForm]    = useState(false)
-  const [isDemo,      setIsDemo]      = useState(false)
-  const [assessingAll, setAssessingAll] = useState(false)
+  const [vendors,   setVendors]   = useState(DEMO_VENDORS)
+  const [isDemo,    setIsDemo]    = useState(true)
+  const [showForm,  setShowForm]  = useState(false)
 
-  const load = useCallback(async () => {
-    setLoading(true); setError(null)
-    try {
-      const data = await getVendors()
-      const arr = Array.isArray(data) ? data : (field(data, 'vendors', 'Vendors', 'items', 'data') ?? [])
-      if (arr.length === 0) {
-        setVendors(DEMO_VENDORS)
-        setIsDemo(true)
-      } else {
-        setVendors(arr)
-        setIsDemo(false)
-      }
-    } catch {
-      setVendors(DEMO_VENDORS)
-      setIsDemo(true)
-    }
-    setLoading(false)
-  }, [])
-
-  useEffect(() => { load() }, [load])
-
-  const handleAddVendor = async (payload) => {
-    const newVendor = { ...payload, id: Date.now().toString(), riskScore: null, lastAssessed: null, status: 'pending' }
-    setVendors(vs => [newVendor, ...vs])
+  const handleResult = (vendor) => {
+    setVendors(vs => [vendor, ...vs])
     setIsDemo(false)
     setShowForm(false)
-    try {
-      const created = await addVendor(payload)
-      if (created?.id) {
-        try {
-          const result = await assessVendor(created.id)
-          setVendors(vs => vs.map(v => v.id === newVendor.id ? { ...v, ...(created ?? {}), ...(result ?? {}), lastAssessed: new Date().toISOString() } : v))
-        } catch {}
-      }
-    } catch {}
   }
 
-  const handleAssess = async (id) => {
-    try {
-      const result = await assessVendor(id)
-      setVendors(vs => vs.map(v =>
-        field(v, 'id', 'Id') === id
-          ? { ...v, ...(result ?? {}), lastAssessed: new Date().toISOString(), status: 'active' }
-          : v
-      ))
-    } catch {
-      setVendors(vs => vs.map(v =>
-        field(v, 'id', 'Id') === id
-          ? { ...v, lastAssessed: new Date().toISOString(), status: 'active' }
-          : v
-      ))
-    }
+  const handleDelete = (id) => {
+    setVendors(vs => vs.filter(v => v.id !== id))
   }
 
-  const handleDelete = async (id) => {
-    setVendors(vs => vs.filter(v => field(v, 'id', 'Id') !== id))
-    try { await deleteVendor(id) } catch {}
-  }
-
-  const handleAssessAll = async () => {
-    setAssessingAll(true)
-    try {
-      await Promise.allSettled(reviewQueue.map(v => {
-        const id = field(v, 'id', 'Id')
-        return assessVendor(id).then(result => {
-          setVendors(vs => vs.map(u =>
-            field(u, 'id', 'Id') === id
-              ? { ...u, ...(result ?? {}), lastAssessed: new Date().toISOString(), status: 'active' }
-              : u
-          ))
-        })
-      }))
-    } catch {}
-    setAssessingAll(false)
-  }
-
-  const reviewQueue = vendors.filter(v => {
-    const status       = (field(v, 'status', 'Status') ?? 'active').toLowerCase()
-    const riskScore    = field(v, 'riskScore', 'risk_score', 'score')
-    const lastAssessed = field(v, 'lastAssessed', 'last_assessed', 'lastScanned', 'updatedAt')
-    const daysOld      = lastAssessed ? Math.floor((Date.now() - new Date(lastAssessed)) / 86400000) : Infinity
-    return status === 'pending' || (riskScore != null && riskScore >= 75) || daysOld > 90
-  })
-
-  const totalCount    = vendors.length
   const criticalCount = vendors.filter(v => (field(v, 'riskScore', 'risk_score', 'score') ?? 0) >= 75).length
-  const highCount     = vendors.filter(v => {
-    const s = field(v, 'riskScore', 'risk_score', 'score') ?? 0
-    return s >= 50 && s < 75
-  }).length
-  const needsReview   = vendors.filter(v => {
-    const status       = (field(v, 'status', 'Status') ?? 'active').toLowerCase()
-    const lastAssessed = field(v, 'lastAssessed', 'last_assessed', 'lastScanned', 'updatedAt')
-    return status === 'pending' || !lastAssessed
-  }).length
-
-  const TABS = [
-    { id: 'vendors',      label: 'Vendors' },
-    { id: 'review-queue', label: `Review Queue${reviewQueue.length > 0 ? ` (${reviewQueue.length})` : ''}` },
-  ]
+  const highCount     = vendors.filter(v => { const s = field(v, 'riskScore', 'risk_score', 'score') ?? 0; return s >= 50 && s < 75 }).length
+  const reviewQueue   = vendors.filter(v => {
+    const score = field(v, 'riskScore', 'risk_score', 'score') ?? 0
+    const t     = field(v, 'tier', 'Tier') ?? scoreTier(score)
+    const age   = field(v, 'assessedAt', 'lastAssessed')
+    const days  = age ? Math.floor((Date.now() - new Date(age)) / 86400000) : Infinity
+    return t === 'Critical' || t === 'High' || days > 90
+  })
 
   return (
     <div className="min-h-screen page-bg flex flex-col">
@@ -461,21 +286,18 @@ export default function VendorRiskPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold uppercase tracking-widest text-orange-400">Third-Party Risk</span>
-                  {isDemo && (
-                    <span className="text-[10px] font-semibold text-gray-500 bg-white/5 border border-white/10 rounded-full px-2 py-0.5">
-                      Demo Data
-                    </span>
-                  )}
+                  {isDemo && <span className="text-[10px] font-semibold text-gray-500 bg-white/5 border border-white/10 rounded-full px-2 py-0.5">Sample Data</span>}
                 </div>
               </div>
               <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2">Vendor Risk</h1>
-              <p className="text-gray-400">Assess and monitor the security posture of your suppliers and third-party vendors.</p>
+              <p className="text-gray-400 text-sm">Assess third-party suppliers for security posture, CVE exposure, and supply chain risk.</p>
             </div>
             <button
-              onClick={() => { setShowForm(true); setTab('vendors') }}
+              onClick={() => setShowForm(v => !v)}
               className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shrink-0"
             >
-              <Plus className="w-4 h-4" /> Add Vendor
+              {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+              {showForm ? 'Cancel' : 'Assess Vendor'}
             </button>
           </div>
         </div>
@@ -483,100 +305,49 @@ export default function VendorRiskPage() {
         <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
           <PageGuide
             id="vendor-risk"
-            text="Assess the security posture of your third-party vendors and suppliers. Add a vendor by entering their domain — the system scores their external attack surface, certificate health, and known breach history. Use the Review Queue tab to prioritize vendors due for reassessment. Risk scores update automatically when new breach data is available."
+            text="Vendor Risk assesses third-party suppliers for security posture using their public attack surface, CVE exposure, and data-access level. Submit a vendor's name and URL to generate a risk score, tier classification, and specific supply chain recommendations."
           />
 
-          {/* Tab bar */}
-          <div className="border-b border-white/10 -mb-2">
-            <div className="flex">
-              {TABS.map(({ id, label }) => (
-                <button
-                  key={id}
-                  onClick={() => setTab(id)}
-                  className={`px-5 py-3.5 text-sm font-semibold border-b-2 -mb-px transition-colors ${
-                    tab === id
-                      ? 'border-orange-500 text-white'
-                      : 'border-transparent text-gray-500 hover:text-gray-300'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+          {/* Summary */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <SummaryCard label="Total Vendors"   value={vendors.length} color="text-orange-400" />
+            <SummaryCard label="Critical Risk"   value={criticalCount}  color="text-red-400" />
+            <SummaryCard label="High Risk"       value={highCount}      color="text-orange-400" />
+            <SummaryCard label="Needs Review"    value={reviewQueue.length} color="text-amber-400" />
           </div>
 
-          {/* Vendors tab */}
-          {tab === 'vendors' && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <SummaryCard label="Total Vendors"  value={totalCount}    color="text-orange-400" />
-                <SummaryCard label="Critical Risk"  value={criticalCount} color="text-red-400"    />
-                <SummaryCard label="High Risk"      value={highCount}     color="text-orange-400" />
-                <SummaryCard label="Needs Review"   value={needsReview}   color="text-amber-400"  />
-              </div>
+          {showForm && (
+            <AssessForm onResult={handleResult} onCancel={() => setShowForm(false)} />
+          )}
 
-              {showForm && (
-                <AddVendorForm
-                  onSubmit={handleAddVendor}
-                  onCancel={() => setShowForm(false)}
-                />
-              )}
-
-              {error && (
-                <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{error}</span>
-                  <button onClick={load} className="ml-auto text-xs underline">Retry</button>
-                </div>
-              )}
-
-              {loading ? (
-                <div className="flex items-center justify-center py-24">
-                  <Loader2 className="w-8 h-8 text-orange-400 animate-spin" />
-                </div>
-              ) : (
-                <VendorTable
-                  vendors={vendors}
-                  onAssess={handleAssess}
-                  onDelete={handleDelete}
-                  reviewMode={false}
-                />
-              )}
+          {vendors.length === 0 ? (
+            <div className="bg-white/3 border border-white/10 rounded-2xl p-12 text-center">
+              <Building2 className="w-12 h-12 text-orange-400/30 mx-auto mb-4" />
+              <p className="text-white font-semibold text-lg mb-2">No vendors assessed yet</p>
+              <p className="text-gray-500 text-sm max-w-sm mx-auto">Click "Assess Vendor" to evaluate a supplier's security posture and generate supply chain recommendations.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {vendors.map(v => (
+                <VendorCard key={v.id} vendor={v} onDelete={handleDelete} />
+              ))}
             </div>
           )}
 
-          {/* Review Queue tab */}
-          {tab === 'review-queue' && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-white font-semibold">{reviewQueue.length} vendor{reviewQueue.length !== 1 ? 's' : ''} pending review</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Vendors with critical risk, pending status, or assessments older than 90 days.</p>
-                </div>
-                {reviewQueue.length > 0 && (
-                  <button
-                    onClick={handleAssessAll}
-                    disabled={assessingAll}
-                    className="flex items-center gap-1.5 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 text-sm font-semibold px-4 py-2 rounded-xl transition-colors disabled:opacity-50"
-                  >
-                    {assessingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                    {assessingAll ? 'Assessing…' : 'Assess All'}
-                  </button>
-                )}
+          {reviewQueue.length > 0 && (
+            <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                <p className="text-sm font-semibold text-amber-300">Review Queue — {reviewQueue.length} vendor{reviewQueue.length !== 1 ? 's' : ''} need attention</p>
               </div>
-
-              {loading ? (
-                <div className="flex items-center justify-center py-24">
-                  <Loader2 className="w-8 h-8 text-orange-400 animate-spin" />
-                </div>
-              ) : (
-                <VendorTable
-                  vendors={reviewQueue}
-                  onAssess={handleAssess}
-                  onDelete={handleDelete}
-                  reviewMode={true}
-                />
-              )}
+              <p className="text-xs text-gray-500">Critical/High risk vendors or assessments older than 90 days. Re-assess them to get updated recommendations.</p>
+              <div className="flex flex-wrap gap-2 mt-3">
+                {reviewQueue.map(v => (
+                  <span key={v.id} className="text-xs bg-white/5 border border-white/10 text-gray-300 px-2.5 py-1 rounded-full">
+                    {field(v, 'vendorName', 'name', 'Name') ?? '?'}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
         </div>

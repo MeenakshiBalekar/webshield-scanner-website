@@ -80,7 +80,7 @@ const COMMON_NAV = [
     ],
   },
   {
-    label: 'Intelligence',
+    label: 'Threat Intelligence',
     dropdown: [
       { label: 'AI Report',          href: '/ai-report' },
       { label: 'Alert Triage',       href: '/alert-triage' },

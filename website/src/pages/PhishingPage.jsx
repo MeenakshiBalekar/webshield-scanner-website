@@ -740,7 +740,7 @@ export default function PhishingPage() {
         <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
           <PageGuide
             id="phishing-simulation"
-            text="Run authorized phishing simulations to measure employee security awareness. Create a campaign, choose a phishing template, upload your recipient list, and schedule it. The Dashboard shows real-time click rates, open rates, and which employees need extra training. All simulations require prior authorization — ensure you have written approval before running."
+            text="Phishing Simulation lets you run authorized email phishing drills against your own organization. Create a campaign with target emails and a template, track who clicked or reported the link, and use the results to identify security awareness gaps."
           />
 
           {/* New campaign form */}

@@ -669,6 +669,7 @@ function PackageCveTab({ selectedId }) {
 
 export default function VmdrPage() {
   const [agents, setAgents]         = useState([])
+  const [agentsLoaded, setAgentsLoaded] = useState(false)
   const [selectedId, setSelectedId] = useState('')
   const [findings, setFindings]     = useState([])
   const [summary, setSummary]       = useState(null)
@@ -689,8 +690,9 @@ export default function VmdrPage() {
           const firstId = field(list[0], 'id', 'agentId', 'AgentId')
           setSelectedId(firstId || '')
         }
+        setAgentsLoaded(true)
       })
-      .catch(() => {})
+      .catch(() => { setAgentsLoaded(true) })
 
     getVmdrSummary()
       .then(setSummary)
@@ -782,26 +784,34 @@ export default function VmdrPage() {
             <div className="flex flex-wrap gap-3 items-end">
               <div className="flex-1 min-w-[200px]">
                 <label className="text-xs text-gray-400 mb-1 block">Agent</label>
-                <div className="relative">
-                  <select
-                    value={selectedId}
-                    onChange={e => setSelectedId(e.target.value)}
-                    className="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white appearance-none focus:outline-none focus:border-lime-500/50"
-                  >
-                    <option value="">— select an agent —</option>
-                    {agents.map(a => {
-                      const id   = field(a, 'id', 'agentId', 'AgentId')
-                      const name = field(a, 'name', 'Name', 'hostname', 'Hostname') || id
-                      const os   = field(a, 'os', 'Os', 'platform', 'Platform') || ''
-                      return (
-                        <option key={id} value={id}>
-                          {name}{os ? ` (${os})` : ''}
-                        </option>
-                      )
-                    })}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-gray-400 pointer-events-none" />
-                </div>
+                {agentsLoaded && agents.length === 0 ? (
+                  <p className="text-sm text-amber-400 py-2">
+                    No agents registered.{' '}
+                    <a href="/agent" className="underline text-lime-400 hover:text-lime-300">Download and install the Udyo360 Agent</a>
+                    {' '}on your servers to start scanning.
+                  </p>
+                ) : (
+                  <div className="relative">
+                    <select
+                      value={selectedId}
+                      onChange={e => setSelectedId(e.target.value)}
+                      className="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white appearance-none focus:outline-none focus:border-lime-500/50"
+                    >
+                      <option value="">— select an agent —</option>
+                      {agents.map(a => {
+                        const id   = field(a, 'id', 'agentId', 'AgentId')
+                        const name = field(a, 'name', 'Name', 'hostname', 'Hostname') || id
+                        const os   = field(a, 'os', 'Os', 'platform', 'Platform') || ''
+                        return (
+                          <option key={id} value={id}>
+                            {name}{os ? ` (${os})` : ''}
+                          </option>
+                        )
+                      })}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-gray-400 pointer-events-none" />
+                  </div>
+                )}
               </div>
 
               <button

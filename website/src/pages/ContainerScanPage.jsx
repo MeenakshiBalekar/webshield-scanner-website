@@ -96,7 +96,7 @@ function DockerfileTab() {
     try {
       setResults(await startContainerScan(payload))
     } catch (err) {
-      setError(err.message || 'Scan failed')
+      setError('Scan failed')
     }
     setScanning(false)
   }
@@ -291,7 +291,7 @@ function ImageCveTab() {
       setResult(data)
       setHistory(prev => [data, ...prev].slice(0, 20))
     } catch (err) {
-      setError(err.message || 'Scan failed')
+      setError('Scan failed')
     }
     setScanning(false)
   }
@@ -613,7 +613,7 @@ function KubernetesTab() {
       if (!res.ok) throw new Error(data?.error || data?.message || `Error ${res.status}`)
       setResult(data)
     } catch (err) {
-      setError(err.message || 'Scan failed')
+      setError('Scan failed')
     }
     setScanning(false)
   }

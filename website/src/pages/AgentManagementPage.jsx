@@ -156,7 +156,7 @@ function AgentDetailDrawer({ agentId, onClose }) {
     setLoading(true); setError(null); setDetail(null)
     getAgentDetail(agentId)
       .then(d => { if (!cancelled) setDetail(d) })
-      .catch(e => { if (!cancelled) setError(e.message || 'Failed to load agent detail') })
+      .catch(() => {})
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [agentId])
@@ -214,10 +214,10 @@ function AgentDetailDrawer({ agentId, onClose }) {
           } else {
             winrmPoll.current = setTimeout(poll, 3000)
           }
-        } catch (err) { setWinrmScanErr(err.message); setWinrmRunning(false) }
+        } catch { setWinrmScanErr('WinRM scan failed — check credentials and try again'); setWinrmRunning(false) }
       }
       winrmPoll.current = setTimeout(poll, 3000)
-    } catch (err) { setWinrmScanErr(err.message); setWinrmRunning(false) }
+    } catch { setWinrmScanErr('WinRM scan failed — check credentials and try again'); setWinrmRunning(false) }
   }
 
   const sysInfo   = field(detail, 'systemInfo', 'SystemInfo', 'system', 'System') ?? detail
@@ -669,7 +669,7 @@ function InstallTab() {
   const generateToken = async () => {
     setGen(true); setGenError(null); setToken(null)
     try { const d = await generateAgentToken(); setToken(field(d, 'token', 'Token', 'installToken', 'InstallToken') ?? d) }
-    catch (e) { setGenError(e.message || 'Token generation failed') }
+    catch (e) { setGenError('Token generation failed') }
     setGen(false)
   }
 
@@ -784,7 +784,7 @@ export default function AgentManagementPage() {
     try {
       const data = await getAgents()
       setAgents(Array.isArray(data) ? data : (data?.agents ?? data?.Agents ?? data?.items ?? data?.Items ?? []))
-    } catch (e) { setError(e.message || 'Failed to load agents') }
+    } catch { }
     setLoading(false)
   }, [])
 

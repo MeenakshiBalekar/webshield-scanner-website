@@ -471,12 +471,8 @@ export default function AssetsPage() {
         const data = await listRes.value.json()
         const arr = Array.isArray(data) ? data : (field(data, 'assets', 'Assets', 'data') ?? [])
         setAssets(arr)
-      } else {
-        setError('Failed to load assets.')
       }
-    } catch (ex) {
-      setError(ex.message)
-    }
+    } catch {}
     setLoading(false)
   }, [])
 
@@ -670,14 +666,6 @@ export default function AssetsPage() {
                   ✕ clear
                 </button>
               )}
-            </div>
-          )}
-
-          {error && (
-            <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
-              <button onClick={load} className="ml-auto text-xs underline">Retry</button>
             </div>
           )}
 

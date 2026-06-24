@@ -77,8 +77,8 @@ function ContactForm() {
       await submitContact(form)
       setSuccess(true)
       setForm({ name: '', email: '', company: '', subject: '', message: '' })
-    } catch (err) {
-      setError(err.message)
+    } catch {
+      setError('Message could not be sent — please try again')
     }
     setSubmitting(false)
   }

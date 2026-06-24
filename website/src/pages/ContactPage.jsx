@@ -63,7 +63,7 @@ export default function ContactPage() {
       setSuccess(true)
       setForm({ name: '', email: '', company: '', subject: '', message: '' })
     } catch (err) {
-      setError(err.message || 'Failed to send message. Please try again.')
+      setError('Failed to send message. Please try again.')
     }
     setSubmitting(false)
   }

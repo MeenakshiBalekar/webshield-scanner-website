@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import {
-  TrendingUp, Loader2, AlertCircle, TrendingDown,
+  TrendingUp, Loader2, TrendingDown,
   Minus, Activity,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
@@ -105,7 +105,6 @@ export default function TrendsPage() {
   const [trendsData, setTrendsData] = useState(null)
   const [scoresData, setScoresData] = useState(null)
   const [loading, setLoading]       = useState(true)
-  const [error, setError]           = useState(null)
 
   useEffect(() => {
     Promise.all([
@@ -114,7 +113,7 @@ export default function TrendsPage() {
     ]).then(([trends, scores]) => {
       setTrendsData(trends)
       setScoresData(scores)
-    }).catch(e => setError(e.message || 'Failed to load trends')).finally(() => setLoading(false))
+    }).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
   const weekly  = field(trendsData, 'weeklyTrend', 'WeeklyTrend', 'trend', 'Trend') ?? []
@@ -144,12 +143,6 @@ export default function TrendsPage() {
         </div>
 
         <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
-
-          {error && (
-            <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
-              <AlertCircle className="w-4 h-4 shrink-0" />{error}
-            </div>
-          )}
 
           {loading ? (
             <div className="flex items-center gap-2 text-gray-400 py-16 justify-center">

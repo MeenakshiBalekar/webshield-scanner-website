@@ -82,7 +82,7 @@ export default function MsspWhiteLabelPage() {
       const tArr = Array.isArray(ts) ? ts : (ts?.tenants ?? ts?.items ?? [])
       setTenants(tArr)
       applyConfig(wl)
-    } catch (e) { setError(e.message) }
+    } catch (e) { setError('Action failed — please try again') }
     finally { setLoading(false) }
   }
 
@@ -133,7 +133,7 @@ export default function MsspWhiteLabelPage() {
       }
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
-    } catch (e) { setSaveErr(e.message) }
+    } catch (e) { setSaveErr('Action failed — please try again') }
     finally { setSaving(false) }
   }
 

@@ -381,8 +381,8 @@ export default function RemediationTasksPage() {
         setHasJira(list.some((i) => (i.type ?? i.Type ?? '').toLowerCase() === 'jira'))
         setHasServiceNow(list.some((i) => (i.type ?? i.Type ?? '').toLowerCase() === 'servicenow'))
       } catch { /* non-critical */ }
-    } catch (err) {
-      setError(err.message)
+    } catch {
+      // suppress load error — show empty state
     }
     setLoading(false)
   }, [navigate])

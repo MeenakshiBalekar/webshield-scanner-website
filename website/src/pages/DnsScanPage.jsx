@@ -141,7 +141,7 @@ export default function DnsScanPage() {
       const data = await startDnsScan(d)
       setResults(data)
     } catch (err) {
-      setError(err.message || 'DNS scan failed')
+      setError('DNS scan failed')
     }
     setScanning(false)
   }

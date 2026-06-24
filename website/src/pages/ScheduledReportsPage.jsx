@@ -59,7 +59,7 @@ function ScheduleModal({ existing, onClose, onSaved }) {
         ? await updateScheduledReport(existing.id ?? existing.Id, payload)
         : await createScheduledReport(payload)
       onSaved(res)
-    } catch (e) { setErr(e.message || 'Save failed') }
+    } catch (e) { setErr('Save failed') }
     setSaving(false)
   }
 
@@ -195,7 +195,6 @@ function ScheduleRow({ schedule, onDelete, onEdit, onSendNow, onToggle }) {
 export default function ScheduledReportsPage() {
   const [schedules, setSchedules] = useState([])
   const [loading, setLoading]     = useState(true)
-  const [error, setError]         = useState(null)
   const [showModal, setShowModal] = useState(false)
   const [editTarget, setEditTarget] = useState(null)
   const [toast, setToast]         = useState(null)
@@ -205,7 +204,7 @@ export default function ScheduledReportsPage() {
   const load = () => {
     getScheduledReports()
       .then((data) => setSchedules(Array.isArray(data) ? data : (data?.schedules ?? [])))
-      .catch((e) => setError(e.message || 'Failed to load'))
+      .catch(() => {})
       .finally(() => setLoading(false))
   }
 
@@ -217,14 +216,14 @@ export default function ScheduledReportsPage() {
       await deleteScheduledReport(id)
       setSchedules((prev) => prev.filter((s) => (s.id ?? s.Id) !== id))
       showToast('Schedule deleted')
-    } catch (e) { showToast(e.message || 'Delete failed', false) }
+    } catch (e) { showToast('Delete failed', false) }
   }
 
   const handleSendNow = async (id) => {
     try {
       await sendReportNow(id)
       showToast('Report sent')
-    } catch (e) { showToast(e.message || 'Send failed', false) }
+    } catch (e) { showToast('Send failed', false) }
   }
 
   const handleToggle = async (id, enable) => {
@@ -237,7 +236,7 @@ export default function ScheduledReportsPage() {
         if ((s.id ?? s.Id) !== id) return s
         return { ...s, isEnabled: enable, IsEnabled: enable }
       }))
-    } catch (e) { showToast(e.message || 'Update failed', false) }
+    } catch (e) { showToast('Update failed', false) }
   }
 
   const handleSaved = () => { setShowModal(false); setEditTarget(null); load(); showToast('Schedule saved') }
@@ -261,12 +260,6 @@ export default function ScheduledReportsPage() {
               <Plus className="w-4 h-4" />Add Schedule
             </button>
           </div>
-
-          {error && (
-            <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm mb-6">
-              <AlertTriangle className="w-4 h-4 shrink-0" />{error}
-            </div>
-          )}
 
           {loading ? (
             <div className="flex items-center gap-2 text-gray-400 py-12 justify-center text-sm">

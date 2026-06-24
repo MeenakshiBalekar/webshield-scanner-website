@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Building2, Plus, Loader2, AlertCircle, Users, Key,
+  Building2, Plus, Loader2, Users, Key,
   ClipboardList, ChevronDown, ChevronUp, Trash2, UserPlus,
   RefreshCw, Check, Crown, Shield, User, CreditCard,
 } from 'lucide-react'
@@ -54,14 +54,14 @@ function MemberRow({ member, orgId, currentUserIsAdmin, onRemoved, onRoleChanged
     if (!confirm(`Remove ${email || name} from this org?`)) return
     setRemoving(true)
     try { await removeOrgMember(orgId, id); onRemoved(id) }
-    catch (e) { alert(e.message || 'Failed to remove member') }
+    catch (e) { alert('Failed to remove member') }
     finally { setRemoving(false) }
   }
 
   const handleRoleChange = async (r) => {
     setChanging(true)
     try { await updateMemberRole(orgId, id, r); onRoleChanged(id, r) }
-    catch (e) { alert(e.message || 'Failed to change role') }
+    catch (e) { alert('Failed to change role') }
     finally { setChanging(false); setNewRole('') }
   }
 
@@ -103,13 +103,12 @@ function MemberRow({ member, orgId, currentUserIsAdmin, onRemoved, onRoleChanged
 function PlanSection({ orgId }) {
   const [plan, setPlan]       = useState(null)
   const [loading, setLoading] = useState(true)
-  const [err, setErr]         = useState(null)
 
   useEffect(() => {
-    setLoading(true); setErr(null)
+    setLoading(true)
     getOrgPlan(orgId)
       .then(data => setPlan(data))
-      .catch(e => setErr(e.message || 'Failed to load plan'))
+      .catch(() => {})
       .finally(() => setLoading(false))
   }, [orgId])
 
@@ -118,7 +117,6 @@ function PlanSection({ orgId }) {
       <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading plan…
     </div>
   )
-  if (err) return <p className="text-xs text-red-400 py-2">{err}</p>
   if (!plan) return null
 
   const planName = field(plan, 'plan', 'Plan', 'planName', 'PlanName') ?? 'Free'
@@ -203,7 +201,7 @@ function OrgCard({ org, onDeleted }) {
       }
       setInviteEmail(''); setInvitedOk(true)
       setTimeout(() => setInvitedOk(false), 3000)
-    } catch (e) { alert(e.message || 'Failed to invite member') }
+    } catch (e) { alert('Failed to invite member') }
     finally { setInviting(false) }
   }
 
@@ -211,7 +209,7 @@ function OrgCard({ org, onDeleted }) {
     if (!confirm(`Delete organization "${name}"? This cannot be undone.`)) return
     setDeleting(true)
     try { await deleteOrg(id); onDeleted(id) }
-    catch (e) { alert(e.message || 'Failed to delete org'); setDeleting(false) }
+    catch (e) { alert('Failed to delete org'); setDeleting(false) }
   }
 
   return (
@@ -340,17 +338,16 @@ function OrgCard({ org, onDeleted }) {
 export default function OrganizationPage() {
   const [orgs, setOrgs]         = useState([])
   const [loading, setLoading]   = useState(true)
-  const [error, setError]       = useState(null)
   const [creating, setCreating] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
   const [newName, setNewName]   = useState('')
   const [newSlug, setNewSlug]   = useState('')
 
   const load = () => {
-    setLoading(true); setError(null)
+    setLoading(true)
     getOrgs()
       .then(data => setOrgs(Array.isArray(data) ? data : (data?.organizations ?? data?.orgs ?? data?.items ?? [])))
-      .catch(e => setError(e.message || 'Failed to load organizations'))
+      .catch(() => {})
       .finally(() => setLoading(false))
   }
 
@@ -364,7 +361,7 @@ export default function OrganizationPage() {
       const org = await createOrg({ name: newName.trim(), slug: newSlug.trim() || undefined })
       setOrgs(o => [org, ...o])
       setNewName(''); setNewSlug(''); setShowCreate(false)
-    } catch (e) { alert(e.message || 'Failed to create org') }
+    } catch (e) { alert('Failed to create org') }
     finally { setCreating(false) }
   }
 
@@ -435,22 +432,13 @@ export default function OrganizationPage() {
             </form>
           )}
 
-          {error && (
-            <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
-              <AlertCircle className="w-4 h-4 shrink-0" />{error}
-              <button onClick={load} className="ml-auto flex items-center gap-1 hover:text-white transition-colors">
-                <RefreshCw className="w-3.5 h-3.5" /> Retry
-              </button>
-            </div>
-          )}
-
           {loading && (
             <div className="flex items-center gap-2 text-gray-400 py-12 justify-center">
               <Loader2 className="w-5 h-5 animate-spin" /> Loading organizations…
             </div>
           )}
 
-          {!loading && !error && orgs.length === 0 && (
+          {!loading && orgs.length === 0 && (
             <div className="text-center py-16 bg-white/3 border border-white/10 rounded-2xl">
               <Building2 className="w-10 h-10 text-gray-600 mx-auto mb-3" />
               <p className="text-white font-semibold">No organizations yet</p>

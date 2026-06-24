@@ -132,7 +132,7 @@ export default function TrustPage() {
     setLoading(true); setError(null); setData(null)
     getTrustData(domain)
       .then(setData)
-      .catch((e) => setError(e.message || 'No trust data found for this domain'))
+      .catch(() => setError('No trust data found for this domain'))
       .finally(() => setLoading(false))
   }, [domain])
 

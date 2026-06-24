@@ -115,7 +115,7 @@ export default function ShadowAiPage() {
       const r = await scanShadowAi(target)
       setResult(r)
     } catch (e) {
-      setError(e.message || 'Scan failed')
+      setError('Scan failed — the service is temporarily unavailable')
     }
     setLoading(false)
   }

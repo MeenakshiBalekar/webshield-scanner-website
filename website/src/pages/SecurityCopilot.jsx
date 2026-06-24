@@ -145,7 +145,7 @@ export default function SecurityCopilot() {
         updateSession(activeId, s => {
           const msgs = [...s.messages]
           const last = msgs[msgs.length - 1]
-          if (last?.role === 'assistant') msgs[msgs.length - 1] = { ...last, content: `Error: ${err.message}` }
+          if (last?.role === 'assistant') msgs[msgs.length - 1] = { ...last, content: err.message?.startsWith('HTTP') ? 'Unable to connect to the AI service — please try again' : `Error: ${'Unknown error'}` }
           return { ...s, messages: msgs }
         })
       }

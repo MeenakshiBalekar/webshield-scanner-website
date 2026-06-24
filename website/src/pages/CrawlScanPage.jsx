@@ -107,7 +107,7 @@ export default function CrawlScanPage() {
       const data = await startCrawlScan({ url: url.trim(), maxDepth, maxPages })
       setResults(data)
     } catch (err) {
-      setError(err.message || 'Crawl scan failed')
+      setError('Crawl scan failed')
     }
     setScanning(false)
   }

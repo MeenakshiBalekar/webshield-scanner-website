@@ -97,7 +97,7 @@ function MarketplaceSection() {
       const url  = field(data, 'redirectUrl', 'RedirectUrl', 'url', 'Url')
       if (url) { window.location.href = url }
       else setAwsDone(true)
-    } catch (e) { setAwsErr(e.message || 'Failed to connect AWS Marketplace') }
+    } catch (e) { setAwsErr('Failed to connect AWS Marketplace') }
     setAwsLoading(false)
   }
 
@@ -108,7 +108,7 @@ function MarketplaceSection() {
       const url  = field(data, 'redirectUrl', 'RedirectUrl', 'url', 'Url')
       if (url) { window.location.href = url }
       else setAzureDone(true)
-    } catch (e) { setAzureErr(e.message || 'Failed to connect Azure Marketplace') }
+    } catch (e) { setAzureErr('Failed to connect Azure Marketplace') }
     setAzureLoading(false)
   }
 
@@ -176,7 +176,6 @@ export default function BillingPage() {
   const [sub, setSub]             = useState(null)
   const [invoices, setInvoices]   = useState([])
   const [loading, setLoading]     = useState(true)
-  const [error, setError]         = useState(null)
   const [portalLoading, setPortal] = useState(false)
   const [portalError, setPortalError] = useState(null)
 
@@ -194,7 +193,6 @@ export default function BillingPage() {
           : invData.value?.invoices ?? invData.value?.Invoices ?? []
         setInvoices(arr)
       }
-      if (subData.status === 'rejected') setError(subData.reason?.message || 'Failed to load subscription')
     } finally {
       setLoading(false)
     }
@@ -210,7 +208,7 @@ export default function BillingPage() {
       if (url) window.open(url, '_blank', 'noopener')
       else setPortalError('Portal URL not returned by server.')
     } catch (err) {
-      setPortalError(err.message || 'Failed to open billing portal.')
+      setPortalError('Failed to open billing portal.')
     }
     setPortal(false)
   }
@@ -253,18 +251,6 @@ export default function BillingPage() {
             <div className="flex items-center justify-center py-16 gap-3">
               <Loader2 className="w-6 h-6 text-crimson-400 animate-spin" />
               <span className="text-gray-400 text-sm">Loading subscription…</span>
-            </div>
-          )}
-
-          {!loading && error && (
-            <div className="flex items-start justify-between gap-4 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                <span>{error}</span>
-              </div>
-              <button onClick={fetchData} className="shrink-0 flex items-center gap-1 text-xs hover:text-white transition-colors">
-                <RefreshCw className="w-3.5 h-3.5" /> Retry
-              </button>
             </div>
           )}
 

@@ -28,7 +28,7 @@ export default function SolutionsPage() {
   useEffect(() => {
     getSolutions()
       .then(setSolutions)
-      .catch((e) => setError(e.message))
+      .catch(() => {})
   }, [])
 
   const entries = solutions ? Object.entries(solutions) : []

@@ -109,7 +109,7 @@ function MetricsPanel({ serverId }) {
   useEffect(() => {
     apiFetch(`/api/servermonitor/${serverId}/metrics?hours=24`)
       .then(setMetrics)
-      .catch((e) => setErr(e.message))
+      .catch(() => {})
       .finally(() => setLoading(false))
   }, [serverId])
 
@@ -265,7 +265,7 @@ function RegisterModal({ onClose, onRegistered }) {
       setResult(res)
       onRegistered(res)
     } catch (e) {
-      setErr(e.message)
+      setErr('Action failed — please try again')
     }
     setLoading(false)
   }
@@ -346,7 +346,7 @@ function LiveMonitors() {
   useEffect(() => {
     apiFetch('/api/servermonitor')
       .then((d) => setServers(Array.isArray(d) ? d : (d.servers ?? d.items ?? [])))
-      .catch((e) => setErr(e.message))
+      .catch(() => {})
   }, [])
 
   const handleRegistered = (s) => setServers((prev) => [s, ...(prev ?? [])])
@@ -409,7 +409,7 @@ function AgentScanRow({ scan, onDelete }) {
     if (!open && !detail) {
       setLoading(true); setErr(null)
       try { setDetail(await apiFetch(`/api/agentscan/${id}`)) }
-      catch (e) { setErr(e.message) }
+      catch (e) { setErr('Action failed — please try again') }
       setLoading(false)
     }
     setOpen((v) => !v)
@@ -498,7 +498,7 @@ function UploadPanel({ onUploaded }) {
       onUploaded(res)
       setTimeout(() => setOk(false), 3000)
     } catch (e) {
-      setErr(e.message)
+      setErr('Action failed — please try again')
     }
     setLoading(false)
   }
@@ -564,7 +564,7 @@ function AgentScanReports() {
   useEffect(() => {
     apiFetch('/api/agentscan')
       .then((d) => setScans(Array.isArray(d) ? d : (d.scans ?? d.items ?? [])))
-      .catch((e) => setErr(e.message))
+      .catch(() => {})
   }, [])
 
   const handleUploaded = (report) => { setScans((prev) => [report, ...(prev ?? [])]); setShowUpload(false) }

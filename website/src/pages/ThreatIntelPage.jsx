@@ -54,7 +54,7 @@ function AttackMapperTab() {
         ? { cveIds: input.split(/[\n,\s]+/).map(s => s.trim()).filter(s => /CVE-\d{4}-\d+/i.test(s)) }
         : { findings: input.trim() }
       setResult(await mapAttackTechniques(payload))
-    } catch (e) { setError(e.message || 'ATT&CK mapping failed') }
+    } catch (e) { setError('ATT&CK mapping failed') }
     setLoad(false)
   }
 
@@ -162,7 +162,7 @@ function IocCheckerTab() {
     if (!indicators.length) return
     setLoad(true); setError(null); setResult(null)
     try { setResult(await checkIocs(indicators)) }
-    catch (e) { setError(e.message || 'IOC check failed') }
+    catch (e) { setError('IOC check failed') }
     setLoad(false)
   }
 
@@ -294,7 +294,7 @@ function ShodanLookupTab() {
     if (!target) return
     setLoad(true); setError(null); setResult(null)
     try { setResult(await getShodanHost(target)) }
-    catch (e) { setError(e.message || 'Shodan lookup failed') }
+    catch (e) { setError('Shodan lookup failed') }
     setLoad(false)
   }
 

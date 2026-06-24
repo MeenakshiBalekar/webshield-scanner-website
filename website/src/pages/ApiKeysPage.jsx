@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import {
-  Key, Plus, Loader2, AlertCircle, Copy, Check, RotateCcw,
+  Key, Plus, Loader2, Copy, Check, RotateCcw,
   Trash2, Eye, EyeOff, ShieldCheck, RefreshCw,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
@@ -89,7 +89,7 @@ function KeyRow({ apiKey, orgId, onRevoked, onRotated }) {
     if (!confirm(`Revoke key "${name}"? This cannot be undone.`)) return
     setRevoking(true)
     try { await revokeApiKey(orgId, id); onRevoked(id) }
-    catch (e) { alert(e.message || 'Failed to revoke key') }
+    catch (e) { alert('Failed to revoke key') }
     finally { setRevoking(false) }
   }
 
@@ -101,7 +101,7 @@ function KeyRow({ apiKey, orgId, onRevoked, onRotated }) {
       const newKey = field(res, 'key', 'Key', 'apiKey', 'ApiKey', 'value', 'Value')
       if (newKey) setRotatedKey(newKey)
       onRotated(id, res)
-    } catch (e) { alert(e.message || 'Failed to rotate key') }
+    } catch (e) { alert('Failed to rotate key') }
     finally { setRotating(false) }
   }
 
@@ -177,7 +177,6 @@ export default function ApiKeysPage() {
 
   const [keys, setKeys]       = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError]     = useState(null)
   const [creating, setCreating] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [newName, setNewName] = useState('')
@@ -186,10 +185,10 @@ export default function ApiKeysPage() {
 
   const load = () => {
     if (!orgId) { setLoading(false); return }
-    setLoading(true); setError(null)
+    setLoading(true)
     getApiKeys(orgId)
       .then(data => setKeys(Array.isArray(data) ? data : (data?.keys ?? data?.apiKeys ?? data?.items ?? [])))
-      .catch(e => setError(e.message || 'Failed to load API keys'))
+      .catch(() => {})
       .finally(() => setLoading(false))
   }
 
@@ -210,7 +209,7 @@ export default function ApiKeysPage() {
       setKeys(k => [typeof keyObj === 'object' ? keyObj : { id: Date.now(), name: newName, scopes: selectedScopes }, ...k])
       if (rawKey) setNewApiKey(rawKey)
       setNewName(''); setSelectedScopes(['read:scans']); setShowForm(false)
-    } catch (e) { alert(e.message || 'Failed to create key') }
+    } catch (e) { alert('Failed to create key') }
     finally { setCreating(false) }
   }
 
@@ -304,19 +303,13 @@ export default function ApiKeysPage() {
             </form>
           )}
 
-          {error && (
-            <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
-              <AlertCircle className="w-4 h-4 shrink-0" />{error}
-            </div>
-          )}
-
           {loading && (
             <div className="flex items-center gap-2 text-gray-400 py-12 justify-center">
               <Loader2 className="w-5 h-5 animate-spin" /> Loading API keys…
             </div>
           )}
 
-          {!loading && !error && keys.length === 0 && (
+          {!loading && keys.length === 0 && (
             <div className="text-center py-16 bg-white/3 border border-white/10 rounded-2xl">
               <Key className="w-10 h-10 text-gray-600 mx-auto mb-3" />
               <p className="text-white font-semibold">No API keys yet</p>

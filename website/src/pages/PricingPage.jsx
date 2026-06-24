@@ -155,7 +155,7 @@ export default function PricingPage() {
       const redirectUrl = data?.url ?? data?.Url ?? data?.checkoutUrl ?? data?.CheckoutUrl
       if (redirectUrl) window.location.href = redirectUrl
     } catch (e) {
-      setError(e.message || 'Checkout failed. Please try again.')
+      setError('Checkout failed. Please try again.')
     }
     setCheckoutLoading(false)
   }

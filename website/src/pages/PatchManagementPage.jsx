@@ -161,7 +161,7 @@ function DeployModal({ pkg, cves, onClose, onDeployed }) {
       await deployPatch({ agentId, packageName: pkg.name, cveIds })
       setDone(true)
       onDeployed?.()
-    } catch (e) { setError(e.message || 'Deploy failed') }
+    } catch (e) { setError('Deploy failed') }
     setDep(false)
   }
 
@@ -260,7 +260,7 @@ function CveLookupTab() {
     if (!ids.length) { setError('Enter at least one CVE ID (e.g. CVE-2024-1234)'); return }
     setLoad(true); setError(null); setResult(null)
     try { setResult(await lookupCves(ids)) }
-    catch (e) { setError(e.message || 'CVE lookup failed') }
+    catch (e) { setError('CVE lookup failed') }
     setLoad(false)
   }
 
@@ -350,7 +350,7 @@ function SoftwareAuditTab({ onDeployCreated }) {
     if (!validRows.length) { setError('Add at least one package'); return }
     setLoad(true); setError(null); setResult(null)
     try { setResult(await auditSoftware({ os, software: validRows })) }
-    catch (e) { setError(e.message || 'Software audit failed') }
+    catch (e) { setError('Software audit failed') }
     setLoad(false)
   }
 
@@ -516,7 +516,7 @@ function BulletinsTab() {
       const data = await getPatchBulletins(d ?? days)
       const list = Array.isArray(data) ? data : (data?.bulletins ?? data?.Bulletins ?? data?.items ?? data?.Items ?? [])
       setBulletins(list)
-    } catch (e) { setError(e.message || 'Failed to load bulletins') }
+    } catch { }
     setLoad(false)
   }
 
@@ -640,7 +640,7 @@ function DeploymentsTab({ refreshTrigger }) {
       setJobs(list)
       return list
     } catch (e) {
-      setError(e.message || 'Failed to load deployments')
+      setError('Failed to load deployments')
       return []
     } finally {
       if (!silent) setLoad(false)

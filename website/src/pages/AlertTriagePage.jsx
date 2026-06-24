@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import {
-  Bell, CheckCircle2, XCircle, Eye, Loader2, AlertTriangle,
+  Bell, CheckCircle2, XCircle, Eye, Loader2,
   Copy, Check, ChevronDown, ChevronUp, Brain,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
@@ -138,7 +138,6 @@ function AlertCard({ alert, onAction }) {
 export default function AlertTriagePage() {
   const [alerts, setAlerts]   = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError]     = useState(null)
   const [filter, setFilter]   = useState('open')
 
   useEffect(() => {
@@ -147,7 +146,7 @@ export default function AlertTriagePage() {
         const list = Array.isArray(data) ? data : (data?.alerts ?? data?.items ?? data?.triage ?? [])
         setAlerts(list)
       })
-      .catch((e) => setError(e.message || 'Failed to load triage data'))
+      .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
 
@@ -218,13 +217,7 @@ export default function AlertTriagePage() {
             </div>
           )}
 
-          {error && (
-            <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm mb-6">
-              <AlertTriangle className="w-4 h-4 shrink-0" />{error}
-            </div>
-          )}
-
-          {!loading && !error && visible.length === 0 && (
+          {!loading && visible.length === 0 && (
             <div className="text-center py-16 text-gray-500">
               <CheckCircle2 className="w-10 h-10 mx-auto mb-3 text-green-500/50" />
               <p className="font-semibold text-white">All clear!</p>

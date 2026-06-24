@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import {
-  Layers, Loader2, AlertTriangle, ArrowUpRight, ExternalLink,
+  Layers, Loader2, ArrowUpRight, ExternalLink,
   ShieldAlert, CheckCircle2, Search,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -84,7 +84,6 @@ export default function PortfolioPage() {
   const [assets, setAssets]   = useState([])
   const [scoreMap, setScoreMap] = useState({})
   const [loading, setLoading] = useState(true)
-  const [error, setError]     = useState(null)
   const [search, setSearch]   = useState('')
   const [tierFilter, setTierFilter] = useState('All')
 
@@ -102,7 +101,7 @@ export default function PortfolioPage() {
         })
         setScoreMap(map)
       })
-      .catch((e) => setError(e.message || 'Failed to load portfolio'))
+      .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
 
@@ -170,12 +169,6 @@ export default function PortfolioPage() {
               </button>
             )}
           </div>
-
-          {error && (
-            <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm mb-6">
-              <AlertTriangle className="w-4 h-4 shrink-0" />{error}
-            </div>
-          )}
 
           {loading ? (
             <div className="flex items-center gap-2 text-gray-400 py-12 justify-center text-sm">

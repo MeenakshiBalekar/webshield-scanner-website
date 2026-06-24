@@ -137,7 +137,7 @@ export default function BizLogicPage() {
       }
       setResults(await res.json())
     } catch (err) {
-      setError(err.message || 'Scan failed')
+      setError('Scan failed')
     }
     setScanning(false)
   }

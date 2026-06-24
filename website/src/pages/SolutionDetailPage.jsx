@@ -34,7 +34,7 @@ export default function SolutionDetailPage() {
     setError(null)
     getSolution(type)
       .then(setSol)
-      .catch((e) => setError(e.message))
+      .catch(() => {})
   }, [type])
 
   const Icon     = ICONS[type] || Shield

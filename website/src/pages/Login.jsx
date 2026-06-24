@@ -82,7 +82,7 @@ export default function Login() {
       }
       navigate(redirect)
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Authentication failed')
+      setError(err.response?.data?.message || 'Authentication failed')
     }
     setLoading(false)
   }

@@ -154,8 +154,8 @@ export default function AutoScanPage() {
       if (!res.ok) throw new Error(`Server error ${res.status}`)
       const data = await res.json()
       setAssets(Array.isArray(data) ? data : (data.assets ?? data.Assets ?? data.items ?? data.Items ?? data.scans ?? []))
-    } catch (err) {
-      setError(err.message)
+    } catch {
+      // suppress load error — show empty state
     }
     setLoading(false)
   }, [navigate])
@@ -192,8 +192,8 @@ export default function AutoScanPage() {
         throw new Error(d.message ?? d.error ?? 'Failed')
       }
       await fetchAssets()
-    } catch (err) {
-      setError(err.message)
+    } catch {
+      setError('Toggle failed — please try again')
     }
     setAllToggling(false)
   }

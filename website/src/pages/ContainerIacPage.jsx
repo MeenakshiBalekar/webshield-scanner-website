@@ -150,7 +150,7 @@ export default function ContainerIacPage() {
       fd.append('type', fileType)
       const data = await scanIacFile(fd)
       setResult(data)
-    } catch (e) { setError(e.message || 'Scan failed') }
+    } catch (e) { setError('Scan failed') }
     setScanning(false)
   }
 

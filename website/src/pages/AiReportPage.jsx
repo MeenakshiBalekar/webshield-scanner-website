@@ -70,7 +70,7 @@ export default function AiReportPage() {
       setReport(r)
       setTimeout(() => reportRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
     } catch (e) {
-      setError(e.message || 'Failed to generate report')
+      setError('Failed to generate report')
     }
     setLoading(false)
   }

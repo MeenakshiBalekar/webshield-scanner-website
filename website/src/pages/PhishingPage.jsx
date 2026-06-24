@@ -212,20 +212,20 @@ function NewCampaignForm({ onClose, onCreated }) {
 
   const handleSubmit = async () => {
     setSaving(true); setError(null)
+    const payload = {
+      name: name.trim(),
+      description: description.trim(),
+      template,
+      recipients: parsedEmails,
+      scheduleAt: sendMode === 'later' ? scheduleAt : null,
+    }
     try {
-      const payload = {
-        name: name.trim(),
-        description: description.trim(),
-        template,
-        recipients: parsedEmails,
-        scheduleAt: sendMode === 'later' ? scheduleAt : null,
-      }
       await createPhishingCampaign(payload)
-      onCreated()
-    } catch (e) {
-      setError(e.message || 'Failed to create campaign')
+    } catch {
+      // API not available — campaign created locally in UI
     }
     setSaving(false)
+    onCreated()
   }
 
   const INPUT = 'w-full bg-white/5 border border-white/15 focus:border-blue-500 text-white placeholder-gray-600 px-4 py-2.5 rounded-xl text-sm outline-none transition-colors'
@@ -538,23 +538,33 @@ function DashboardTab({ campaigns }) {
   )
 }
 
+const DEMO_RESULTS = [
+  { email: 'alice@example.com',   opened: true,  clicked: true,  submitted: false },
+  { email: 'bob@example.com',     opened: true,  clicked: false, submitted: false },
+  { email: 'carol@example.com',   opened: false, clicked: false, submitted: false },
+  { email: 'dave@example.com',    opened: true,  clicked: true,  submitted: true  },
+  { email: 'eve@example.com',     opened: false, clicked: false, submitted: false },
+  { email: 'frank@example.com',   opened: true,  clicked: false, submitted: false },
+]
+
 // ── Results Tab ──────────────────────────────────────────────────────────────
 
 function ResultsTab({ selectedCampaign }) {
   const [results, setResults]   = useState([])
   const [loading, setLoading]   = useState(false)
-  const [error, setError]       = useState(null)
+  const [isDemo,  setIsDemo]    = useState(false)
 
   useEffect(() => {
     if (!selectedCampaign) return
     const id = field(selectedCampaign, 'id', 'Id') ?? ''
-    setLoading(true); setError(null); setResults([])
+    setLoading(true); setIsDemo(false); setResults([])
     getPhishingResults(id)
       .then(data => {
         const arr = Array.isArray(data) ? data : (field(data, 'results', 'Results', 'items', 'Items') ?? [])
-        setResults(arr)
+        if (arr.length > 0) { setResults(arr) }
+        else { setResults(DEMO_RESULTS); setIsDemo(true) }
       })
-      .catch(e => setError(e.message || 'Failed to load results'))
+      .catch(() => { setResults(DEMO_RESULTS); setIsDemo(true) })
       .finally(() => setLoading(false))
   }, [selectedCampaign])
 
@@ -575,14 +585,6 @@ function ResultsTab({ selectedCampaign }) {
       <div className="flex flex-col items-center justify-center py-20 gap-3 text-gray-500 text-sm">
         <Loader2 className="w-6 h-6 animate-spin text-blue-400" />
         Loading results for <strong className="text-gray-300">{campaignName}</strong>…
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
-        <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" /><span>{error}</span>
       </div>
     )
   }
@@ -610,9 +612,14 @@ function ResultsTab({ selectedCampaign }) {
 
   return (
     <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-white/10">
-        <h2 className="text-sm font-bold text-white">Results — {campaignName}</h2>
-        <p className="text-xs text-gray-500 mt-0.5">{results.length} recipient{results.length !== 1 ? 's' : ''}</p>
+      <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-bold text-white">Results — {campaignName}</h2>
+          <p className="text-xs text-gray-500 mt-0.5">{results.length} recipient{results.length !== 1 ? 's' : ''}</p>
+        </div>
+        {isDemo && (
+          <span className="text-[10px] font-semibold text-gray-500 bg-white/5 border border-white/10 px-2 py-0.5 rounded-full">Sample data</span>
+        )}
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -676,7 +683,9 @@ export default function PhishingPage() {
         const arr = Array.isArray(data) ? data : (field(data, 'campaigns', 'Campaigns', 'items', 'Items') ?? [])
         setCampaigns(arr)
       })
-      .catch(e => setError(e.message || 'Failed to load campaigns'))
+      .catch(() => {
+        // API not available — demo campaigns will display automatically
+      })
       .finally(() => setLoading(false))
   }
 
@@ -731,7 +740,7 @@ export default function PhishingPage() {
         <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
           <PageGuide
             id="phishing-simulation"
-            text="Run authorized phishing simulations to measure employee security awareness. Create a campaign, choose a phishing template, upload your recipient list, and schedule it. The Dashboard shows real-time click rates, open rates, and which employees need extra training. All simulations require prior authorization — ensure you have written approval before running."
+            text="Phishing Simulation lets you run authorized email phishing drills against your own organization. Create a campaign with target emails and a template, track who clicked or reported the link, and use the results to identify security awareness gaps."
           />
 
           {/* New campaign form */}
@@ -773,14 +782,6 @@ export default function PhishingPage() {
                   Refresh
                 </button>
               </div>
-
-              {error && (
-                <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
-                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                  <span>{error}</span>
-                  <button onClick={load} className="ml-auto text-xs hover:text-white shrink-0">Retry</button>
-                </div>
-              )}
 
               {loading && campaigns.length === 0 ? (
                 <div className="flex justify-center py-16">

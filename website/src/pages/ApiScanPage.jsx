@@ -156,7 +156,7 @@ function UrlTab() {
     if (!target) return
     setLoading(true); setError(null); setResult(null)
     try { setResult(await startApiScan(target)) }
-    catch (e) { setError(e.message || 'API scan failed') }
+    catch (e) { setError('API scan failed') }
     setLoading(false)
   }
 
@@ -209,7 +209,7 @@ function SpecTab() {
     if (!specContent.trim()) return
     setLoading(true); setError(null); setResult(null)
     try { setResult(await startApiSpecScan({ specContent: specContent.trim(), baseUrl: baseUrl.trim() })) }
-    catch (e) { setError(e.message || 'Spec scan failed') }
+    catch (e) { setError('Spec scan failed') }
     setLoading(false)
   }
 

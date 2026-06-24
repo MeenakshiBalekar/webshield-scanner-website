@@ -30,7 +30,7 @@ function SchedulesTab() {
         const list = Array.isArray(data) ? data : (field(data, 'schedules', 'Schedules', 'items', 'Items') ?? [])
         setSchedules(list)
       })
-      .catch(e => setError(e.message || 'Failed to load schedules'))
+      .catch(() => {})
       .finally(() => setLoading(false))
   }
 
@@ -145,7 +145,7 @@ function AlertConfigTab() {
       setThreshold(field(data, 'threshold', 'Threshold', 'scoreDrop', 'ScoreDrop') ?? 5)
       setSlackUrl(field(data, 'slackWebhookUrl', 'SlackWebhookUrl', 'slack', 'Slack') ?? '')
       setTeamsUrl(field(data, 'teamsWebhookUrl', 'TeamsWebhookUrl', 'teams', 'Teams') ?? '')
-    } catch (e) { setLoadErr(e.message || 'No config found for this domain') }
+    } catch { setLoadErr('No alert config found for this domain yet') }
     setFetching(false)
   }
 
@@ -158,7 +158,7 @@ function AlertConfigTab() {
       await saveDomainAlertConfig(d, { threshold, slackWebhookUrl: slackUrl, teamsWebhookUrl: teamsUrl })
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
-    } catch (e) { setSaveErr(e.message || 'Save failed') }
+    } catch (e) { setSaveErr('Save failed') }
     setSaving(false)
   }
 
@@ -179,7 +179,7 @@ function AlertConfigTab() {
             {fetching ? 'Loading…' : 'Load'}
           </button>
         </div>
-        {loadErr && <p className="text-xs text-amber-400 mt-2">{loadErr} — you can still configure alerts below</p>}
+        {loadErr && <p className="text-xs text-amber-400 mt-2">{loadErr} — you can configure one below</p>}
       </div>
 
       {/* Config form */}
@@ -349,7 +349,7 @@ export default function MonitoringPage() {
     try {
       const data = await getMonitoringTimeline(target)
       setTimeline(data)
-    } catch (e) { setError(e.message || 'No timeline data found') }
+    } catch { setError('No timeline data found for this period') }
     setLoading(false)
   }
 

@@ -72,7 +72,7 @@ function NewRuleModal({ onClose, onCreated }) {
     if (!form.name.trim() || !form.condition.trim()) { setError('Name and condition are required'); return }
     setSave(true); setError(null)
     try { onCreated(await createEdrRule(form)); onClose() }
-    catch (e) { setError(e.message || 'Failed to create rule') }
+    catch (e) { setError('Failed to create rule') }
     setSave(false)
   }
 
@@ -157,7 +157,7 @@ function AlertsTab() {
       if (statFilter) params.status   = statFilter
       const data = await getEdrAlerts(params)
       setAlerts(Array.isArray(data) ? data : (data?.alerts ?? data?.Alerts ?? data?.items ?? data?.Items ?? []))
-    } catch (e) { setError(e.message || 'Failed to load alerts') }
+    } catch { }
     setLoad(false)
   }, [sevFilter, statFilter])
 
@@ -170,7 +170,7 @@ function AlertsTab() {
       setAlerts(prev => prev.map(a =>
         (field(a, 'alertId', 'AlertId', 'id', 'Id') === id) ? { ...a, status, Status: status } : a
       ))
-    } catch (e) { alert(e.message || 'Update failed') }
+    } catch (e) { alert('Update failed') }
     setUpd(u => ({ ...u, [id]: false }))
   }
 
@@ -311,7 +311,7 @@ function RulesTab() {
     try {
       const data = await getEdrRules()
       setRules(Array.isArray(data) ? data : (data?.rules ?? data?.Rules ?? data?.items ?? data?.Items ?? []))
-    } catch (e) { setError(e.message || 'Failed to load rules') }
+    } catch { }
     setLoad(false)
   }, [])
 
@@ -327,7 +327,7 @@ function RulesTab() {
         const cur = field(r, 'enabled', 'Enabled', 'isEnabled', 'IsEnabled') ?? true
         return { ...r, enabled: !cur, Enabled: !cur, isEnabled: !cur }
       }))
-    } catch (e) { alert(e.message || 'Toggle failed') }
+    } catch (e) { alert('Toggle failed') }
     setTog(t => ({ ...t, [id]: false }))
   }
 
@@ -335,7 +335,7 @@ function RulesTab() {
     if (!window.confirm('Delete this custom rule?')) return
     setDel(d => ({ ...d, [id]: true }))
     try { await deleteEdrRule(id); setRules(prev => prev.filter(r => field(r, 'ruleId', 'RuleId', 'id', 'Id') !== id)) }
-    catch (e) { alert(e.message || 'Delete failed') }
+    catch (e) { alert('Delete failed') }
     setDel(d => ({ ...d, [id]: false }))
   }
 
@@ -434,7 +434,7 @@ function AnalyzeTab() {
     if (!selected) return
     setLoad(true); setError(null); setResult(null)
     try { setResult(await analyzeAgent(selected)) }
-    catch (e) { setError(e.message || 'Analysis failed') }
+    catch (e) { setError('Analysis failed') }
     setLoad(false)
   }
 
@@ -630,7 +630,7 @@ function BehavioralTab() {
     if (!selected) return
     setLoad(true); setError(null); setResult(null)
     try { setResult(await runBehavioralAnalysis(selected)) }
-    catch (e) { setError(e.message || 'Analysis failed') }
+    catch (e) { setError('Analysis failed') }
     setLoad(false)
   }
 

@@ -97,7 +97,7 @@ function ConfigCard({ config, platforms, onDelete, onToggle, onTestDone }) {
       const msg     = field(data, 'message', 'Message') ?? 'Connection successful'
       setTestResult({ ok: true, msg, latencyMs: latency })
     } catch (e) {
-      setTestResult({ ok: false, msg: e.message || 'Test failed' })
+      setTestResult({ ok: false, msg: 'Connection test failed — check your SIEM endpoint and credentials' })
     }
     setTesting(false)
     if (onTestDone) onTestDone()
@@ -186,7 +186,7 @@ function AddConfigForm({ platforms, onSaved, onCancel }) {
     try {
       const saved = await createSiemConfig({ platform: activeTab, name: name || platform?.name, ...form })
       onSaved(saved)
-    } catch (e) { setErr(e.message || 'Save failed') }
+    } catch { setErr('Save failed — please try again') }
     setSaving(false)
   }
 

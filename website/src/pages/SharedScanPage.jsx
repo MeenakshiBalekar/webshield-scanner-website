@@ -45,7 +45,7 @@ export default function SharedScanPage() {
   useEffect(() => {
     getSharedScan(token)
       .then(setScan)
-      .catch((e) => setError(e.message || 'This link has expired or is invalid.'))
+      .catch((e) => setError('This link has expired or is invalid.'))
       .finally(() => setLoading(false))
   }, [token])
 

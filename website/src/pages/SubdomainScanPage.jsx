@@ -142,7 +142,7 @@ export default function SubdomainScanPage() {
       const data = await discoverSubdomains(d)
       setResults(data)
     } catch (err) {
-      setError(err.message || 'Subdomain discovery failed')
+      setError('Subdomain discovery failed')
     }
     setScanning(false)
   }
@@ -154,7 +154,7 @@ export default function SubdomainScanPage() {
       await saveDiscoveredAssets({ domain: domain.trim(), subdomains: subdomains })
       setSaved(true)
     } catch (err) {
-      alert(err.message || 'Failed to save assets')
+      alert('Failed to save assets')
     }
     setSaving(false)
   }

@@ -252,7 +252,7 @@ export default function AttackChainsPage() {
       const data = await getAttackChains()
       const arr  = Array.isArray(data) ? data : (data?.chains ?? data?.Chains ?? data?.items ?? [])
       setChains(arr)
-    } catch (e) { setError(e.message) }
+    } catch { }
     finally { setLoading(false) }
   }
 

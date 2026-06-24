@@ -184,7 +184,7 @@ export default function SbomPage() {
       }
       setFile(null)
       loadList()
-    } catch (e) { setImportErr(e.message || 'Import failed') }
+    } catch (e) { setImportErr('Import failed') }
     setImporting(false)
   }
 

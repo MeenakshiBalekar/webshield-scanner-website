@@ -30,7 +30,7 @@ function SchedulesTab() {
         const list = Array.isArray(data) ? data : (field(data, 'schedules', 'Schedules', 'items', 'Items') ?? [])
         setSchedules(list)
       })
-      .catch(e => setError(e.message || 'Failed to load schedules'))
+      .catch(() => {})
       .finally(() => setLoading(false))
   }
 
@@ -158,7 +158,7 @@ function AlertConfigTab() {
       await saveDomainAlertConfig(d, { threshold, slackWebhookUrl: slackUrl, teamsWebhookUrl: teamsUrl })
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
-    } catch (e) { setSaveErr(e.message || 'Save failed') }
+    } catch (e) { setSaveErr('Save failed') }
     setSaving(false)
   }
 
@@ -349,7 +349,7 @@ export default function MonitoringPage() {
     try {
       const data = await getMonitoringTimeline(target)
       setTimeline(data)
-    } catch (e) { setError(e.message || 'No timeline data found') }
+    } catch { setError('No timeline data found for this period') }
     setLoading(false)
   }
 

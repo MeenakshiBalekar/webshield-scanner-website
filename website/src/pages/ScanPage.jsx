@@ -85,8 +85,8 @@ export default function ScanPage() {
     try {
       const result = await startScan(target, deepScan ? { mode: 'Deep' } : {})
       navigate('/scanner/results', { state: { scan: result, scanType, deepScan } })
-    } catch (err) {
-      setError(err.message)
+    } catch {
+      setError('Scan failed — please try again')
       setScanning(false)
     }
   }

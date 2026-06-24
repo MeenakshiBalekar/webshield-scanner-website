@@ -104,7 +104,7 @@ export default function WhiteLabelPage() {
       await saveWhiteLabel(payload())
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
-    } catch (e) { setSaveErr(e.message || 'Save failed') }
+    } catch { setSaveErr('Save failed — please try again') }
     setSaving(false)
   }
 
@@ -124,7 +124,7 @@ export default function WhiteLabelPage() {
       const html = await res.text()
       setPreviewHtml(html)
       setShowPreview(true)
-    } catch (e) { setError(e.message || 'Preview failed') }
+    } catch { setError('Preview failed — please try again') }
     setPreviewing(false)
   }
 

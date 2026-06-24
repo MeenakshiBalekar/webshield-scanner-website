@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Shield, Plus, AlertCircle, BarChart3, Target,
+  Shield, Plus, BarChart3, Target,
   Server, Calendar, TrendingUp, ArrowRight, AlertTriangle, TrendingDown, Minus,
 } from 'lucide-react'
 import { getDashboard, getScans, getRemediations, getExploitForecast, getTrend, getPortfolioTrend } from '../services/api'
@@ -196,7 +196,7 @@ function ScoreTrendWidget() {
     if (!trendUrl.trim()) return
     setLoading(true); setErr(null); setData(null)
     try { setData(await getTrend(trendUrl.trim())) }
-    catch (e) { setErr(e.message || 'Failed to load trend') }
+    catch { }
     setLoading(false)
   }
 
@@ -408,12 +408,11 @@ const PRODUCTS = [
 
 export default function DashboardPage() {
   const [data, setData] = useState(null)
-  const [error, setError] = useState(null)
 
   useEffect(() => {
     getDashboard()
       .then(setData)
-      .catch((e) => setError(e.message))
+      .catch(() => {})
   }, [])
 
   const fmt = (iso) => iso ? new Date(iso).toLocaleDateString() : '—'
@@ -433,14 +432,7 @@ export default function DashboardPage() {
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 pt-24 pb-10">
         <h1 className="text-2xl font-bold text-white mb-8">Dashboard</h1>
 
-        {error && (
-          <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm mb-6">
-            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {!data && !error && (
+        {!data && (
           <div className="flex justify-center py-20">
             <span className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
           </div>

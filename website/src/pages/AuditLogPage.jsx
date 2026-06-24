@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import {
-  ClipboardList, Loader2, AlertCircle, Download, ChevronLeft,
+  ClipboardList, Loader2, Download, ChevronLeft,
   ChevronRight, Filter, RefreshCw, CheckCircle2, XCircle,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
@@ -47,7 +47,6 @@ export default function AuditLogPage() {
   const [total, setTotal]       = useState(0)
   const [page, setPage]         = useState(1)
   const [loading, setLoading]   = useState(true)
-  const [error, setError]       = useState(null)
   const [exporting, setExporting] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
 
@@ -59,7 +58,7 @@ export default function AuditLogPage() {
   }
 
   const loadEvents = useCallback(() => {
-    setLoading(true); setError(null)
+    setLoading(true)
     const params = { ...filters, page, pageSize: PAGE_SIZE }
     getAuditLog(params)
       .then(data => {
@@ -68,7 +67,7 @@ export default function AuditLogPage() {
         setEvents(list)
         setTotal(count)
       })
-      .catch(e => setError(e.message || 'Failed to load audit log'))
+      .catch(() => {})
       .finally(() => setLoading(false))
   }, [filters, page])
 
@@ -83,7 +82,7 @@ export default function AuditLogPage() {
       const a    = document.createElement('a')
       a.href = url; a.download = `audit-log-${new Date().toISOString().split('T')[0]}.csv`
       a.click(); URL.revokeObjectURL(url)
-    } catch (e) { alert(e.message || 'Export failed') }
+    } catch (e) { alert('Export failed') }
     finally { setExporting(false) }
   }
 
@@ -211,11 +210,6 @@ export default function AuditLogPage() {
             )}
           </div>
 
-          {error && (
-            <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
-              <AlertCircle className="w-4 h-4 shrink-0" />{error}
-            </div>
-          )}
 
           {/* Table */}
           <div className="bg-white/3 border border-white/10 rounded-2xl overflow-hidden">

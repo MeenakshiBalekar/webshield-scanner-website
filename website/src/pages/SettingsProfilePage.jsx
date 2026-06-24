@@ -229,7 +229,7 @@ export default function SettingsProfilePage() {
       setNotifFb({ ok: true, msg: 'Saved.' })
     } catch (e) {
       setNotifPrefs(p => ({ ...p, [key]: !next }))
-      setNotifFb({ ok: false, msg: e.message || 'Failed to save.' })
+      setNotifFb({ ok: false, msg: 'Failed to save.' })
     }
     setNotifSaving(null)
     setTimeout(() => setNotifFb(null), 3000)
@@ -269,7 +269,7 @@ export default function SettingsProfilePage() {
       setProfile((p) => ({ ...p, name: name.trim() }))
       setNameFb({ ok: true, msg: 'Name updated.' })
     } catch (e) {
-      setNameFb({ ok: false, msg: e.message || 'Failed to save name.' })
+      setNameFb({ ok: false, msg: 'Failed to save name.' })
     }
     setSavingName(false)
   }
@@ -289,7 +289,7 @@ export default function SettingsProfilePage() {
         updateUser({ profilePictureUrl: url })
       }
     } catch (e) {
-      setNameFb({ ok: false, msg: e.message || 'Avatar upload failed.' })
+      setNameFb({ ok: false, msg: 'Avatar upload failed.' })
     }
     setAvatarUploading(false)
   }
@@ -305,7 +305,7 @@ export default function SettingsProfilePage() {
       setPwFb({ ok: true, msg: 'Password changed.' })
       setPw({ current: '', new: '', confirm: '' })
     } catch (e) {
-      setPwFb({ ok: false, msg: e.message || 'Failed to change password.' })
+      setPwFb({ ok: false, msg: 'Failed to change password.' })
     }
     setSavingPw(false)
   }
@@ -318,7 +318,7 @@ export default function SettingsProfilePage() {
       const portalUrl = data?.url ?? data?.Url ?? data?.portalUrl ?? data?.PortalUrl
       if (portalUrl) window.location.href = portalUrl
     } catch (e) {
-      alert(e.message || 'Could not open billing portal. Please try again.')
+      alert('Could not open billing portal. Please try again.')
     }
     setPortalLoading(false)
   }
@@ -334,7 +334,7 @@ export default function SettingsProfilePage() {
       a.download = `webshield-data-${new Date().toISOString().split('T')[0]}.json`
       document.body.appendChild(a); a.click(); a.remove()
       URL.revokeObjectURL(url)
-    } catch (e) { alert(e.message || 'Export failed') }
+    } catch (e) { alert('Export failed') }
     setExporting(false)
   }
 
@@ -346,7 +346,7 @@ export default function SettingsProfilePage() {
       logout()
       navigate('/')
     } catch (e) {
-      alert(e.message || 'Failed to delete account.')
+      alert('Failed to delete account.')
       setDeleting(false)
       setShowDelete(false)
     }

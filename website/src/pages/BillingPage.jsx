@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Shield, CreditCard, Calendar, CheckCircle2,
+  Shield, CreditCard, Calendar, CheckCircle2, AlertCircle,
   Loader2, ExternalLink, RefreshCw, XCircle, Clock, Zap, ShoppingBag,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
@@ -97,7 +97,7 @@ function MarketplaceSection() {
       const url  = field(data, 'redirectUrl', 'RedirectUrl', 'url', 'Url')
       if (url) { window.location.href = url }
       else setAwsDone(true)
-    } catch (e) { setAwsErr(e.message || 'Failed to connect AWS Marketplace') }
+    } catch (e) { setAwsErr('Failed to connect AWS Marketplace') }
     setAwsLoading(false)
   }
 
@@ -108,7 +108,7 @@ function MarketplaceSection() {
       const url  = field(data, 'redirectUrl', 'RedirectUrl', 'url', 'Url')
       if (url) { window.location.href = url }
       else setAzureDone(true)
-    } catch (e) { setAzureErr(e.message || 'Failed to connect Azure Marketplace') }
+    } catch (e) { setAzureErr('Failed to connect Azure Marketplace') }
     setAzureLoading(false)
   }
 
@@ -208,7 +208,7 @@ export default function BillingPage() {
       if (url) window.open(url, '_blank', 'noopener')
       else setPortalError('Portal URL not returned by server.')
     } catch (err) {
-      setPortalError(err.message || 'Failed to open billing portal.')
+      setPortalError('Failed to open billing portal.')
     }
     setPortal(false)
   }

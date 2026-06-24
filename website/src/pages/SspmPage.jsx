@@ -246,7 +246,7 @@ export default function SspmPage() {
   const scan = async () => {
     setLoading(true); setError(null); setResult(null)
     try { setResult(await startSspmScan({ provider, credentials: creds })) }
-    catch (e) { setError(e) }
+    catch { setError('Scan failed — the service is temporarily unavailable. Check your credentials and try again.') }
     setLoading(false)
   }
 

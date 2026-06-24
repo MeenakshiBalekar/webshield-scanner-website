@@ -61,7 +61,7 @@ export default function Dashboard() {
       const { data } = await axios.post(`${API}/api${product.endpoint}`, { url: url.trim() })
       setResult(data)
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Scan failed')
+      setError(err.response?.data?.message || 'Scan failed')
     }
     setLoading(false)
   }

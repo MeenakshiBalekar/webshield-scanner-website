@@ -111,7 +111,7 @@ export default function IacScannerPage() {
     try {
       const data = await runIacScan({ code: code.trim(), format })
       setResults(data)
-    } catch (e) { setError(e) }
+    } catch { setError('Scan failed — the service is temporarily unavailable. Please try again.') }
     finally { setLoading(false) }
   }
 

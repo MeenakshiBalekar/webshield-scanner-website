@@ -102,7 +102,7 @@ export default function MsspTenantsPage() {
     try {
       const data = await getMsspTenants()
       setTenants(Array.isArray(data) ? data : (data?.tenants ?? data?.items ?? []))
-    } catch (e) { setError(e.message) }
+    } catch { }
     finally { setLoading(false) }
   }
 
@@ -116,7 +116,7 @@ export default function MsspTenantsPage() {
       const created = await createMsspTenant({ name: newName.trim(), domain: newDomain.trim() || undefined })
       setTenants(ts => [created, ...ts])
       setNewName(''); setNewDomain(''); setShowCreate(false)
-    } catch (e) { setCreateErr(e.message) }
+    } catch (e) { setCreateErr('Action failed — please try again') }
     finally { setCreating(false) }
   }
 

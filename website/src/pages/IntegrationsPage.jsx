@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import {
-  Plug, Plus, Trash2, TestTube2, Pencil, Loader2, AlertTriangle,
+  Plug, Plus, Trash2, TestTube2, Pencil, Loader2,
   CheckCircle2, XCircle, X, Clock, ChevronDown, ChevronUp, ExternalLink,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
@@ -226,7 +226,7 @@ function AddModal({ onClose, onSaved }) {
     setSaving(true); setErr(null)
     try {
       onSaved(await createIntegration(buildPayload(form)))
-    } catch (e) { setErr(e.message || 'Save failed') }
+    } catch (e) { setErr('Save failed') }
     setSaving(false)
   }
 
@@ -309,7 +309,7 @@ function EditModal({ integration, onClose, onSaved }) {
     setSaving(true); setErr(null)
     try {
       onSaved(await createIntegration({ ...buildPayload(form), id }))
-    } catch (e) { setErr(e.message || 'Save failed') }
+    } catch (e) { setErr('Save failed') }
     setSaving(false)
   }
 
@@ -382,7 +382,6 @@ export default function IntegrationsPage() {
   const [integrations, setIntegrations] = useState([])
   const [events, setEvents]             = useState([])
   const [loading, setLoading]           = useState(true)
-  const [error, setError]               = useState(null)
   const [showAdd, setShowAdd]           = useState(false)
   const [editTarget, setEditTarget]     = useState(null)
   const [eventsOpen, setEventsOpen]     = useState(false)
@@ -396,7 +395,7 @@ export default function IntegrationsPage() {
         setIntegrations(Array.isArray(ints) ? ints : (ints?.integrations ?? []))
         setEvents(Array.isArray(evts) ? evts : (evts?.events ?? []))
       })
-      .catch((e) => setError(e.message || 'Failed to load'))
+      .catch(() => {})
       .finally(() => setLoading(false))
   }
 
@@ -407,7 +406,7 @@ export default function IntegrationsPage() {
       await testIntegration(id)
       showToast('Test payload delivered')
     } catch (e) {
-      showToast(e.message || 'Delivery failed', false)
+      showToast('Delivery failed', false)
     }
   }
 
@@ -418,7 +417,7 @@ export default function IntegrationsPage() {
       setIntegrations((prev) => prev.filter((i) => (i.id ?? i.Id) !== id))
       showToast('Integration removed')
     } catch (e) {
-      showToast(e.message || 'Delete failed', false)
+      showToast('Delete failed', false)
     }
   }
 
@@ -450,12 +449,6 @@ export default function IntegrationsPage() {
               <Plus className="w-4 h-4" />Add Integration
             </button>
           </div>
-
-          {error && (
-            <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm mb-6">
-              <AlertTriangle className="w-4 h-4 shrink-0" />{error}
-            </div>
-          )}
 
           {loading ? (
             <div className="flex items-center gap-2 text-gray-400 py-12 justify-center text-sm">

@@ -39,7 +39,7 @@ export default function AlertConfigPage() {
       await configSlackAlert({ webhookUrl: slackUrl })
       setSlackSaved(true)
       setTimeout(() => setSlackSaved(false), 3000)
-    } catch (e) { setSlackErr(e.message || 'Failed to save Slack config') }
+    } catch (e) { setSlackErr('Failed to save Slack config') }
     setSlackSaving(false)
   }
 
@@ -49,7 +49,7 @@ export default function AlertConfigPage() {
       await configTeamsAlert({ webhookUrl: teamsUrl })
       setTeamsSaved(true)
       setTimeout(() => setTeamsSaved(false), 3000)
-    } catch (e) { setTeamsErr(e.message || 'Failed to save Teams config') }
+    } catch (e) { setTeamsErr('Failed to save Teams config') }
     setTeamsSaving(false)
   }
 

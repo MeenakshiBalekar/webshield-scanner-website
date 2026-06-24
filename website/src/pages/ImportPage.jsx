@@ -44,7 +44,7 @@ export default function ImportPage() {
         message:  data?.message      ?? data?.Message      ?? null,
         scanId:   data?.scanId       ?? data?.ScanId       ?? data?.id ?? data?.Id ?? null,
       })
-    } catch (e) { setError(e.message || 'Import failed') }
+    } catch (e) { setError('Import failed') }
     setLoading(false)
   }
 

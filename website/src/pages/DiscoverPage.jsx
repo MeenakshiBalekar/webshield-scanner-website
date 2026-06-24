@@ -35,7 +35,7 @@ function DiscoverRow({ row, onAdd, isSelected, onToggle }) {
     try {
       await onAdd(subdomain)
       setAdded(true)
-    } catch (e) { setErr(e.message || 'Failed') }
+    } catch { setErr('Failed — please try again') }
     setAdding(false)
   }
 
@@ -96,7 +96,7 @@ export default function DiscoverPage() {
       setResults(list)
       setDomain(d)
       setRan(true)
-    } catch (e) { setError(e.message || 'Discovery failed') }
+    } catch { setError('Discovery failed — please try again') }
     setLoading(false)
   }
 
@@ -120,7 +120,7 @@ export default function DiscoverPage() {
       })
       setBulkSaved(true)
       setSelected(new Set())
-    } catch (e) { setError(e.message || 'Failed to save assets') }
+    } catch { setError('Failed to save assets — please try again') }
     setSaving(false)
   }
 

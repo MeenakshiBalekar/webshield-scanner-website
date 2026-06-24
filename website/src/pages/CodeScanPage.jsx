@@ -176,7 +176,7 @@ export default function CodeScanPage() {
       const data = await scanCodeText({ files: [{ name: filename, content: code }] })
       setResults(data)
     } catch (err) {
-      setError(err.message || 'Scan failed')
+      setError('Scan failed')
     }
     setScanning(false)
   }

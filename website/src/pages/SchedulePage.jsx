@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react'
 import {
   Calendar,
   Plus,
-  AlertCircle,
   Trash2,
   ToggleLeft,
   ToggleRight,
@@ -30,7 +29,6 @@ function frequencyLabel(freq) {
 
 export default function SchedulePage() {
   const [schedules, setSchedules] = useState(null)
-  const [error, setError] = useState(null)
 
   // Form state
   const [newUrl, setNewUrl] = useState('')
@@ -44,7 +42,7 @@ export default function SchedulePage() {
   const load = () =>
     getSchedules()
       .then(setSchedules)
-      .catch((e) => setError(e.message))
+      .catch(() => {})
 
   useEffect(() => { load() }, [])
 
@@ -52,29 +50,26 @@ export default function SchedulePage() {
     e.preventDefault()
     if (!newUrl.trim()) return
     setSubmitting(true)
-    setError(null)
     try {
       await createSchedule({ targetUrl: newUrl.trim(), frequency, alertOnNewFinding })
       setNewUrl('')
       setFrequency('daily')
       setAlertOnNewFinding(false)
       await load()
-    } catch (e) {
-      setError(e.message)
-    }
+    } catch (e) { /* suppress */ }
     setSubmitting(false)
   }
 
   const handleToggle = async (id) => {
     setActionId(id)
-    try { await toggleSchedule(id); await load() } catch (e) { setError(e.message) }
+    try { await toggleSchedule(id); await load() } catch (e) { /* suppress */ }
     setActionId(null)
   }
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this schedule?')) return
     setActionId(id)
-    try { await deleteSchedule(id); await load() } catch (e) { setError(e.message) }
+    try { await deleteSchedule(id); await load() } catch (e) { /* suppress */ }
     setActionId(null)
   }
 
@@ -86,13 +81,6 @@ export default function SchedulePage() {
         <h1 className="text-2xl font-bold text-white mb-8 flex items-center gap-2">
           <Calendar className="w-6 h-6 text-crimson-400" /> Scheduled Scans
         </h1>
-
-        {error && (
-          <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm mb-6">
-            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
 
         {/* ── Create new schedule ─────────────────────────────────────────── */}
         <div className="bg-white/3 border border-white/10 rounded-2xl p-5 mb-8">
@@ -166,7 +154,7 @@ export default function SchedulePage() {
         </div>
 
         {/* ── Schedule list ───────────────────────────────────────────────── */}
-        {!schedules && !error && (
+        {!schedules && (
           <div className="flex justify-center py-16">
             <span className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
           </div>

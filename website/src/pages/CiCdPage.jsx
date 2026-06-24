@@ -322,7 +322,7 @@ export default function CiCdPage() {
       const data = await testCicdGate({ url: gateUrl, failOn })
       setGateResult(data)
     } catch (err) {
-      setGateError(err.message || 'Gate test failed')
+      setGateError('Gate test failed')
     }
     setTesting(false)
   }

@@ -218,7 +218,7 @@ export default function HostScanPage() {
       const data = await startHostScan(payload)
       setResults(data)
     } catch (err) {
-      setError(err.message || 'Scan failed')
+      setError('Scan failed')
     }
     setScanning(false)
   }

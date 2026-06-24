@@ -109,7 +109,7 @@ function ScanRow({ scan, findingTab }) {
         const d = await getScanDetail(id)
         setDetail(d)
       } catch (e) {
-        setErr(e.message)
+        setErr('Action failed — please try again')
       }
       setLoading(false)
     }
@@ -241,7 +241,7 @@ function PushToSiemButton({ scanId }) {
       const dest  = index ? `${cfgName} (${index})` : cfgName
       setToast(`${count ? `${count} findings` : 'Findings'} pushed to ${dest}`)
     } catch (e) {
-      setToast(`Push failed: ${e.message}`)
+      setToast('Push failed— please try again')
     }
     setPushing(null)
     setTimeout(() => setToast(null), 5000)
@@ -310,7 +310,6 @@ const GRADES = ['A', 'B', 'C', 'D', 'F']
 
 export default function HistoryPage() {
   const [scans, setScans]         = useState(null)
-  const [error, setError]         = useState(null)
   const [tab, setTab]             = useState('all')       // all | failed | passed
   const [search, setSearch]       = useState('')
   const [gradeFilter, setGradeFilter] = useState([])     // [] = all
@@ -319,7 +318,7 @@ export default function HistoryPage() {
   useEffect(() => {
     getScans()
       .then((data) => setScans(Array.isArray(data) ? data : (data.scans ?? data.items ?? [])))
-      .catch((err) => setError(err.message))
+      .catch(() => setScans([]))
   }, [])
 
   const toggleGrade = (g) =>
@@ -352,14 +351,7 @@ export default function HistoryPage() {
           </Link>
         </div>
 
-        {error && (
-          <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm mb-6">
-            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {!scans && !error && (
+        {!scans && (
           <div className="flex items-center justify-center py-24">
             <span className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
           </div>

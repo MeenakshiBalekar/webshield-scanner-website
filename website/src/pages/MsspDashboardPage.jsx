@@ -67,7 +67,7 @@ export default function MsspDashboardPage() {
   const load = async () => {
     setLoading(true); setError(null)
     try { setData(await getMsspDashboard()) }
-    catch (e) { setError(e.message) }
+    catch { }
     finally { setLoading(false) }
   }
 

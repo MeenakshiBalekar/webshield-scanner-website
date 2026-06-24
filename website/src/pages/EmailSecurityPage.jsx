@@ -140,7 +140,7 @@ export default function EmailSecurityPage() {
     try {
       const data = await checkEmailSecurity(d)
       setResult(data)
-    } catch (e) { setError(e.message || 'Check failed') }
+    } catch (e) { setError('Check failed') }
     setLoading(false)
   }
 

@@ -293,7 +293,7 @@ function HostVulnsTab({ selectedId }) {
       .then(data => {
         setVulns(Array.isArray(data) ? data : (data?.vulnerabilities ?? data?.vulns ?? []))
       })
-      .catch(e => setError(e.message))
+      .catch(() => {})
       .finally(() => setLoading(false))
   }, [selectedId])
 
@@ -445,9 +445,7 @@ function PackageCveTab({ selectedId }) {
       setVulns(list)
       const ts = data?.scannedAt ?? data?.ScannedAt ?? null
       if (ts) setScannedAt(ts)
-    } catch (e) {
-      if (!String(e.message).includes('404')) setError(e.message)
-    }
+    } catch { }
     setLoading(false)
   }, [])
 
@@ -462,7 +460,7 @@ function PackageCveTab({ selectedId }) {
       setVulns(list)
       const ts = data?.scannedAt ?? data?.ScannedAt ?? new Date().toISOString()
       setScannedAt(ts)
-    } catch (e) { setError(e.message || 'Package scan failed') }
+    } catch (e) { setError('Package scan failed') }
     setScanning(false)
   }
 
@@ -709,7 +707,7 @@ export default function VmdrPage() {
         setFindings(list)
         if (!Array.isArray(data)) setScanMeta(data)
       })
-      .catch(e => setError(e.message))
+      .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
 
@@ -727,8 +725,8 @@ export default function VmdrPage() {
       setFindings(list)
       if (!Array.isArray(data)) setScanMeta(data)
       getVmdrSummary().then(setSummary).catch(() => {})
-    } catch (e) {
-      setError(e.message)
+    } catch {
+      setError('Scan failed — try again')
     } finally {
       setScanning(false)
     }

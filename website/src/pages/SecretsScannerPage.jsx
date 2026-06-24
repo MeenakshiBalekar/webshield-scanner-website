@@ -130,7 +130,7 @@ export default function SecretsScannerPage() {
     try {
       const data = await runSecretsScan({ code: code.trim() })
       setResults(data)
-    } catch (e) { setError(e) }
+    } catch { setError('Scan failed — the service is temporarily unavailable. Please try again.') }
     finally { setLoading(false) }
   }
 

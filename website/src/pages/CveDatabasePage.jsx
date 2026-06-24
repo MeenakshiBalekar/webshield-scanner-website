@@ -244,7 +244,7 @@ function CheckDetail({ checkId, list, onNavigate }) {
         return r.json()
       })
       .then((d) => setDetail(d))
-      .catch((e) => setError(e.message))
+      .catch(() => {})
       .finally(() => setLoading(false))
   }, [checkId])
 
@@ -538,7 +538,7 @@ function CveSearchTab() {
       const res = await fetch(`${BACKEND}/api/cve/search?${params}`, { headers: hdrs })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       setData(await res.json())
-    } catch (e) { setError(e.message) }
+    } catch (e) { setError('Action failed — please try again') }
     setLoading(false)
   }, [])
 
@@ -752,7 +752,7 @@ export default function CveDatabasePage() {
           setSelectedId(firstId)
         }
       })
-      .catch((e) => setListError(e.message))
+      .catch((e) => setListError('Action failed — please try again'))
       .finally(() => setListLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

@@ -229,7 +229,7 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
       const data = await getFrameworkControls(fw.id)
       const list = Array.isArray(data) ? data : (data?.controls ?? data?.Controls ?? data?.items ?? data?.Items ?? [])
       setControls(list)
-    } catch (e) { setError(e.message || 'Failed to load framework controls') }
+    } catch { }
     setLoading(false)
   }, [fw.id])
 
@@ -244,7 +244,7 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
         const data = await deepScanCompliance(fw.id, deepScanAgentId)
         const list = Array.isArray(data) ? data : (data?.controls ?? data?.Controls ?? data?.results ?? data?.Results ?? data?.items ?? data?.Items ?? [])
         if (list.length > 0) { setControls(list); setAssessed(true) }
-      } catch (e) { setError(e.message || 'Deep scan failed') }
+      } catch { setError('Deep scan failed — try again') }
       setDeepSc(false)
     }
     run()
@@ -259,7 +259,7 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
       const sid = field(data, 'scanId', 'ScanId', 'scan_id', 'id', 'Id')
       if (sid) setScanId(String(sid))
       setAssessed(true)
-    } catch (e) { setError(e) }
+    } catch { setError('Assessment failed — try again') }
     setAssessing(false)
   }
 
@@ -270,7 +270,7 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
       const data = await fetchComplianceEvidence(assessId)
       setEvidenceArtifacts(data)
       setEvidenceOpen(true)
-    } catch (e) { setError(e.message || 'Evidence fetch failed') }
+    } catch { setError('Evidence fetch failed — try again') }
     setFetchingEvidence(false)
   }
 
@@ -291,7 +291,7 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
       a.download = `${fw.id}-evidence-${new Date().toISOString().split('T')[0]}.zip`
       a.click()
       URL.revokeObjectURL(url)
-    } catch (e) { setError(e.message || 'Evidence export failed') }
+    } catch { setError('Evidence export failed — try again') }
     setExportingEvidence(false)
   }
 
@@ -310,7 +310,7 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
       const win = window.open(blobUrl, '_blank', 'noopener,noreferrer')
       if (!win) throw new Error('Popup blocked — please allow popups for this site')
       setTimeout(() => URL.revokeObjectURL(blobUrl), 60000)
-    } catch (e) { setError(e.message || 'HTML export failed') }
+    } catch { setError('HTML export failed — try again') }
     setHtmlExporting(false)
   }
 
@@ -324,7 +324,7 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
       a.download = `${fw.id}-compliance-report-${new Date().toISOString().split('T')[0]}.pdf`
       a.click()
       URL.revokeObjectURL(url)
-    } catch (e) { setError(e.message || 'Report generation failed') }
+    } catch { setError('Report generation failed — try again') }
     setGeneratingReport(false)
   }
 
@@ -338,7 +338,7 @@ function AssessmentView({ fw, onBack, deepScanAgentId }) {
       a.download = `${fw.id}-compliance-${new Date().toISOString().split('T')[0]}.csv`
       a.click()
       URL.revokeObjectURL(url)
-    } catch (e) { alert(e.message || 'Export failed') }
+    } catch (e) { alert('Export failed') }
     setExporting(false)
   }
 

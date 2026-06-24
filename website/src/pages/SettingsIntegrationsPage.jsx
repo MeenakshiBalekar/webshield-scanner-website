@@ -33,7 +33,7 @@ function IntegrationCard({ id, icon, iconBg, iconColor, title, description, fiel
       setSaveDone(true)
       setTimeout(() => setSaveDone(false), 3000)
     } catch (e) {
-      setSaveErr(e.message)
+      setSaveErr('Action failed — please try again')
     } finally {
       setSaving(false)
     }

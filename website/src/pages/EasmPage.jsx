@@ -447,7 +447,7 @@ function MonitorSection({ domain, onMonitorAdded }) {
       const m = await addEasmMonitor(domain)
       setMonitors(prev => [...prev, m])
       onMonitorAdded?.()
-    } catch (e) { setError(e.message || 'Failed to add monitor') }
+    } catch { setError('Failed to add monitor — please try again') }
     setAdding(false)
   }
 
@@ -456,7 +456,7 @@ function MonitorSection({ domain, onMonitorAdded }) {
     try {
       await removeEasmMonitor(id)
       setMonitors(prev => prev.filter(m => (field(m,'id','Id','monitorId','MonitorId')) !== id))
-    } catch (e) { setError(e.message || 'Failed to remove monitor') }
+    } catch { setError('Failed to remove monitor — please try again') }
     setRemoving(r => ({ ...r, [id]: false }))
   }
 
@@ -824,7 +824,7 @@ export default function EasmPage() {
       const data = await scanEasm(d)
       setResult(data)
     } catch (err) {
-      setError(err.message || 'Scan failed')
+      setError('Scan failed')
     }
     setScanning(false)
   }

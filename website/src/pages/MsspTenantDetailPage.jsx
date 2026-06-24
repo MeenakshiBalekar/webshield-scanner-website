@@ -84,7 +84,7 @@ export default function MsspTenantDetailPage() {
   const load = async () => {
     setLoading(true); setError(null)
     try { setData(await getMsspTenant(id)) }
-    catch (e) { setError(e.message) }
+    catch { }
     finally { setLoading(false) }
   }
 

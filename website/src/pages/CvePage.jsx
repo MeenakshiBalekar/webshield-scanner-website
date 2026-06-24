@@ -125,7 +125,7 @@ export default function CvePage() {
         setResults(list)
         setTotal(data?.Total ?? data?.total ?? list.length)
       })
-      .catch((e) => setError(e.message))
+      .catch(() => {})
       .finally(() => setLoading(false))
   }
 

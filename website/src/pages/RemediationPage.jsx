@@ -229,7 +229,7 @@ function CheckDetail({ checkId, list, onNavigate }) {
         return r.json()
       })
       .then((d) => setDetail(d))
-      .catch((e) => setError(e.message))
+      .catch(() => {})
       .finally(() => setLoading(false))
   }, [checkId])
 
@@ -655,7 +655,7 @@ export default function RemediationPage() {
           setSearchParams({ check: firstId }, { replace: true })
         }
       })
-      .catch((e) => setListError(e.message))
+      .catch(() => {})
       .finally(() => setListLoading(false))
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

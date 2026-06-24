@@ -214,7 +214,7 @@ export default function ExecutiveDashboardPage() {
   useEffect(() => {
     getExecutiveDashboard()
       .then(setData)
-      .catch(e => setError(e.message || 'Failed to load executive dashboard'))
+      .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
 

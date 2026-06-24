@@ -386,7 +386,7 @@ function AiFixButton({ findingId, checkName, severity, technicalDetails }) {
       setGuidance(data)
       setState('open')
     } catch (err) {
-      setError(err.message || 'AI guidance unavailable')
+      setError('AI guidance unavailable — please try again')
       setState('idle')
     }
   }
@@ -713,7 +713,7 @@ function JiraTicketButton({ findingId, checkName, severity, recommendation }) {
       setState('success')
       setTimeout(() => setState('idle'), 5000)
     } catch (err) {
-      setErrMsg(err.message || 'Failed to create ticket')
+      setErrMsg('Failed to create ticket — please try again')
       setState('error')
       setTimeout(() => setState('idle'), 4000)
     }
@@ -853,7 +853,7 @@ function AiNarrativePanel({ scanId, scanUrl }) {
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       setData(await res.json())
       setState('done')
-    } catch (e) { setErr(e.message); setState('error') }
+    } catch { setErr('Scan failed — the service is temporarily unavailable'); setState('error') }
   }
 
   const attackStory    = data?.attackStory           ?? data?.AttackStory          ?? null
@@ -1022,7 +1022,7 @@ function FuzzPanel({ scanUrl }) {
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       setFuzzData(await res.json())
       setState('done')
-    } catch (e) { setErr(e.message); setState('error') }
+    } catch { setErr('Scan failed — the service is temporarily unavailable'); setState('error') }
   }
 
   const _rawFuzz = fuzzData?.fuzzResults ?? fuzzData?.FuzzResults ?? fuzzData?.results ?? fuzzData?.Results
@@ -1176,7 +1176,7 @@ function FindingCard({ item }) {
     try {
       const data = await getRemediationCode(checkName)
       setFixCode(data)
-    } catch (err) { setCodeErr(err.message || 'Could not load fix code') }
+    } catch (err) { setCodeErr('Could not load fix code') }
     setLoadingCode(false)
   }
 
@@ -1524,7 +1524,7 @@ function RemediationPlanPanel({ scanUrl, result }) {
       setPlanData(json)
       setPlanOpen(true)
     } catch (err) {
-      setPlanError(err.message || 'Failed to fetch remediation plan')
+      setPlanError('Failed to fetch remediation plan')
     }
     setPlanLoading(false)
   }
@@ -1663,7 +1663,7 @@ function SiemExportButton({ scanId }) {
       const dest  = index ? `${cfgName} (${index})` : cfgName
       setToast({ ok: true,  msg: `${count ? `${count} findings` : 'Findings'} pushed to ${dest}` })
     } catch (e) {
-      setToast({ ok: false, msg: e.message || 'Push failed' })
+      setToast({ ok: false, msg: 'Push failed — please try again' })
     }
     setPushing(null)
     setTimeout(() => setToast(null), 6000)
@@ -1750,7 +1750,7 @@ function ReportPanel({ scanUrl, scanResult, scanId }) {
       a.click()
       a.remove()
       URL.revokeObjectURL(objUrl)
-    } catch (err) { setError(err.message) }
+    } catch (err) { setError(err.message?.startsWith('HTTP') ? 'Action failed — please try again' : ('Action failed')) }
     setPentestDownloading(false)
   }
 
@@ -1768,7 +1768,7 @@ function ReportPanel({ scanUrl, scanResult, scanId }) {
       a.remove()
       URL.revokeObjectURL(objUrl)
     } catch (err) {
-      setError(err.message)
+      setError(err.message?.startsWith('HTTP') ? 'Action failed — please try again' : ('Action failed'))
     }
     setDownloading(false)
   }
@@ -1787,7 +1787,7 @@ function ReportPanel({ scanUrl, scanResult, scanId }) {
       const win = window.open(blobUrl, '_blank', 'noopener,noreferrer')
       if (!win) throw new Error('Popup blocked — please allow popups for this site')
       setTimeout(() => URL.revokeObjectURL(blobUrl), 60000)
-    } catch (err) { setError(err.message) }
+    } catch (err) { setError(err.message?.startsWith('HTTP') ? 'Action failed — please try again' : ('Action failed')) }
     setHtmlExporting(false)
   }
 
@@ -1800,7 +1800,7 @@ function ReportPanel({ scanUrl, scanResult, scanId }) {
       await emailReport({ url: scanUrl, email: reportEmail.trim() })
       setEmailSent(true)
     } catch (err) {
-      setError(err.message)
+      setError(err.message?.startsWith('HTTP') ? 'Action failed — please try again' : ('Action failed'))
     }
     setSending(false)
   }
@@ -1967,7 +1967,7 @@ function BenchmarkWidget({ results }) {
     try {
       const res = await analyzeBenchmark({ checks: failingChecks, industry })
       setData(res); setRan(true)
-    } catch (e) { setErr(e.message || 'Analysis failed') }
+    } catch { setErr('Analysis failed — please try again') }
     setLoading(false)
   }
 
@@ -2140,7 +2140,7 @@ export default function ProductPage() {
         .catch(() => {})
     } catch (err) {
       const body = err.response?.data
-      const msg  = body?.error || body?.message || err.message || 'Scan failed. Check the URL and try again.'
+      const msg  = body?.error || body?.message || 'Scan failed. Check the URL and try again.'
       const rich = new Error(msg)
       if (body?.howToFix)       rich.howToFix       = body.howToFix
       if (body?.azureErrorCode) rich.azureErrorCode  = body.azureErrorCode

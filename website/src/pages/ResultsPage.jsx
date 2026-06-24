@@ -232,7 +232,7 @@ function OWASPHeatmap({ url }) {
   useEffect(() => {
     getRiskHeatmap(url)
       .then(setData)
-      .catch((e) => setError(e.message))
+      .catch(() => {})
       .finally(() => setLoading(false))
   }, [url])
 

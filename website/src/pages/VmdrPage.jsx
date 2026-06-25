@@ -783,11 +783,13 @@ export default function VmdrPage() {
               <div className="flex-1 min-w-[200px]">
                 <label className="text-xs text-gray-400 mb-1 block">Agent</label>
                 {agentsLoaded && agents.length === 0 ? (
-                  <p className="text-sm text-amber-400 py-2">
-                    No agents registered.{' '}
-                    <a href="/agent" className="underline text-lime-400 hover:text-lime-300">Download and install the Udyo360 Agent</a>
-                    {' '}on your servers to start scanning.
-                  </p>
+                  <div className="py-2 space-y-1">
+                    <p className="text-sm text-amber-400">No agents registered.</p>
+                    <p className="text-xs text-gray-400">
+                      <a href="/agent" className="underline text-lime-400 hover:text-lime-300">Download the Udyo360 Agent</a>
+                      {' '}and run it on your server — it will appear here once it checks in.
+                    </p>
+                  </div>
                 ) : (
                   <div className="relative">
                     <select

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import Footer from '../components/Footer'
 import Navbar from '../components/Navbar'
+import { createAgentToken } from '../services/api'
 
 const API = import.meta.env.VITE_API_URL ?? ''
 const BACKEND = API || 'https://webshield-backend-api.onrender.com'
@@ -131,8 +132,12 @@ function OllamaSection() {
   )
 }
 
+const field = (obj, ...keys) => { for (const k of keys) if (obj?.[k] != null) return obj[k]; return null }
+
 export default function AgentPage() {
-  const [agentInfo, setAgentInfo] = useState(null)
+  const [agentInfo,    setAgentInfo]    = useState(null)
+  const [downloading,  setDownloading]  = useState(null) // 'win' | 'linux' | 'macos' | null
+  const [dlError,      setDlError]      = useState(null)
 
   useEffect(() => {
     fetch(`${BACKEND}/api/agent/info`)
@@ -141,16 +146,22 @@ export default function AgentPage() {
       .catch(() => {})
   }, [])
 
-  const version       = agentInfo?.version           ?? agentInfo?.Version           ?? null
-  const usageExamples = agentInfo?.usageExamples     ?? agentInfo?.UsageExamples     ?? []
-
-  // Ensure download URLs always point to the backend even if the API returns relative paths
-  const resolveUrl = (raw, fallback) => {
-    if (!raw) return fallback
-    return raw.startsWith('http') ? raw : `${BACKEND}${raw}`
+  const handleDownload = async (platform) => {
+    setDownloading(platform)
+    setDlError(null)
+    try {
+      const { token, downloadUrl } = await createAgentToken()
+      const url = `${downloadUrl}&platform=${platform}`
+      window.open(url, '_blank', 'noopener')
+    } catch {
+      setDlError('Could not generate download link — please try again.')
+    } finally {
+      setDownloading(null)
+    }
   }
-  const winUrl   = resolveUrl(agentInfo?.windowsDownloadUrl ?? agentInfo?.WindowsDownloadUrl, `${BACKEND}/api/agent/download?platform=win`)
-  const linuxUrl = resolveUrl(agentInfo?.linuxDownloadUrl   ?? agentInfo?.LinuxDownloadUrl,   `${BACKEND}/api/agent/download?platform=linux`)
+
+  const version       = agentInfo?.version       ?? agentInfo?.Version       ?? null
+  const usageExamples = agentInfo?.usageExamples ?? agentInfo?.UsageExamples ?? []
 
   return (
     <div className="min-h-screen page-bg flex flex-col">
@@ -173,31 +184,37 @@ export default function AgentPage() {
           </p>
 
           {/* Download buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6">
-            <a
-              href={winUrl}
-              className="flex items-center gap-2.5 bg-crimson-500 hover:bg-crimson-600 text-white font-semibold px-6 py-3 rounded-xl text-sm transition-colors w-full sm:w-auto justify-center"
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4">
+            <button
+              onClick={() => handleDownload('win')}
+              disabled={!!downloading}
+              className="flex items-center gap-2.5 bg-crimson-500 hover:bg-crimson-600 disabled:opacity-60 text-white font-semibold px-6 py-3 rounded-xl text-sm transition-colors w-full sm:w-auto justify-center"
             >
               <Download className="w-4 h-4" />
-              Download for Windows (.exe)
-            </a>
-            <a
-              href={linuxUrl}
-              className="flex items-center gap-2.5 bg-white/8 hover:bg-white/15 border border-white/15 text-white font-semibold px-6 py-3 rounded-xl text-sm transition-colors w-full sm:w-auto justify-center"
+              {downloading === 'win' ? 'Preparing…' : 'Download for Windows (.exe)'}
+            </button>
+            <button
+              onClick={() => handleDownload('linux')}
+              disabled={!!downloading}
+              className="flex items-center gap-2.5 bg-white/8 hover:bg-white/15 border border-white/15 disabled:opacity-60 text-white font-semibold px-6 py-3 rounded-xl text-sm transition-colors w-full sm:w-auto justify-center"
             >
               <Download className="w-4 h-4" />
-              Download for Linux
-            </a>
+              {downloading === 'linux' ? 'Preparing…' : 'Download for Linux'}
+            </button>
           </div>
+
+          {dlError && (
+            <p className="text-xs text-red-400 mt-2">{dlError}</p>
+          )}
 
           {/* Version badge + trust line */}
           {version && (
-            <p className="text-xs text-gray-600 mb-2">
+            <p className="text-xs text-gray-600 mt-4 mb-1">
               Latest: <span className="text-gray-400 font-mono">v{version}</span>
             </p>
           )}
-          <p className="text-sm text-gray-500">
-            No account needed &nbsp;·&nbsp; Free forever &nbsp;·&nbsp; Data stays on your machine
+          <p className="text-sm text-gray-500 mt-2">
+            Free forever &nbsp;·&nbsp; Data stays on your machine
           </p>
         </div>
 

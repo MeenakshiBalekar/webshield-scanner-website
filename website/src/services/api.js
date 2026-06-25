@@ -345,6 +345,10 @@ export const inviteOrgMember        = (id, data)      => request(`/api/org/${id}
 export const removeOrgMember        = (id, userId)    => request(`/api/org/${id}/members/${userId}`, { method: 'DELETE' })
 export const updateMemberRole       = (id, userId, r) => request(`/api/org/${id}/members/${userId}/role`, { method: 'PUT', body: JSON.stringify({ role: r }) })
 
+// Agent install token (24-hour, embeds in download URL)
+export const createAgentToken = () =>
+  request('/api/agent/token', { method: 'POST', body: JSON.stringify({}) })
+
 // API Keys
 export const getApiKeys    = (orgId)        => request(`/api/org/${orgId}/apikeys`)
 export const createApiKey  = (orgId, data)  => request(`/api/org/${orgId}/apikeys`, { method: 'POST', body: JSON.stringify(data) })

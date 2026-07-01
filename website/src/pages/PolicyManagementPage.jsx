@@ -185,13 +185,13 @@ function PolicyCard({ policy, onEdit, onDelete, onToggle }) {
     if (!confirm(`Delete policy "${name}"?`)) return
     setDeleting(true)
     try { await onDelete(id) }
-    catch (e) { alert('Delete failed'); setDeleting(false) }
+    catch { setDeleting(false) }
   }
 
   const handleToggle = async () => {
     setToggling(true)
     try { await onToggle(id, !active) }
-    catch (e) { alert('Toggle failed') }
+    catch { }
     finally { setToggling(false) }
   }
 
@@ -374,7 +374,7 @@ function ExceptionRow({ ex, onApprove, onReject, isAdmin }) {
     try {
       if (type === 'approve') await onApprove(id)
       else await onReject(id)
-    } catch (e) { alert('Action failed') }
+    } catch { }
     finally { setActioning(null) }
   }
 

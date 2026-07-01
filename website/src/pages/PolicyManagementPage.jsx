@@ -424,6 +424,8 @@ export default function PolicyManagementPage() {
   const [exceptions, setExceptions] = useState([])
   const [loadingP, setLoadingP]     = useState(true)
   const [loadingE, setLoadingE]     = useState(false)
+  const [errorP, setErrorP]         = useState(null)
+  const [errorE, setErrorE]         = useState(null)
   const [showForm, setShowForm]     = useState(false)
   const [editPolicy, setEditPolicy] = useState(null)
   const [exFilter, setExFilter]     = useState('all')

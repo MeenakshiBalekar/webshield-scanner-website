@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, Shield } from 'lucide-react'
+import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, Shield, ChevronDown, ChevronUp } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { importScan } from '../services/api'
@@ -38,15 +38,22 @@ export default function ImportPage() {
       const fd = new FormData()
       fd.append('file', file)
       const data = await importScan(format, fd)
+      const findingsArr = Array.isArray(data?.findings ?? data?.Findings)
+        ? (data?.findings ?? data?.Findings)
+        : []
       setResult({
-        score:    data?.score        ?? data?.Score        ?? null,
-        findings: data?.findingCount ?? data?.FindingCount ?? data?.findings ?? data?.Findings ?? null,
-        message:  data?.message      ?? data?.Message      ?? null,
-        scanId:   data?.scanId       ?? data?.ScanId       ?? data?.id ?? data?.Id ?? null,
+        score:     data?.score        ?? data?.Score        ?? null,
+        count:     data?.findingCount ?? data?.FindingCount ?? findingsArr.length,
+        findings:  findingsArr,
+        message:   data?.message      ?? data?.Message      ?? null,
+        targetUrl: data?.targetUrl    ?? data?.TargetUrl    ?? null,
+        scanId:    data?.scanId       ?? data?.ScanId       ?? data?.id ?? data?.Id ?? null,
       })
     } catch (e) { setError('Import failed') }
     setLoading(false)
   }
+
+  const [showFindings, setShowFindings] = useState(false)
 
   const scoreColor = (s) => {
     if (s == null) return 'text-gray-400'
@@ -54,6 +61,15 @@ export default function ImportPage() {
     if (s >= 60) return 'text-yellow-400'
     if (s >= 40) return 'text-orange-400'
     return 'text-red-400'
+  }
+
+  const severityColor = (sev) => {
+    const s = (sev ?? '').toLowerCase()
+    if (s === 'critical') return 'text-red-400 bg-red-500/10'
+    if (s === 'high')     return 'text-orange-400 bg-orange-500/10'
+    if (s === 'medium')   return 'text-yellow-400 bg-yellow-500/10'
+    if (s === 'low')      return 'text-sky-400 bg-sky-500/10'
+    return 'text-gray-400 bg-white/5'
   }
 
   return (
@@ -160,21 +176,63 @@ export default function ImportPage() {
                     </div>
                   </div>
                 )}
-                {result.findings != null && (
+                {result.count > 0 && (
                   <div>
                     <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Findings</div>
-                    <div className="text-4xl font-extrabold text-white">{result.findings}</div>
+                    <div className="text-4xl font-extrabold text-white">{result.count}</div>
                   </div>
                 )}
-                {result.score == null && result.findings == null && (
+                {result.score == null && result.count === 0 && (
                   <div className="flex items-center gap-2 text-gray-300 text-sm">
                     <Shield className="w-4 h-4 text-emerald-400" />
                     {result.message || 'Scan imported and queued for analysis.'}
                   </div>
                 )}
               </div>
-              {result.message && (result.score != null || result.findings != null) && (
-                <p className="px-6 pb-5 text-xs text-gray-500">{result.message}</p>
+              {result.message && (result.score != null || result.count > 0) && (
+                <p className="px-6 pb-4 text-xs text-gray-500">{result.message}</p>
+              )}
+              {result.targetUrl && (
+                <p className="px-6 pb-4 text-xs text-gray-500">
+                  Target: <span className="text-gray-300 font-mono">{result.targetUrl}</span>
+                </p>
+              )}
+
+              {/* Findings list */}
+              {result.findings.length > 0 && (
+                <div className="border-t border-emerald-500/20">
+                  <button
+                    onClick={() => setShowFindings(v => !v)}
+                    className="w-full flex items-center justify-between px-6 py-3 text-xs text-gray-400 hover:text-white transition-colors"
+                  >
+                    <span>{showFindings ? 'Hide' : 'Show'} findings ({result.findings.length})</span>
+                    {showFindings
+                      ? <ChevronUp className="w-3.5 h-3.5" />
+                      : <ChevronDown className="w-3.5 h-3.5" />}
+                  </button>
+                  {showFindings && (
+                    <div className="px-6 pb-5 space-y-2 max-h-96 overflow-y-auto">
+                      {result.findings.map((f, i) => (
+                        <div key={i} className="bg-white/3 border border-white/8 rounded-xl px-4 py-3">
+                          <div className="flex items-start justify-between gap-3 mb-1">
+                            <span className="text-sm font-medium text-white">{f.checkName ?? f.CheckName ?? f.name ?? f.Name ?? `Finding ${i + 1}`}</span>
+                            {(f.severity ?? f.Severity) && (
+                              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${severityColor(f.severity ?? f.Severity)}`}>
+                                {(f.severity ?? f.Severity).toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                          {(f.status ?? f.Status) && (
+                            <p className="text-xs text-gray-500 mb-1">Status: {f.status ?? f.Status}</p>
+                          )}
+                          {(f.recommendation ?? f.Recommendation) && (
+                            <p className="text-xs text-gray-400 leading-relaxed">{f.recommendation ?? f.Recommendation}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           )}

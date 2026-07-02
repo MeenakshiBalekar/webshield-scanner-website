@@ -145,19 +145,31 @@ export default function PricingPage() {
 
   const handleCheckout = async (plan, isAnnual) => {
     const token = localStorage.getItem('ws_token')
-    if (!token) { navigate('/login'); return }
+    if (!token) { navigate('/login?redirect=/pricing'); return }
+    setError(null)
     setCheckoutLoading(true)
     try {
-      const data = await createBillingCheckout({
-        planId: plan?.Id ?? plan?.id ?? plan?.Name ?? plan?.name,
-        annual: isAnnual,
-      })
+      // Normalize to the planId strings the backend expects
+      const raw = (plan?.Name ?? plan?.name ?? '').toLowerCase()
+      const planId = raw.includes('enterprise') ? 'enterprise'
+                   : raw.includes('free')       ? 'free'
+                   : 'pro'
+
+      const data = await createBillingCheckout({ planId, annual: isAnnual })
       const redirectUrl = data?.url ?? data?.Url ?? data?.checkoutUrl ?? data?.CheckoutUrl
-      if (redirectUrl) window.location.href = redirectUrl
+      if (redirectUrl) {
+        window.location.href = redirectUrl
+      }
     } catch (e) {
-      setError('Checkout failed. Please try again.')
+      const msg = e?.message ?? ''
+      if (msg.includes('401') || msg.toLowerCase().includes('unauthorized')) {
+        navigate('/login?redirect=/pricing')
+      } else {
+        setError('Checkout failed. Please try again.')
+      }
+    } finally {
+      setCheckoutLoading(false)
     }
-    setCheckoutLoading(false)
   }
 
   return (
@@ -175,13 +187,13 @@ export default function PricingPage() {
           {/* Monthly / Annual toggle */}
           <div className="inline-flex items-center gap-1 bg-white/5 border border-white/10 rounded-full p-1">
             <button
-              onClick={() => setAnnual(false)}
+              onClick={() => { setAnnual(false); setError(null) }}
               className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${!annual ? 'bg-crimson-500 text-white shadow' : 'text-gray-400 hover:text-white'}`}
             >
               Monthly
             </button>
             <button
-              onClick={() => setAnnual(true)}
+              onClick={() => { setAnnual(true); setError(null) }}
               className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${annual ? 'bg-crimson-500 text-white shadow' : 'text-gray-400 hover:text-white'}`}
             >
               Annual

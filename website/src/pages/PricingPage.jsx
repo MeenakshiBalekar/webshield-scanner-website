@@ -127,6 +127,7 @@ export default function PricingPage() {
   const [plans, setPlans]                 = useState([])
   const [faqs, setFaqs]                   = useState([])
   const [error, setError]                 = useState(null)
+  const [notice, setNotice]               = useState(null)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
 
   useEffect(() => {
@@ -157,8 +158,16 @@ export default function PricingPage() {
 
       const data = await createBillingCheckout({ planId, annual: isAnnual })
       const redirectUrl = data?.url ?? data?.Url ?? data?.checkoutUrl ?? data?.CheckoutUrl
+
       if (redirectUrl) {
+        // Stripe configured — go to checkout
         window.location.href = redirectUrl
+      } else if (data?.plan === 'free' || planId === 'free') {
+        // Free trial activated — go straight to dashboard
+        navigate('/dashboard')
+      } else if (data?.message) {
+        // Stripe not yet live — surface the backend message
+        setNotice(data.message)
       }
     } catch (e) {
       const msg = e?.message ?? ''
@@ -187,13 +196,13 @@ export default function PricingPage() {
           {/* Monthly / Annual toggle */}
           <div className="inline-flex items-center gap-1 bg-white/5 border border-white/10 rounded-full p-1">
             <button
-              onClick={() => { setAnnual(false); setError(null) }}
+              onClick={() => { setAnnual(false); setError(null); setNotice(null) }}
               className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${!annual ? 'bg-crimson-500 text-white shadow' : 'text-gray-400 hover:text-white'}`}
             >
               Monthly
             </button>
             <button
-              onClick={() => { setAnnual(true); setError(null) }}
+              onClick={() => { setAnnual(true); setError(null); setNotice(null) }}
               className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${annual ? 'bg-crimson-500 text-white shadow' : 'text-gray-400 hover:text-white'}`}
             >
               Annual
@@ -206,6 +215,13 @@ export default function PricingPage() {
           <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm mb-8 max-w-lg mx-auto">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
+          </div>
+        )}
+
+        {notice && (
+          <div className="flex items-start gap-2 bg-sky-500/10 border border-sky-500/30 text-sky-300 rounded-xl px-4 py-3 text-sm mb-8 max-w-lg mx-auto">
+            <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-sky-400" />
+            <span>{notice}</span>
           </div>
         )}
 

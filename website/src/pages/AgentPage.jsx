@@ -52,6 +52,12 @@ const LINUX_STEPS = [
   { cmd: './udyo360-agent',            comment: '# scan & compare drift' },
 ]
 
+const MACOS_STEPS = [
+  { cmd: "curl -sSL 'https://webshield-backend-api.onrender.com/api/agent/download?platform=macos' | sudo bash", comment: '# one-liner: download & install' },
+  { cmd: 'udyo360-agent --baseline', comment: '# first run: save baseline' },
+  { cmd: 'udyo360-agent',            comment: '# scan & compare drift (runs daily via LaunchAgent)' },
+]
+
 function CopyButton({ text }) {
   const [copied, setCopied] = useState(false)
   const copy = () => {
@@ -138,6 +144,7 @@ export default function AgentPage() {
   const [agentInfo,    setAgentInfo]    = useState(null)
   const [downloading,  setDownloading]  = useState(null) // 'win' | 'linux' | 'macos' | null
   const [dlError,      setDlError]      = useState(null)
+  const [osPlatform,   setOsPlatform]   = useState('linux') // 'win' | 'linux' | 'macos'
 
   useEffect(() => {
     fetch(`${BACKEND}/api/agent/info`)
@@ -184,7 +191,7 @@ export default function AgentPage() {
           </p>
 
           {/* Download buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4 flex-wrap">
             <button
               onClick={() => handleDownload('win')}
               disabled={!!downloading}
@@ -200,6 +207,14 @@ export default function AgentPage() {
             >
               <Download className="w-4 h-4" />
               {downloading === 'linux' ? 'Preparing…' : 'Download for Linux'}
+            </button>
+            <button
+              onClick={() => handleDownload('macos')}
+              disabled={!!downloading}
+              className="flex items-center gap-2.5 bg-white/8 hover:bg-white/15 border border-white/15 disabled:opacity-60 text-white font-semibold px-6 py-3 rounded-xl text-sm transition-colors w-full sm:w-auto justify-center"
+            >
+              <Download className="w-4 h-4" />
+              {downloading === 'macos' ? 'Preparing…' : 'Download for macOS (.sh)'}
             </button>
           </div>
 
@@ -234,11 +249,39 @@ export default function AgentPage() {
         {/* Installation */}
         <div className="mb-12">
           <h2 className="text-xl font-bold text-white mb-1">Installation</h2>
-          <p className="text-sm text-gray-400 mb-6">No installer. Single binary — download and run.</p>
-          <div className="space-y-4">
-            <CodeBlock steps={WIN_STEPS} platform="Windows" />
-            <CodeBlock steps={LINUX_STEPS} platform="Linux / macOS" />
+          <p className="text-sm text-gray-400 mb-4">No installer. Single binary — download and run.</p>
+
+          {/* Platform tabs */}
+          <div className="flex gap-1 bg-white/5 border border-white/10 rounded-xl p-1 mb-4 w-fit">
+            {[
+              { id: 'win',   label: 'Windows' },
+              { id: 'linux', label: 'Linux'   },
+              { id: 'macos', label: 'macOS'   },
+            ].map(({ id, label }) => (
+              <button
+                key={id}
+                onClick={() => setOsPlatform(id)}
+                className={`text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors ${
+                  osPlatform === id
+                    ? 'bg-crimson-500 text-white'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
+
+          {osPlatform === 'win'   && <CodeBlock steps={WIN_STEPS}   platform="Windows" />}
+          {osPlatform === 'linux' && <CodeBlock steps={LINUX_STEPS} platform="Linux" />}
+          {osPlatform === 'macos' && (
+            <div className="space-y-3">
+              <CodeBlock steps={MACOS_STEPS} platform="macOS" />
+              <p className="text-xs text-gray-500 px-1">
+                The installer registers a <span className="text-gray-300 font-mono">launchd</span> LaunchAgent so the agent runs automatically every day — the macOS equivalent of a cron job. No manual scheduling needed.
+              </p>
+            </div>
+          )}
 
           {/* Live CLI usage from /api/agent/info */}
           {usageExamples.length > 0 && (

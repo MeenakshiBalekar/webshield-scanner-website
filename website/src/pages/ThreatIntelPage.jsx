@@ -58,8 +58,13 @@ function AttackMapperTab() {
     setLoad(false)
   }
 
+  const matched = result != null
+    ? (result.matched ?? result.Matched ?? null)
+    : null
+
   const tactics = (() => {
     if (!result) return []
+    if (matched === false) return []
     const direct = field(result, 'tactics', 'Tactics')
     if (Array.isArray(direct)) return direct
     const flat = field(result, 'techniques', 'Techniques') ?? (Array.isArray(result) ? result : [])
@@ -142,7 +147,9 @@ function AttackMapperTab() {
       )}
 
       {result && tactics.length === 0 && (
-        <div className="text-center text-sm text-gray-500 py-8">No ATT&CK techniques mapped for those inputs.</div>
+        <div className="text-center text-sm text-gray-500 py-8">
+          {(result.message ?? result.Message) || 'No ATT&CK techniques mapped for those inputs.'}
+        </div>
       )}
     </div>
   )

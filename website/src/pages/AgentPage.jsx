@@ -157,31 +157,41 @@ export default function AgentPage() {
     setDownloading(platform)
     setDlError(null)
 
-    // Use the direct HTTPS URL from agentInfo — do NOT append &apiKey here because the
-    // backend's authenticated download path redirects through HTTP, causing a mixed-content
-    // block in Chrome. Instead we generate the token and show it for manual agent config.
-    const baseUrl =
-      platform === 'win'   ? (agentInfo?.WindowsDownloadUrl ?? agentInfo?.windowsDownloadUrl) :
-      platform === 'linux' ? (agentInfo?.LinuxDownloadUrl   ?? agentInfo?.linuxDownloadUrl)   :
-                             (agentInfo?.MacOsDownloadUrl   ?? agentInfo?.macOsDownloadUrl)
-    const platformParam = platform === 'win' ? 'windows' : platform
-    const downloadUrl = baseUrl || `${BACKEND}/api/agent/download?platform=${platformParam}`
-
-    // Trigger the file download directly (HTTPS, no redirect through HTTP)
-    const a = document.createElement('a')
-    a.href = downloadUrl
-    a.rel = 'noopener noreferrer'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-
-    // In parallel, try to generate an API token and surface it for agent configuration
     try {
+      // POST /api/agent/token returns { token, downloadUrl } where downloadUrl already
+      // contains authentication and gives the correct binary (.exe for Windows, binary
+      // for Linux). We append &platform= to get the right file.
       const tokenData = await createAgentToken()
-      const token = tokenData?.token ?? tokenData?.Token
-      if (token) setApiToken(token)
+      const token      = tokenData?.token       ?? tokenData?.Token
+      const downloadUrl = tokenData?.downloadUrl ?? tokenData?.DownloadUrl
+
+      if (downloadUrl) {
+        const url = `${downloadUrl}&platform=${platform}`
+        const a = document.createElement('a')
+        a.href = url
+        a.rel = 'noopener noreferrer'
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        if (token) setApiToken(token)
+      } else {
+        // Fallback: use platform-specific URL from agentInfo (install script)
+        const fallbackUrl =
+          platform === 'win'   ? (agentInfo?.WindowsDownloadUrl ?? agentInfo?.windowsDownloadUrl) :
+          platform === 'linux' ? (agentInfo?.LinuxDownloadUrl   ?? agentInfo?.linuxDownloadUrl)   :
+                                 (agentInfo?.MacOsDownloadUrl   ?? agentInfo?.macOsDownloadUrl)
+        const platformParam = platform === 'win' ? 'windows' : platform
+        const url = fallbackUrl || `${BACKEND}/api/agent/download?platform=${platformParam}`
+        const a = document.createElement('a')
+        a.href = url
+        a.rel = 'noopener noreferrer'
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        if (token) setApiToken(token)
+      }
     } catch {
-      // token optional — agent still works without it
+      setDlError('Could not generate download link — please try again.')
     }
 
     setDownloading(null)

@@ -160,10 +160,12 @@ export default function AgentPage() {
     try {
       // Use platform-specific URL from /api/agent/info — these are the correct per-OS links
       const platformUrl =
-        platform === 'win'   ? (agentInfo?.WindowsDownloadUrl ?? agentInfo?.windowsDownloadUrl) :
-        platform === 'linux' ? (agentInfo?.LinuxDownloadUrl   ?? agentInfo?.linuxDownloadUrl)   :
-                               (agentInfo?.MacOsDownloadUrl   ?? agentInfo?.macOsDownloadUrl)
-      const platformParam = platform === 'win' ? 'windows' : platform
+        platform === 'win'        ? (agentInfo?.WindowsDownloadUrl    ?? agentInfo?.windowsDownloadUrl)    :
+        platform === 'linux'      ? (agentInfo?.LinuxDownloadUrl      ?? agentInfo?.linuxDownloadUrl)      :
+        platform === 'macos-arm64'? (agentInfo?.MacOsArm64DownloadUrl ?? agentInfo?.macOsArm64DownloadUrl ??
+                                     agentInfo?.MacOsDownloadUrl      ?? agentInfo?.macOsDownloadUrl)      :
+                                    (agentInfo?.MacOsDownloadUrl      ?? agentInfo?.macOsDownloadUrl)
+      const platformParam = platform === 'win' ? 'windows' : platform === 'macos-arm64' ? 'macos-arm64' : platform
       const url = platformUrl || `${BACKEND}/api/agent/download?platform=${platformParam}`
 
       const a = document.createElement('a')
@@ -241,7 +243,15 @@ export default function AgentPage() {
               className="flex items-center gap-2.5 bg-white/8 hover:bg-white/15 border border-white/15 disabled:opacity-60 text-white font-semibold px-6 py-3 rounded-xl text-sm transition-colors w-full sm:w-auto justify-center"
             >
               <Download className="w-4 h-4" />
-              {downloading === 'macos' ? 'Preparing…' : 'Download for macOS (.sh)'}
+              {downloading === 'macos' ? 'Preparing…' : 'macOS Intel (.sh)'}
+            </button>
+            <button
+              onClick={() => handleDownload('macos-arm64')}
+              disabled={!!downloading}
+              className="flex items-center gap-2.5 bg-white/8 hover:bg-white/15 border border-white/15 disabled:opacity-60 text-white font-semibold px-6 py-3 rounded-xl text-sm transition-colors w-full sm:w-auto justify-center"
+            >
+              <Download className="w-4 h-4" />
+              {downloading === 'macos-arm64' ? 'Preparing…' : 'macOS Apple Silicon (.sh)'}
             </button>
           </div>
 

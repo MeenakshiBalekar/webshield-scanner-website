@@ -4,7 +4,7 @@ import { Loader2, AlertCircle, Eye, EyeOff, Github, LogIn, ShieldCheck } from 'l
 import { useAuth } from '../context/AuthContext'
 import { getSsoProviders } from '../services/api'
 
-const BACKEND = import.meta.env.VITE_API_URL || 'https://webshield-backend-api.onrender.com'
+import { BACKEND } from '../utils/backend.js'
 
 const SSO_ERROR_MESSAGES = {
   access_denied: 'You cancelled the login.',

@@ -151,36 +151,39 @@ export default function AgentPage() {
       .catch(() => {})
   }, [])
 
+  const triggerDownload = (url) => {
+    const a = document.createElement('a')
+    a.href = url
+    a.rel = 'noopener noreferrer'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+  }
+
   const handleDownload = async (platform) => {
     setDownloading(platform)
     setDlError(null)
+
+    // Base URL from agentInfo (already includes platform param); fall back to constructed URL
+    const baseUrl =
+      platform === 'win'   ? (agentInfo?.WindowsDownloadUrl ?? agentInfo?.windowsDownloadUrl) :
+      platform === 'linux' ? (agentInfo?.LinuxDownloadUrl   ?? agentInfo?.linuxDownloadUrl)   :
+                             (agentInfo?.MacOsDownloadUrl   ?? agentInfo?.macOsDownloadUrl)
+    const platformParam = platform === 'win' ? 'windows' : platform
+    const downloadBase = baseUrl || `${BACKEND}/api/agent/download?platform=${platformParam}`
+
+    // Try to append an authenticated apiKey; if anything fails, download without it
+    let finalUrl = downloadBase
     try {
-      // Base URL comes from agentInfo (already includes ?platform=... param)
-      const baseUrl =
-        platform === 'win'   ? (agentInfo?.WindowsDownloadUrl ?? agentInfo?.windowsDownloadUrl) :
-        platform === 'linux' ? (agentInfo?.LinuxDownloadUrl   ?? agentInfo?.linuxDownloadUrl)   :
-                               (agentInfo?.MacOsDownloadUrl   ?? agentInfo?.macOsDownloadUrl)
-
-      // Fall back to constructed URL if agentInfo didn't have it yet
-      const fallback = `${BACKEND}/api/agent/download?platform=${platform === 'win' ? 'windows' : platform}`
-      const downloadBase = baseUrl || fallback
-
-      // Try to get an authenticated token; if it fails, download without apiKey
-      let finalUrl = downloadBase
-      try {
-        const tokenData = await createAgentToken()
-        const token = tokenData?.token ?? tokenData?.Token
-        if (token) finalUrl = `${downloadBase}&apiKey=${encodeURIComponent(token)}`
-      } catch {
-        // Not logged in or token endpoint unavailable — download unauthenticated
-      }
-
-      window.open(finalUrl, '_blank', 'noopener')
+      const tokenData = await createAgentToken()
+      const token = tokenData?.token ?? tokenData?.Token
+      if (token) finalUrl = `${downloadBase}&apiKey=${encodeURIComponent(token)}`
     } catch {
-      setDlError('Could not generate download link — please try again.')
-    } finally {
-      setDownloading(null)
+      // proceed unauthenticated — user can fill in their key manually
     }
+
+    triggerDownload(finalUrl)
+    setDownloading(null)
   }
 
   const version       = agentInfo?.version       ?? agentInfo?.Version       ?? null

@@ -46,14 +46,15 @@ function DemoModal({ onClose }) {
           <X className="w-4 h-4 text-white" />
         </button>
 
-        <div className="relative aspect-video bg-navy-950 flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-crimson-500/20 border border-crimson-500/40 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Play className="w-7 h-7 text-crimson-400 fill-crimson-400 ml-1" />
-            </div>
-            <p className="text-white font-semibold text-lg mb-1">Product Demo</p>
-            <p className="text-gray-400 text-sm">See Udyo360 detect and remediate vulnerabilities across your attack surface.</p>
-          </div>
+        <div className="relative aspect-video bg-navy-950">
+          <iframe
+            className="absolute inset-0 w-full h-full"
+            src="https://www.youtube.com/embed/G3ea_t7dN1k?autoplay=1"
+            title="Udyo360 Product Demo"
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowFullScreen
+            frameBorder="0"
+          />
         </div>
 
         <div className="px-6 py-4 flex items-center justify-between">

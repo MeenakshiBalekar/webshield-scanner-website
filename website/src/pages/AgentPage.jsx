@@ -158,40 +158,32 @@ export default function AgentPage() {
     setDlError(null)
 
     try {
-      // POST /api/agent/token returns { token, downloadUrl } where downloadUrl already
-      // contains authentication and gives the correct binary (.exe for Windows, binary
-      // for Linux). We append &platform= to get the right file.
-      const tokenData = await createAgentToken()
-      const token      = tokenData?.token       ?? tokenData?.Token
-      const downloadUrl = tokenData?.downloadUrl ?? tokenData?.DownloadUrl
+      // Use platform-specific URL from /api/agent/info — these are the correct per-OS links
+      const platformUrl =
+        platform === 'win'        ? (agentInfo?.WindowsDownloadUrl    ?? agentInfo?.windowsDownloadUrl)    :
+        platform === 'linux'      ? (agentInfo?.LinuxDownloadUrl      ?? agentInfo?.linuxDownloadUrl)      :
+        platform === 'macos-arm64'? (agentInfo?.MacOsArm64DownloadUrl ?? agentInfo?.macOsArm64DownloadUrl ??
+                                     agentInfo?.MacOsDownloadUrl      ?? agentInfo?.macOsDownloadUrl)      :
+                                    (agentInfo?.MacOsDownloadUrl      ?? agentInfo?.macOsDownloadUrl)
+      const platformParam = platform === 'win' ? 'windows' : platform === 'macos-arm64' ? 'macos-arm64' : platform
+      const url = platformUrl || `${BACKEND}/api/agent/download?platform=${platformParam}`
 
-      if (downloadUrl) {
-        const url = `${downloadUrl}&platform=${platform}`
-        const a = document.createElement('a')
-        a.href = url
-        a.rel = 'noopener noreferrer'
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        if (token) setApiToken(token)
-      } else {
-        // Fallback: use platform-specific URL from agentInfo (install script)
-        const fallbackUrl =
-          platform === 'win'   ? (agentInfo?.WindowsDownloadUrl ?? agentInfo?.windowsDownloadUrl) :
-          platform === 'linux' ? (agentInfo?.LinuxDownloadUrl   ?? agentInfo?.linuxDownloadUrl)   :
-                                 (agentInfo?.MacOsDownloadUrl   ?? agentInfo?.macOsDownloadUrl)
-        const platformParam = platform === 'win' ? 'windows' : platform
-        const url = fallbackUrl || `${BACKEND}/api/agent/download?platform=${platformParam}`
-        const a = document.createElement('a')
-        a.href = url
-        a.rel = 'noopener noreferrer'
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        if (token) setApiToken(token)
-      }
+      const a = document.createElement('a')
+      a.href = url
+      a.rel = 'noopener noreferrer'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+
+      // Generate API token in background — shown as copyable field for agent config
+      createAgentToken()
+        .then((data) => {
+          const token = data?.token ?? data?.Token
+          if (token) setApiToken(token)
+        })
+        .catch(() => {})
     } catch {
-      setDlError('Could not generate download link — please try again.')
+      setDlError('Could not start download — please try again.')
     }
 
     setDownloading(null)
@@ -251,7 +243,15 @@ export default function AgentPage() {
               className="flex items-center gap-2.5 bg-white/8 hover:bg-white/15 border border-white/15 disabled:opacity-60 text-white font-semibold px-6 py-3 rounded-xl text-sm transition-colors w-full sm:w-auto justify-center"
             >
               <Download className="w-4 h-4" />
-              {downloading === 'macos' ? 'Preparing…' : 'Download for macOS (.sh)'}
+              {downloading === 'macos' ? 'Preparing…' : 'macOS Intel (.sh)'}
+            </button>
+            <button
+              onClick={() => handleDownload('macos-arm64')}
+              disabled={!!downloading}
+              className="flex items-center gap-2.5 bg-white/8 hover:bg-white/15 border border-white/15 disabled:opacity-60 text-white font-semibold px-6 py-3 rounded-xl text-sm transition-colors w-full sm:w-auto justify-center"
+            >
+              <Download className="w-4 h-4" />
+              {downloading === 'macos-arm64' ? 'Preparing…' : 'macOS Apple Silicon (.sh)'}
             </button>
           </div>
 

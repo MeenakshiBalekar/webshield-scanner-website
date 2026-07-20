@@ -1,141 +1,86 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-  Database, Code2, ShieldAlert, Globe, Layers, Cpu,
-  ArrowRight, CheckCircle2, Bell, BadgeCheck, Rss, CalendarClock,
-} from 'lucide-react'
-
-const PRODUCT_ROUTES = {
-  'SQL Injection Detection':  '/products/sqli',
-  'XSS Detection':            '/products/xss',
-  'OWASP Top 10':             '/products/owasp',
-  'API Security Testing':     '/products/api',
-  'Continuous Monitoring':    '/products/web',
-  'AI-Powered Analysis':      '/products/web',
-  'Slack & Webhook Alerts':   '/integrations',
-  'Security Trust Badge':     '/trust',
-  'CVE Threat Feed':          '/threat-feed',
-  'Scheduled Reports':        '/reports/schedule',
-}
+import { Globe, Cloud, Code2, Brain, Shield, FileText, CheckCircle2, ArrowRight } from 'lucide-react'
 
 const features = [
-  {
-    icon: Database,
-    color: 'text-red-500',
-    bg: 'bg-red-50',
-    title: 'SQL Injection Detection',
-    description:
-      'Automatically detect blind, error-based, time-based, and union-based SQL injection vulnerabilities across all input vectors including forms, headers, and cookies.',
-    points: ['In-band & blind SQLi', 'ORM-level detection', 'Database fingerprinting', 'Automated PoC generation'],
-  },
-  {
-    icon: Code2,
-    color: 'text-orange-500',
-    bg: 'bg-orange-50',
-    title: 'XSS Detection',
-    description:
-      'Identify reflected, stored, and DOM-based cross-site scripting flaws with our context-aware payload engine that bypasses modern WAFs and sanitization filters.',
-    points: ['Reflected & stored XSS', 'DOM-based analysis', 'WAF bypass payloads', 'CSP evaluation'],
-  },
-  {
-    icon: ShieldAlert,
-    color: 'text-purple-600',
-    bg: 'bg-purple-50',
-    title: 'OWASP Top 10',
-    description:
-      'Full coverage of the OWASP Top 10 2024 — from injection attacks and broken authentication to security misconfigurations and vulnerable components.',
-    points: ['All 10 categories covered', 'CVSS scoring', 'CWE mapping', 'Remediation guidance'],
-  },
   {
     icon: Globe,
     color: 'text-blue-600',
     bg: 'bg-blue-50',
-    title: 'API Security Testing',
+    title: 'Web & API Security',
     description:
-      'Test REST, GraphQL, and SOAP APIs for authorization bypasses, data exposure, rate limiting issues, and injection flaws with OpenAPI/Swagger integration.',
-    points: ['REST & GraphQL APIs', 'BOLA/BFLA detection', 'OAuth/JWT testing', 'OpenAPI import'],
+      'OWASP Top 10, HTTP security headers, TLS/SSL grading, cookie flags, API authentication, and CORS policy — with live scan progress and per-finding severity.',
+    points: ['OWASP Top 10 (2024)', 'TLS/SSL grading', 'API auth & CORS', 'Per-finding severity ratings'],
+    route: '/products/web',
   },
   {
-    icon: Layers,
+    icon: Cloud,
     color: 'text-teal-600',
     bg: 'bg-teal-50',
-    title: 'Continuous Monitoring',
+    title: 'Cloud Security',
     description:
-      'Schedule automated scans to run on a daily, weekly, or on-commit basis. Get instant alerts when new vulnerabilities are introduced to your web applications.',
-    points: ['CI/CD integration', 'Scheduled scans', 'Slack/email alerts', 'Trend analysis'],
+      'Configuration auditing for AWS (EC2, S3, RDS, IAM, CloudTrail), Azure, GCP, and Oracle Cloud. Catches public buckets, open security groups, and missing MFA.',
+    points: ['AWS, Azure, GCP, OCI', 'Public bucket detection', 'Open security groups', 'IAM & MFA checks'],
+    route: '/products/cloud',
   },
   {
-    icon: Cpu,
-    color: 'text-indigo-600',
-    bg: 'bg-indigo-50',
-    title: 'AI-Powered Analysis',
-    description:
-      'Machine learning models reduce false positives by 90%, correlate related vulnerabilities, and suggest context-aware remediation steps tailored to your stack.',
-    points: ['90% fewer false positives', 'Smart deduplication', 'Stack-aware remediation', 'Risk prioritization'],
-  },
-  {
-    icon: Bell,
+    icon: Code2,
     color: 'text-violet-600',
     bg: 'bg-violet-50',
-    title: 'Slack & Webhook Alerts',
+    title: 'Code & DevSecOps',
     description:
-      'Push scan alerts and regression notifications directly to Slack, Teams, or any webhook endpoint the moment a new vulnerability is detected.',
-    points: ['Slack Block Kit messages', 'Microsoft Teams support', 'Generic webhook (any HTTPS)', 'Delivery event log'],
+      'IaC scanning (Terraform, CloudFormation), Dockerfile hardening, Kubernetes RBAC, secrets detection, SAST, and CI/CD pipeline security.',
+    points: ['Terraform & CloudFormation', 'Secrets detection', 'Kubernetes RBAC', 'CI/CD pipeline checks'],
+    route: '/products/code',
   },
   {
-    icon: BadgeCheck,
+    icon: Brain,
+    color: 'text-orange-600',
+    bg: 'bg-orange-50',
+    title: 'Threat Intelligence',
+    description:
+      'MITRE ATT&CK mapping, IOC checking via AbuseIPDB and VirusTotal, CISA Known Exploited Vulnerabilities feed, EPSS exploitation scoring, and Shodan host enrichment.',
+    points: ['MITRE ATT&CK mapping', 'AbuseIPDB & VirusTotal', 'CISA KEV feed', 'EPSS scoring'],
+    route: '/threat',
+  },
+  {
+    icon: Shield,
+    color: 'text-crimson-600',
+    bg: 'bg-red-50',
+    title: 'Security Operations',
+    description:
+      'Full VMDR workflow — score vulnerabilities (0–100, A–F grade), track remediation, integrate with SIEM (Splunk/Elastic), and receive Slack and email alerts.',
+    points: ['VMDR remediation tracking', 'A–F risk grading', 'SIEM integration', 'Slack & email alerts'],
+    route: '/products/vmdr',
+  },
+  {
+    icon: FileText,
     color: 'text-emerald-600',
     bg: 'bg-emerald-50',
-    title: 'Security Trust Badge',
+    title: 'Compliance Reports',
     description:
-      'Embed a live security score badge in your README or website — updated automatically every scan so stakeholders always see your latest posture.',
-    points: ['Live score badge (SVG)', 'HTML & Markdown snippet', 'Grade + compliance highlights', 'Public trust page'],
-  },
-  {
-    icon: Rss,
-    color: 'text-sky-600',
-    bg: 'bg-sky-50',
-    title: 'CVE Threat Feed',
-    description:
-      'Every scan finding enriched with live CVE data, CVSS scores, and exploit availability — so you know which vulnerabilities are being actively exploited.',
-    points: ['Live CVE enrichment', 'CVSS ring scoring', 'Exploit & patch flags', 'Mapped to your checks'],
-  },
-  {
-    icon: CalendarClock,
-    color: 'text-rose-600',
-    bg: 'bg-rose-50',
-    title: 'Scheduled Reports',
-    description:
-      'Automated PDF reports delivered to your inbox on a daily, weekly, or monthly cadence — with optional AI executive summary included.',
-    points: ['PDF & email formats', 'AI narrative summary', 'Multi-recipient support', 'Send-now override'],
+      'Automated PCI-DSS, ISO 27001, SOC 2 Type II, and HIPAA gap analysis. PDF reports and scheduled email delivery for your auditors and exec team.',
+    points: ['PCI-DSS, ISO 27001', 'SOC 2 Type II & HIPAA', 'PDF & email delivery', 'Scheduled reporting'],
+    route: '/reports',
   },
 ]
 
 export default function Features() {
   const navigate = useNavigate()
 
-  const handleLearnMore = (title) => {
-    const dest = PRODUCT_ROUTES[title] || '/products/web'
-    const token = localStorage.getItem('ws_token')
-    navigate(token ? dest : `/login?redirect=${encodeURIComponent(dest)}`)
-  }
-
   return (
     <section id="products" className="py-20 md:py-28 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        {/* Header */}
         <div className="text-center mb-16">
-          <span className="section-tag">What We Detect</span>
+          <span className="section-tag">Platform Capabilities</span>
           <h2 className="section-heading mb-4">
-            Comprehensive Vulnerability Coverage
+            Complete Security Coverage
           </h2>
           <p className="text-lg text-gray-500 max-w-2xl mx-auto">
-            Udyo360 goes beyond surface-level scanning. Our engine tests every attack surface
-            your application exposes to the internet — before the bad guys find it.
+            One platform to detect, prioritize, and remediate security risks across your web apps, cloud, code, and endpoints — with compliance reporting built in.
           </p>
         </div>
 
-        {/* Feature Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((f) => {
             const Icon = f.icon
@@ -158,7 +103,7 @@ export default function Features() {
                   ))}
                 </ul>
                 <button
-                  onClick={() => handleLearnMore(f.title)}
+                  onClick={() => navigate(f.route)}
                   className="inline-flex items-center gap-1 text-sm font-semibold text-crimson-500 hover:gap-2 transition-all"
                 >
                   Learn more <ArrowRight className="w-4 h-4" />

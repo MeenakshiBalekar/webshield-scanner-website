@@ -1,13 +1,29 @@
 import React, { useEffect, useRef } from 'react'
 import { ArrowRight, Play, CheckCircle, Zap } from 'lucide-react'
 
-const badges = ['SOC 2 Certified', 'OWASP Aligned', 'GDPR Ready', 'CVE Coverage']
+const badges = ['SOC 2 Aligned', 'OWASP Covered', 'MITRE ATT&CK Mapped', 'PCI-DSS Ready']
 
 const scanResults = [
   { severity: 'CRITICAL', count: 3, color: 'bg-red-500' },
-  { severity: 'HIGH', count: 7, color: 'bg-orange-500' },
-  { severity: 'MEDIUM', count: 14, color: 'bg-yellow-500' },
-  { severity: 'LOW', count: 22, color: 'bg-blue-400' },
+  { severity: 'HIGH',     count: 7, color: 'bg-orange-500' },
+  { severity: 'MEDIUM',   count: 14, color: 'bg-yellow-500' },
+  { severity: 'LOW',      count: 22, color: 'bg-blue-400' },
+]
+
+const LIVE_LOG = [
+  { level: 'CRITICAL', color: 'text-red-400',    text: 'SQL Injection found at /api/users?id=' },
+  { level: 'HIGH',     color: 'text-orange-400', text: 'Reflected XSS detected at /search' },
+  { level: 'HIGH',     color: 'text-orange-400', text: 'S3 bucket publicly readable: assets-prod' },
+  { level: 'MEDIUM',   color: 'text-yellow-400', text: 'Missing Content-Security-Policy header' },
+  { level: 'MEDIUM',   color: 'text-yellow-400', text: 'TLS 1.0 still accepted on port 443' },
+  { level: 'LOW',      color: 'text-blue-400',   text: 'Server version disclosed: Apache/2.4.51' },
+]
+
+const STATS = [
+  { value: '20+',  label: 'Scan Types' },
+  { value: '5',    label: 'Cloud Providers' },
+  { value: '4',    label: 'Compliance Frameworks' },
+  { value: '3',    label: 'Agent Platforms' },
 ]
 
 export default function Hero({ onWatchDemo, onStartFreeScan }) {
@@ -42,7 +58,6 @@ export default function Hero({ onWatchDemo, onStartFreeScan }) {
         ctx.fillStyle = `rgba(163, 190, 230, ${p.opacity})`
         ctx.fill()
       })
-      // Draw connections
       for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
           const dx = particles[i].x - particles[j].x
@@ -66,41 +81,33 @@ export default function Hero({ onWatchDemo, onStartFreeScan }) {
 
   return (
     <section className="relative min-h-screen bg-navy-900 overflow-hidden flex items-center">
-      {/* Animated particle network background */}
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full opacity-70" />
-
-      {/* Grid pattern */}
       <div className="absolute inset-0 grid-bg opacity-30" />
-
-      {/* Gradient overlays */}
       <div className="absolute inset-0 bg-gradient-to-br from-navy-950 via-navy-900 to-navy-800 opacity-80" />
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-navy-950 to-transparent" />
-
-      {/* Red accent glow */}
       <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-crimson-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute top-2/3 left-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-24 md:py-32 w-full">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
+
           {/* Left Content */}
           <div>
-            {/* Badge */}
             <div className="inline-flex items-center gap-2 bg-crimson-500/10 border border-crimson-500/30 text-crimson-400 text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
               <Zap className="w-3.5 h-3.5" />
-              NEW — OWASP Top 10 2024 Coverage
+              All-in-One Security Platform
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-[1.1] mb-6">
-              Find & Fix{' '}
-              <span className="text-crimson-500">Web Vulnerabilities</span>{' '}
-              Before Attackers Do
+              Detect & Remediate{' '}
+              <span className="text-crimson-500">Vulnerabilities</span>{' '}
+              Across Your Entire Attack Surface
             </h1>
 
             <p className="text-lg text-gray-400 leading-relaxed mb-8 max-w-xl">
-              Udyo360's intelligent scanner detects SQL injection, XSS, OWASP Top 10, and API security flaws in minutes — giving your team actionable insights to secure your web applications at scale.
+              Udyo360 is an all-in-one security platform that scans your web apps, APIs, cloud infrastructure, code, and endpoints — then maps findings to MITRE ATT&CK, tracks remediation, and delivers compliance reports for PCI-DSS, ISO 27001, SOC 2, and HIPAA.
             </p>
 
-            {/* CTA Buttons */}
             <div className="flex flex-wrap gap-4 mb-10">
               {onStartFreeScan ? (
                 <button
@@ -128,7 +135,6 @@ export default function Hero({ onWatchDemo, onStartFreeScan }) {
               </button>
             </div>
 
-            {/* Trust badges */}
             <div className="flex flex-wrap gap-3">
               {badges.map((b) => (
                 <span
@@ -145,11 +151,9 @@ export default function Hero({ onWatchDemo, onStartFreeScan }) {
           {/* Right — Animated Scan Widget */}
           <div className="hidden lg:block">
             <div className="relative">
-              {/* Outer glow */}
               <div className="absolute -inset-4 bg-crimson-500/5 rounded-3xl blur-xl" />
-
               <div className="relative bg-navy-950/90 border border-white/10 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-sm">
-                {/* Window bar */}
+
                 <div className="flex items-center gap-2 px-4 py-3 bg-white/5 border-b border-white/10">
                   <div className="w-3 h-3 rounded-full bg-red-500" />
                   <div className="w-3 h-3 rounded-full bg-yellow-500" />
@@ -158,7 +162,6 @@ export default function Hero({ onWatchDemo, onStartFreeScan }) {
                   <span className="text-xs text-gray-400 font-mono">udyo360 — scan in progress</span>
                 </div>
 
-                {/* URL Bar */}
                 <div className="px-4 py-3 border-b border-white/10">
                   <div className="flex items-center gap-2 bg-navy-900 rounded-lg px-3 py-2">
                     <img src="/udyo360-icon-only.svg" alt="" className="w-4 h-4" />
@@ -167,14 +170,13 @@ export default function Hero({ onWatchDemo, onStartFreeScan }) {
                   </div>
                 </div>
 
-                {/* Scan Progress */}
                 <div className="px-4 py-3 border-b border-white/10">
                   <div className="flex justify-between text-xs text-gray-400 mb-1.5">
                     <span>Scan Progress</span>
                     <span className="text-white font-semibold">73%</span>
                   </div>
                   <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full w-[73%] bg-gradient-to-r from-crimson-500 to-crimson-400 rounded-full" style={{animation: 'none'}} />
+                    <div className="h-full w-[73%] bg-gradient-to-r from-crimson-500 to-crimson-400 rounded-full" />
                   </div>
                   <div className="flex justify-between text-[10px] text-gray-500 mt-1">
                     <span>Crawling pages...</span>
@@ -182,43 +184,33 @@ export default function Hero({ onWatchDemo, onStartFreeScan }) {
                   </div>
                 </div>
 
-                {/* Results */}
                 <div className="px-4 py-3 border-b border-white/10">
                   <p className="text-xs text-gray-400 mb-2 font-semibold uppercase tracking-wider">Vulnerabilities Found</p>
                   <div className="grid grid-cols-4 gap-2">
                     {scanResults.map((r) => (
                       <div key={r.severity} className="bg-navy-900/80 rounded-lg p-2 text-center">
-                        <div className={`text-lg font-bold text-white`}>{r.count}</div>
+                        <div className="text-lg font-bold text-white">{r.count}</div>
                         <div className={`text-[9px] font-bold ${
                           r.severity === 'CRITICAL' ? 'text-red-400' :
-                          r.severity === 'HIGH' ? 'text-orange-400' :
-                          r.severity === 'MEDIUM' ? 'text-yellow-400' : 'text-blue-400'
+                          r.severity === 'HIGH'     ? 'text-orange-400' :
+                          r.severity === 'MEDIUM'   ? 'text-yellow-400' : 'text-blue-400'
                         }`}>{r.severity}</div>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* Live Log */}
                 <div className="px-4 py-3">
                   <p className="text-xs text-gray-400 mb-2 font-semibold uppercase tracking-wider">Live Log</p>
                   <div className="space-y-1.5 font-mono text-[10px]">
-                    <div className="flex gap-2">
-                      <span className="text-red-400 shrink-0">[CRITICAL]</span>
-                      <span className="text-gray-300">SQL Injection found at /api/users?id=</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <span className="text-orange-400 shrink-0">[HIGH]</span>
-                      <span className="text-gray-300">Reflected XSS detected at /search</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <span className="text-yellow-400 shrink-0">[MEDIUM]</span>
-                      <span className="text-gray-300">Missing CSP header on 12 pages</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <span className="text-blue-400 shrink-0">[INFO]</span>
-                      <span className="text-gray-400 animate-pulse">Scanning /api/v2/products...</span>
-                    </div>
+                    {LIVE_LOG.map((entry, i) => (
+                      <div key={i} className="flex gap-2">
+                        <span className={`${entry.color} shrink-0`}>[{entry.level}]</span>
+                        <span className={i === LIVE_LOG.length - 1 ? 'text-gray-400 animate-pulse' : 'text-gray-300'}>
+                          {entry.text}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -228,12 +220,7 @@ export default function Hero({ onWatchDemo, onStartFreeScan }) {
 
         {/* Stats bar */}
         <div className="mt-16 pt-10 border-t border-white/10 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-          {[
-            { value: '50,000+', label: 'Scans Completed' },
-            { value: '2.4M+', label: 'Vulnerabilities Found' },
-            { value: '99.7%', label: 'Detection Accuracy' },
-            { value: '<5 min', label: 'Avg. Scan Time' },
-          ].map((s) => (
+          {STATS.map((s) => (
             <div key={s.label}>
               <div className="text-3xl font-extrabold text-white">{s.value}</div>
               <div className="text-sm text-gray-400 mt-1">{s.label}</div>

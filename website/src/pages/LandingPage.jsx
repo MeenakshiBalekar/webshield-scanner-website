@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import {
   X, Play, ChevronDown, ChevronUp, ArrowRight,
-  BookOpen, Shield, Zap, Lock, Globe,
+  BookOpen, Shield, Zap, Lock, Globe, Terminal, Download,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Hero from '../components/Hero'
@@ -46,26 +46,18 @@ function DemoModal({ onClose }) {
           <X className="w-4 h-4 text-white" />
         </button>
 
-        {/* Video placeholder — replace src with real embed when available */}
         <div className="relative aspect-video bg-navy-950 flex items-center justify-center">
           <div className="text-center">
             <div className="w-16 h-16 bg-crimson-500/20 border border-crimson-500/40 rounded-full flex items-center justify-center mx-auto mb-4">
               <Play className="w-7 h-7 text-crimson-400 fill-crimson-400 ml-1" />
             </div>
             <p className="text-white font-semibold text-lg mb-1">Product Demo</p>
-            <p className="text-gray-400 text-sm">See Udyo360 find and explain vulnerabilities in under 2 minutes.</p>
+            <p className="text-gray-400 text-sm">See Udyo360 detect and remediate vulnerabilities across your attack surface.</p>
           </div>
-          {/* Uncomment and replace with real YouTube/Vimeo embed:
-          <iframe
-            className="absolute inset-0 w-full h-full"
-            src="https://www.youtube.com/embed/YOUR_VIDEO_ID?autoplay=1"
-            allow="autoplay; fullscreen"
-            frameBorder="0"
-          /> */}
         </div>
 
         <div className="px-6 py-4 flex items-center justify-between">
-          <p className="text-sm text-gray-400">Udyo360 — Web Vulnerability Scanner</p>
+          <p className="text-sm text-gray-400">Udyo360 — All-in-One Security Platform</p>
           <button
             onClick={onClose}
             className="text-xs text-gray-500 hover:text-white transition-colors"
@@ -75,6 +67,62 @@ function DemoModal({ onClose }) {
         </div>
       </div>
     </div>
+  )
+}
+
+/* ──────────────── Agent Section ──────────────── */
+const AGENT_CMDS = [
+  { platform: 'Linux',   cmd: "curl -sSL '…&platform=linux'   | sudo bash" },
+  { platform: 'macOS',   cmd: "curl -sSL '…&platform=macos'   | sudo bash" },
+  { platform: 'Windows', cmd: "Invoke-RestMethod '…&platform=windows' | powershell -" },
+]
+
+function AgentSection() {
+  return (
+    <section className="py-20 md:py-24 bg-navy-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div>
+            <div className="inline-flex items-center gap-2 bg-lime-500/10 border border-lime-500/30 text-lime-400 text-xs font-semibold px-3 py-1.5 rounded-full mb-5">
+              <Terminal className="w-3.5 h-3.5" />
+              Lightweight Security Agent
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4 leading-tight">
+              Windows, Linux &amp; macOS — Install in One Command
+            </h2>
+            <p className="text-gray-400 leading-relaxed mb-6">
+              The Udyo360 agent runs locally on your server, inventories installed packages, maps open ports, and checks OS hardening — then reports findings back to your VMDR dashboard. No binary to maintain; updates are automatic.
+            </p>
+            <Link
+              to="/agent"
+              className="inline-flex items-center gap-2 bg-crimson-500 hover:bg-crimson-600 text-white font-semibold px-6 py-3 rounded-lg text-sm transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              Download Agent
+            </Link>
+          </div>
+
+          <div className="space-y-3">
+            {AGENT_CMDS.map(({ platform, cmd }) => (
+              <div key={platform} className="bg-[#0d1117] border border-white/10 rounded-xl overflow-hidden">
+                <div className="flex items-center gap-2 px-4 py-2.5 border-b border-white/10 bg-white/3">
+                  <Terminal className="w-3.5 h-3.5 text-gray-500" />
+                  <span className="text-xs text-gray-400 font-medium">{platform}</span>
+                </div>
+                <div className="px-4 py-3 font-mono text-sm text-green-400 overflow-x-auto">
+                  {cmd}
+                </div>
+              </div>
+            ))}
+            <p className="text-xs text-gray-500 px-1">
+              Get the authenticated URL from the{' '}
+              <Link to="/agent" className="text-lime-400 hover:text-lime-300 underline">Agent download page</Link>.
+              Daily scheduling via cron (Linux/macOS) or Task Scheduler (Windows) is set up automatically.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
   )
 }
 
@@ -268,6 +316,7 @@ export default function LandingPage() {
         />
         <TrustLogos />
         <Features />
+        <AgentSection />
         <HowItWorks />
         <Solutions />
         <Testimonials />

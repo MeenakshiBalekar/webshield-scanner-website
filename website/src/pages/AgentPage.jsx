@@ -7,9 +7,7 @@ import {
 import Footer from '../components/Footer'
 import Navbar from '../components/Navbar'
 import { createAgentToken } from '../services/api'
-
-const API = import.meta.env.VITE_API_URL ?? ''
-const BACKEND = API || 'https://webshield-backend-api.onrender.com'
+import { BACKEND } from '../utils/backend.js'
 
 const FEATURES = [
   {
@@ -157,20 +155,27 @@ export default function AgentPage() {
     setDownloading(platform)
     setDlError(null)
     try {
-      const data = await createAgentToken()
-      // Response may be { token, downloadUrl } or { token, platforms: { linux: { downloadUrl } } }
-      const platformKey = platform === 'win' ? 'windows' : platform
-      const url =
-        data?.platforms?.[platformKey]?.downloadUrl ??
-        data?.platforms?.[platformKey]?.DownloadUrl ??
-        (data?.downloadUrl ?? data?.DownloadUrl
-          ? `${data.downloadUrl ?? data.DownloadUrl}&platform=${platform}`
-          : null)
-      if (url) {
-        window.open(url, '_blank', 'noopener')
-      } else {
-        setDlError('Could not generate download link — please try again.')
+      // Base URL comes from agentInfo (already includes ?platform=... param)
+      const baseUrl =
+        platform === 'win'   ? (agentInfo?.WindowsDownloadUrl ?? agentInfo?.windowsDownloadUrl) :
+        platform === 'linux' ? (agentInfo?.LinuxDownloadUrl   ?? agentInfo?.linuxDownloadUrl)   :
+                               (agentInfo?.MacOsDownloadUrl   ?? agentInfo?.macOsDownloadUrl)
+
+      // Fall back to constructed URL if agentInfo didn't have it yet
+      const fallback = `${BACKEND}/api/agent/download?platform=${platform === 'win' ? 'windows' : platform}`
+      const downloadBase = baseUrl || fallback
+
+      // Try to get an authenticated token; if it fails, download without apiKey
+      let finalUrl = downloadBase
+      try {
+        const tokenData = await createAgentToken()
+        const token = tokenData?.token ?? tokenData?.Token
+        if (token) finalUrl = `${downloadBase}&apiKey=${encodeURIComponent(token)}`
+      } catch {
+        // Not logged in or token endpoint unavailable — download unauthenticated
       }
+
+      window.open(finalUrl, '_blank', 'noopener')
     } catch {
       setDlError('Could not generate download link — please try again.')
     } finally {

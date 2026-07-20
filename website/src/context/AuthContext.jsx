@@ -1,9 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import axios from 'axios'
 
-const API     = import.meta.env.VITE_API_URL ?? ''
-const BACKEND = API || 'https://webshield-backend-api.onrender.com'
-if (API) axios.defaults.baseURL = API
+import { BACKEND } from '../utils/backend.js'
+if (BACKEND) axios.defaults.baseURL = BACKEND
 
 const AuthContext = createContext(null)
 

@@ -157,9 +157,20 @@ export default function AgentPage() {
     setDownloading(platform)
     setDlError(null)
     try {
-      const { token, downloadUrl } = await createAgentToken()
-      const url = `${downloadUrl}&platform=${platform}`
-      window.open(url, '_blank', 'noopener')
+      const data = await createAgentToken()
+      // Response may be { token, downloadUrl } or { token, platforms: { linux: { downloadUrl } } }
+      const platformKey = platform === 'win' ? 'windows' : platform
+      const url =
+        data?.platforms?.[platformKey]?.downloadUrl ??
+        data?.platforms?.[platformKey]?.DownloadUrl ??
+        (data?.downloadUrl ?? data?.DownloadUrl
+          ? `${data.downloadUrl ?? data.DownloadUrl}&platform=${platform}`
+          : null)
+      if (url) {
+        window.open(url, '_blank', 'noopener')
+      } else {
+        setDlError('Could not generate download link — please try again.')
+      }
     } catch {
       setDlError('Could not generate download link — please try again.')
     } finally {

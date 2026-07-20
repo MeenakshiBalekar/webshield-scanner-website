@@ -1,4 +1,4 @@
-const BASE = import.meta.env.VITE_API_URL || 'https://webshield-backend-api.onrender.com'
+import { BACKEND as BASE } from '../utils/backend.js'
 
 function authHeaders() {
   const token = localStorage.getItem('ws_token')

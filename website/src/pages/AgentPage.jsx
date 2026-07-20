@@ -142,6 +142,8 @@ export default function AgentPage() {
   const [agentInfo,    setAgentInfo]    = useState(null)
   const [downloading,  setDownloading]  = useState(null) // 'win' | 'linux' | 'macos' | null
   const [dlError,      setDlError]      = useState(null)
+  const [apiToken,     setApiToken]     = useState(null) // shown after download for manual config
+  const [tokenCopied,  setTokenCopied]  = useState(false)
   const [osPlatform,   setOsPlatform]   = useState('linux') // 'win' | 'linux' | 'macos'
 
   useEffect(() => {
@@ -151,39 +153,45 @@ export default function AgentPage() {
       .catch(() => {})
   }, [])
 
-  const triggerDownload = (url) => {
-    const a = document.createElement('a')
-    a.href = url
-    a.rel = 'noopener noreferrer'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-  }
-
   const handleDownload = async (platform) => {
     setDownloading(platform)
     setDlError(null)
 
-    // Base URL from agentInfo (already includes platform param); fall back to constructed URL
+    // Use the direct HTTPS URL from agentInfo — do NOT append &apiKey here because the
+    // backend's authenticated download path redirects through HTTP, causing a mixed-content
+    // block in Chrome. Instead we generate the token and show it for manual agent config.
     const baseUrl =
       platform === 'win'   ? (agentInfo?.WindowsDownloadUrl ?? agentInfo?.windowsDownloadUrl) :
       platform === 'linux' ? (agentInfo?.LinuxDownloadUrl   ?? agentInfo?.linuxDownloadUrl)   :
                              (agentInfo?.MacOsDownloadUrl   ?? agentInfo?.macOsDownloadUrl)
     const platformParam = platform === 'win' ? 'windows' : platform
-    const downloadBase = baseUrl || `${BACKEND}/api/agent/download?platform=${platformParam}`
+    const downloadUrl = baseUrl || `${BACKEND}/api/agent/download?platform=${platformParam}`
 
-    // Try to append an authenticated apiKey; if anything fails, download without it
-    let finalUrl = downloadBase
+    // Trigger the file download directly (HTTPS, no redirect through HTTP)
+    const a = document.createElement('a')
+    a.href = downloadUrl
+    a.rel = 'noopener noreferrer'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+
+    // In parallel, try to generate an API token and surface it for agent configuration
     try {
       const tokenData = await createAgentToken()
       const token = tokenData?.token ?? tokenData?.Token
-      if (token) finalUrl = `${downloadBase}&apiKey=${encodeURIComponent(token)}`
+      if (token) setApiToken(token)
     } catch {
-      // proceed unauthenticated — user can fill in their key manually
+      // token optional — agent still works without it
     }
 
-    triggerDownload(finalUrl)
     setDownloading(null)
+  }
+
+  const copyToken = () => {
+    if (!apiToken) return
+    navigator.clipboard.writeText(apiToken)
+    setTokenCopied(true)
+    setTimeout(() => setTokenCopied(false), 1800)
   }
 
   const version       = agentInfo?.version       ?? agentInfo?.Version       ?? null
@@ -239,6 +247,22 @@ export default function AgentPage() {
 
           {dlError && (
             <p className="text-xs text-red-400 mt-2">{dlError}</p>
+          )}
+
+          {/* API token shown after download for agent configuration */}
+          {apiToken && (
+            <div className="mt-4 max-w-lg mx-auto bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-left">
+              <p className="text-xs text-gray-400 mb-1.5">Your API key — paste this when the agent asks on first run:</p>
+              <div className="flex items-center gap-2">
+                <code className="text-xs text-green-400 font-mono flex-1 truncate">{apiToken}</code>
+                <button
+                  onClick={copyToken}
+                  className="text-xs text-gray-500 hover:text-gray-200 transition-colors shrink-0"
+                >
+                  {tokenCopied ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
+            </div>
           )}
 
           {/* Version badge + trust line */}

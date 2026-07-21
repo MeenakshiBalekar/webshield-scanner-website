@@ -96,6 +96,8 @@ import CleanImageDetailPage from './pages/CleanImageDetailPage'
 import CleanImageBuilderPage from './pages/CleanImageBuilderPage'
 import HelmChartsPage from './pages/HelmChartsPage'
 import HelmChartDetailPage from './pages/HelmChartDetailPage'
+import CleanLibrariesPage from './pages/CleanLibrariesPage'
+import CleanLibraryDetailPage from './pages/CleanLibraryDetailPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -128,6 +130,8 @@ export default function App() {
           <Route path="/images/:slug"      element={<CleanImageDetailPage />} />
           <Route path="/helm"              element={<HelmChartsPage />} />
           <Route path="/helm/:slug"        element={<HelmChartDetailPage />} />
+          <Route path="/libraries"         element={<CleanLibrariesPage />} />
+          <Route path="/libraries/:slug"   element={<CleanLibraryDetailPage />} />
           <Route path="/privacy-policy"         element={<PrivacyPolicyPage />} />
           <Route path="/terms-of-service"       element={<TermsOfServicePage />} />
           <Route path="/cookie-policy"          element={<CookiePolicyPage />} />

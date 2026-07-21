@@ -132,6 +132,7 @@ const COMMON_NAV = [
       { label: 'CVE Database',  href: '/cve-database' },
       { label: 'Clean Images',  href: '/images' },
       { label: 'Helm Charts',   href: '/helm' },
+      { label: 'Clean Libraries', href: '/libraries' },
       { label: 'Blog',          href: '/blog' },
       { label: 'Help',          href: '/help' },
       { label: 'Pricing',       href: '/pricing' },

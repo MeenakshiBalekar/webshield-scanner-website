@@ -629,3 +629,11 @@ export const getImages = ({ search = '', category = '', sort = '', page = 1, pag
 export const getImageDetail = (slug) => request(`/api/images/${encodeURIComponent(slug)}/details`)
 export const getImageTags   = (slug) => request(`/api/images/${encodeURIComponent(slug)}/tags`)
 export const getImageSbom   = (slug) => request(`/api/images/${encodeURIComponent(slug)}/sbom`)
+
+// Clean Images — custom image builder & requests
+export const getBuilderOptions   = ()     => request('/api/images/builder/options')
+export const generateDockerfile  = (data) => request('/api/images/builder/generate', { method: 'POST', body: JSON.stringify(data) })
+export const downloadDockerfile  = (data) => blobRequest('/api/images/builder/generate?download=true', { method: 'POST', body: JSON.stringify(data) })
+export const submitImageRequest  = (data) => request('/api/images/requests', { method: 'POST', body: JSON.stringify(data) })
+export const getImageRequests    = ()     => request('/api/images/requests')
+export const updateImageRequest  = (id, data) => request(`/api/images/requests/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(data) })

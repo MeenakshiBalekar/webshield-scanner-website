@@ -2,10 +2,11 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Search, ChevronLeft, ChevronRight, ChevronDown, Loader2, AlertCircle,
-  ShieldCheck, Package, Download, BadgeCheck, Boxes,
+  ShieldCheck, Package, Download, BadgeCheck, Boxes, Hammer, Send,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import RequestImageModal from '../components/RequestImageModal'
 import { getImageStats, getImageCategories, getImages } from '../services/api'
 
 /* Dual-case field accessor — backend may serialize camelCase or PascalCase */
@@ -136,7 +137,8 @@ export default function CleanImagesPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState(null)
 
-  const [sortOpen, setSortOpen] = useState(false)
+  const [sortOpen, setSortOpen]       = useState(false)
+  const [requestOpen, setRequestOpen] = useState(false)
   const sortRef  = useRef(null)
   const debRef   = useRef(null)
 
@@ -360,14 +362,30 @@ export default function CleanImagesPage() {
               Private image mirrors, custom hardened builds, FIPS attestations, SLA-backed
               CVE remediation, and compliance evidence for your auditors.
             </p>
-            <Link
-              to="/contact"
-              className="inline-flex items-center gap-1.5 text-sm font-semibold text-crimson-400 hover:text-crimson-300 transition-colors"
-            >
-              Talk to sales <ChevronRight className="w-4 h-4" />
-            </Link>
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+              <Link
+                to="/images/builder"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-crimson-400 hover:text-crimson-300 transition-colors"
+              >
+                <Hammer className="w-4 h-4" /> Custom Image Builder
+              </Link>
+              <button
+                onClick={() => setRequestOpen(true)}
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-crimson-400 hover:text-crimson-300 transition-colors"
+              >
+                <Send className="w-4 h-4" /> Request a Custom Image
+              </button>
+              <Link
+                to="/contact"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-crimson-400 hover:text-crimson-300 transition-colors"
+              >
+                Talk to sales <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
         </div>
+
+        <RequestImageModal open={requestOpen} onClose={() => setRequestOpen(false)} />
 
         {/* Footer note */}
         <p className="text-center text-xs text-gray-600 mt-12">

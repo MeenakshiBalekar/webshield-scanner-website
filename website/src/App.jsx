@@ -93,6 +93,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import DarkWebPage from './pages/DarkWebPage'
 import CleanImagesPage from './pages/CleanImagesPage'
 import CleanImageDetailPage from './pages/CleanImageDetailPage'
+import CleanImageBuilderPage from './pages/CleanImageBuilderPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -121,6 +122,7 @@ export default function App() {
           <Route path="/cve-database/:checkId"          element={<CveDatabasePage />} />
           <Route path="/agent"             element={<AgentPage />} />
           <Route path="/images"            element={<CleanImagesPage />} />
+          <Route path="/images/builder"    element={<CleanImageBuilderPage />} />
           <Route path="/images/:slug"      element={<CleanImageDetailPage />} />
           <Route path="/privacy-policy"         element={<PrivacyPolicyPage />} />
           <Route path="/terms-of-service"       element={<TermsOfServicePage />} />

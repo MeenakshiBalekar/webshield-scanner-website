@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import {
   ChevronLeft, Copy, Check, Loader2, AlertCircle, Package, Download,
-  ShieldCheck, BadgeCheck, FileText, FileCheck2, Tag, HardDrive, Boxes,
+  ShieldCheck, BadgeCheck, FileText, FileCheck2, Tag, HardDrive, Boxes, Send,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import RequestImageModal from '../components/RequestImageModal'
 import { getImageDetail, getImageTags, getImageSbom } from '../services/api'
 import { BACKEND } from '../utils/backend.js'
 
@@ -431,6 +432,7 @@ export default function CleanImageDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState(null)
   const [activeTab, setActiveTab] = useState('overview')
+  const [requestOpen, setRequestOpen] = useState(false)
 
   useEffect(() => {
     setLoading(true)
@@ -535,6 +537,26 @@ export default function CleanImageDetailPage() {
             {activeTab === 'overview' && <OverviewTab image={image} />}
             {activeTab === 'tags'     && <TagsTab slug={slug} />}
             {activeTab === 'sbom'     && <SbomTab slug={slug} />}
+
+            {/* Request a custom variant */}
+            <div className="mt-12 bg-crimson-500/10 border border-crimson-500/20 rounded-2xl px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-white">Need a custom variant of {name}?</p>
+                <p className="text-xs text-gray-400 mt-0.5">Extra packages, FIPS builds, or a different base — we'll harden it for you.</p>
+              </div>
+              <button
+                onClick={() => setRequestOpen(true)}
+                className="shrink-0 inline-flex items-center gap-2 bg-crimson-500 hover:bg-crimson-600 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors"
+              >
+                <Send className="w-4 h-4" /> Request a Custom Image
+              </button>
+            </div>
+
+            <RequestImageModal
+              open={requestOpen}
+              onClose={() => setRequestOpen(false)}
+              defaultImage={name}
+            />
           </>
         )}
       </main>

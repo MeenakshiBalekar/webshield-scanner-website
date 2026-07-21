@@ -627,3 +627,5 @@ export const getImages = ({ search = '', category = '', sort = '', page = 1, pag
   return request(`/api/images${qs ? `?${qs}` : ''}`)
 }
 export const getImageDetail = (slug) => request(`/api/images/${encodeURIComponent(slug)}/details`)
+export const getImageTags   = (slug) => request(`/api/images/${encodeURIComponent(slug)}/tags`)
+export const getImageSbom   = (slug) => request(`/api/images/${encodeURIComponent(slug)}/sbom`)

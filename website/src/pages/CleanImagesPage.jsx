@@ -61,15 +61,16 @@ function StatBand({ stats }) {
 
 /* ── Image card ── */
 function ImageCard({ image, onOpen }) {
+  const security = f(image, 'security') ?? {}
   const name    = f(image, 'name', 'slug', 'id') ?? '—'
   const slug    = f(image, 'slug', 'name', 'id') ?? ''
   const desc    = f(image, 'description', 'summary', 'shortDescription') ?? ''
   const category = f(image, 'category') ?? ''
   const pulls   = f(image, 'pulls', 'pullCount', 'downloads')
   const tag     = f(image, 'latestTag', 'version', 'tag')
-  const fips    = f(image, 'fipsAvailable', 'fips', 'isFips')
-  const cveCount = f(image, 'cveCount', 'cves', 'vulnerabilities')
-  const reduction = f(image, 'cveReduction', 'reductionPercent')
+  const fips    = f(security, 'fipsAvailable', 'fips') ?? f(image, 'fipsAvailable', 'fips', 'isFips')
+  const cveCount = f(security, 'cveCount', 'cves') ?? f(image, 'cveCount', 'cves', 'vulnerabilities')
+  const reduction = f(security, 'cveReductionPercent', 'cveReduction') ?? f(image, 'cveReductionPercent', 'cveReduction', 'reductionPercent')
 
   return (
     <button

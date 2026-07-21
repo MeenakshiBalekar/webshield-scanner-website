@@ -7,6 +7,7 @@ import {
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { getImageDetail, getImageTags, getImageSbom } from '../services/api'
+import { BACKEND } from '../utils/backend.js'
 
 /* Dual-case field accessor */
 function f(obj, ...keys) {
@@ -107,24 +108,37 @@ function TabError({ msg }) {
 
 /* ── Overview tab ── */
 function OverviewTab({ image }) {
+  /* API nests security posture under `security` and metadata under `details` */
+  const security = f(image, 'security') ?? {}
+  const details  = f(image, 'details')  ?? {}
+
   const name        = f(image, 'name', 'slug', 'id')
-  const size        = f(image, 'compressedSize', 'size')
-  const cveCount    = f(image, 'cveCount', 'cves', 'vulnerabilities')
-  const reduction   = f(image, 'cveReduction', 'reductionPercent')
-  const fips        = f(image, 'fipsAvailable', 'fips', 'isFips')
-  const sbom        = f(image, 'sbom', 'hasSbom', 'sbomAvailable')
-  const provenance  = f(image, 'signedProvenance', 'provenance', 'signed', 'hasProvenance')
+  const size        = f(details, 'compressedSize', 'size') ?? f(image, 'compressedSize', 'size')
+  const cveCount    = f(security, 'cveCount', 'cves') ?? f(image, 'cveCount', 'cves', 'vulnerabilities')
+  const reduction   = f(security, 'cveReductionPercent', 'cveReduction') ?? f(image, 'cveReductionPercent', 'cveReduction', 'reductionPercent')
+  const fips        = f(security, 'fipsAvailable', 'fips') ?? f(details, 'fipsAvailable') ?? f(image, 'fipsAvailable', 'fips', 'isFips')
+  const sbom        = f(security, 'sbomAvailable', 'sbom') ?? f(image, 'sbomAvailable', 'sbom', 'hasSbom')
+  const provenance  = f(security, 'signedProvenance', 'provenance') ?? f(image, 'signedProvenance', 'provenance', 'signed', 'hasProvenance')
   const tags        = asArray(image, 'tags', 'versions', 'availableTags')
   const related     = asArray(image, 'related', 'relatedImages')
-  const defaultTag  = f(image, 'latestTag', 'version', 'tag') ?? 'latest'
-  const pullCommand = f(image, 'pullCommand', 'dockerPull') ??
+  const defaultTag  = f(details, 'latestTag') ?? f(image, 'latestTag', 'version', 'tag') ?? 'latest'
+  const pullCommand = f(image, 'pullCommand', 'dockerPull') ?? f(details, 'pullCommand') ??
     `docker pull ${f(image, 'registry') ?? 'registry.udyo360.com'}/${name}:${defaultTag}`
+
+  const slug = f(image, 'slug', 'name', 'id')
 
   return (
     <>
-      {/* Pull command */}
-      <div className="mb-8">
+      {/* Pull command + SBOM download */}
+      <div className="mb-8 space-y-3">
         <PullCommand command={pullCommand} />
+        <a
+          href={`${BACKEND}/api/images/${encodeURIComponent(slug)}/sbom/download`}
+          download
+          className="inline-flex items-center gap-2 bg-white/8 hover:bg-white/15 border border-white/15 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors"
+        >
+          <FileText className="w-4 h-4" /> Download SBOM
+        </a>
       </div>
 
       {/* Security posture */}
@@ -431,8 +445,8 @@ export default function CleanImageDetailPage() {
   const name        = f(image, 'name', 'slug', 'id') ?? slug
   const description = f(image, 'description', 'summary', 'longDescription') ?? ''
   const category    = f(image, 'category') ?? ''
-  const pulls       = f(image, 'pulls', 'pullCount', 'downloads')
-  const fips        = f(image, 'fipsAvailable', 'fips', 'isFips')
+  const pulls       = f(image, 'pulls', 'pullCount', 'downloads') ?? f(f(image, 'details'), 'pulls', 'pullCount')
+  const fips        = f(f(image, 'security'), 'fipsAvailable', 'fips') ?? f(image, 'fipsAvailable', 'fips', 'isFips')
 
   return (
     <div className="min-h-screen page-bg flex flex-col">

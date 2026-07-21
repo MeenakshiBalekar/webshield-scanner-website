@@ -15,7 +15,9 @@ async function request(path, options = {}) {
     let howToFix = null, azureErrorCode = null, details = null
     try {
       const body = await res.json()
-      msg = body.error || body.message || body.title || msg
+      const errs = body.errors ?? body.Errors
+      const errStr = Array.isArray(errs) ? errs.filter(Boolean).join('; ') : (typeof errs === 'string' ? errs : null)
+      msg = body.error || body.message || body.title || errStr || msg
       howToFix      = body.howToFix      ?? body.HowToFix      ?? null
       azureErrorCode = body.azureErrorCode ?? body.AzureErrorCode ?? null
       details        = body.details        ?? body.Details        ?? null
@@ -637,3 +639,18 @@ export const downloadDockerfile  = (data) => blobRequest('/api/images/builder/ge
 export const submitImageRequest  = (data) => request('/api/images/requests', { method: 'POST', body: JSON.stringify(data) })
 export const getImageRequests    = ()     => request('/api/images/requests')
 export const updateImageRequest  = (id, data) => request(`/api/images/requests/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(data) })
+
+// Helm Charts — hardened chart catalog (public, no auth)
+export const getHelmStats      = ()     => request('/api/helm/stats')
+export const getHelmCategories = ()     => request('/api/helm/categories')
+export const getHelmCharts = ({ search = '', category = '', sort = '', page = 1, pageSize } = {}) => {
+  const q = new URLSearchParams()
+  if (search)   q.set('search', search)
+  if (category) q.set('category', category)
+  if (sort)     q.set('sort', sort)
+  if (page)     q.set('page', page)
+  if (pageSize) q.set('pageSize', pageSize)
+  const qs = q.toString()
+  return request(`/api/helm${qs ? `?${qs}` : ''}`)
+}
+export const getHelmChartDetail = (slug) => request(`/api/helm/${encodeURIComponent(slug)}/details`)

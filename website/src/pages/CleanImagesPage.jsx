@@ -32,9 +32,10 @@ function compact(n) {
 const PAGE_SIZE = 12
 
 const SORTS = [
+  { id: 'latest',  label: 'Latest'       },
   { id: 'popular', label: 'Most Popular' },
   { id: 'name',    label: 'Name (A–Z)'   },
-  { id: 'newest',  label: 'Newest'       },
+  { id: 'secure',  label: 'Most Secure'  },
 ]
 
 /* ── Stat band ── */
@@ -330,6 +331,42 @@ export default function CleanImagesPage() {
             </button>
           </div>
         )}
+
+        {/* Community / Enterprise band */}
+        <div className="grid md:grid-cols-2 gap-4 mt-14">
+          <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
+            <div className="flex items-center gap-2 mb-2">
+              <Boxes className="w-5 h-5 text-emerald-400" />
+              <h3 className="text-base font-bold text-white">Community</h3>
+            </div>
+            <p className="text-sm text-gray-400 leading-relaxed mb-4">
+              Pull any Clean Image for free. Every build is minimal, hardened, and ships
+              with a signed SBOM — no account required.
+            </p>
+            <Link
+              to="/agent"
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
+            >
+              <Download className="w-4 h-4" /> Get the Udyo360 Agent
+            </Link>
+          </div>
+          <div className="bg-crimson-500/10 border border-crimson-500/20 rounded-2xl p-6">
+            <div className="flex items-center gap-2 mb-2">
+              <ShieldCheck className="w-5 h-5 text-crimson-400" />
+              <h3 className="text-base font-bold text-white">Enterprise</h3>
+            </div>
+            <p className="text-sm text-gray-400 leading-relaxed mb-4">
+              Private image mirrors, custom hardened builds, FIPS attestations, SLA-backed
+              CVE remediation, and compliance evidence for your auditors.
+            </p>
+            <Link
+              to="/contact"
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-crimson-400 hover:text-crimson-300 transition-colors"
+            >
+              Talk to sales <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
 
         {/* Footer note */}
         <p className="text-center text-xs text-gray-600 mt-12">

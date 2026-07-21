@@ -612,3 +612,18 @@ export const saveDomainAlertConfig = (domain, data) => request(`/api/alerts/conf
 export const getPhishingCampaigns   = ()     => request('/api/phishing/campaigns')
 export const createPhishingCampaign = (data) => request('/api/phishing/campaign', { method: 'POST', body: JSON.stringify(data) })
 export const getPhishingResults     = (id)   => request(`/api/phishing/campaigns/${encodeURIComponent(id)}/results`)
+
+// Clean Images — hardened container image catalog (public, no auth)
+export const getImageStats      = ()     => request('/api/images/stats')
+export const getImageCategories = ()     => request('/api/images/categories')
+export const getImages = ({ search = '', category = '', sort = '', page = 1, pageSize } = {}) => {
+  const q = new URLSearchParams()
+  if (search)   q.set('search', search)
+  if (category) q.set('category', category)
+  if (sort)     q.set('sort', sort)
+  if (page)     q.set('page', page)
+  if (pageSize) q.set('pageSize', pageSize)
+  const qs = q.toString()
+  return request(`/api/images${qs ? `?${qs}` : ''}`)
+}
+export const getImageDetail = (slug) => request(`/api/images/${encodeURIComponent(slug)}/details`)

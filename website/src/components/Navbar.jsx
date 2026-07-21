@@ -130,6 +130,7 @@ const COMMON_NAV = [
       { label: 'White Label',   href: '/whitelabel' },
       { label: 'Trust Badge',   href: '/trust' },
       { label: 'CVE Database',  href: '/cve-database' },
+      { label: 'Clean Images',  href: '/images' },
       { label: 'Blog',          href: '/blog' },
       { label: 'Help',          href: '/help' },
       { label: 'Pricing',       href: '/pricing' },

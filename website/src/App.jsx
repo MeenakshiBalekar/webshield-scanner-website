@@ -91,6 +91,8 @@ import ContainerIacPage from './pages/ContainerIacPage'
 import EmailSecurityPage from './pages/EmailSecurityPage'
 import ErrorBoundary from './components/ErrorBoundary'
 import DarkWebPage from './pages/DarkWebPage'
+import CleanImagesPage from './pages/CleanImagesPage'
+import CleanImageDetailPage from './pages/CleanImageDetailPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -118,6 +120,8 @@ export default function App() {
           <Route path="/cve-database"                   element={<CveDatabasePage />} />
           <Route path="/cve-database/:checkId"          element={<CveDatabasePage />} />
           <Route path="/agent"             element={<AgentPage />} />
+          <Route path="/images"            element={<CleanImagesPage />} />
+          <Route path="/images/:slug"      element={<CleanImageDetailPage />} />
           <Route path="/privacy-policy"         element={<PrivacyPolicyPage />} />
           <Route path="/terms-of-service"       element={<TermsOfServicePage />} />
           <Route path="/cookie-policy"          element={<CookiePolicyPage />} />

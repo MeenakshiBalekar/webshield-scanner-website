@@ -15,7 +15,9 @@ async function request(path, options = {}) {
     let howToFix = null, azureErrorCode = null, details = null
     try {
       const body = await res.json()
-      msg = body.error || body.message || body.title || msg
+      const errs = body.errors ?? body.Errors
+      const errStr = Array.isArray(errs) ? errs.filter(Boolean).join('; ') : (typeof errs === 'string' ? errs : null)
+      msg = body.error || body.message || body.title || errStr || msg
       howToFix      = body.howToFix      ?? body.HowToFix      ?? null
       azureErrorCode = body.azureErrorCode ?? body.AzureErrorCode ?? null
       details        = body.details        ?? body.Details        ?? null

@@ -115,15 +115,18 @@ function Toggle({ checked, onChange, label, hint }) {
 }
 
 export default function CleanImageBuilderPage() {
-  const [baseImages, setBaseImages] = useState([])
+  const [baseImages, setBaseImages] = useState([])   // [{ slug, name, distroless, fipsAvailable, ... }]
+  const [limits, setLimits]         = useState(null)
 
   const [name, setName]             = useState('')
-  const [baseImage, setBaseImage]   = useState('')
+  const [baseImage, setBaseImage]   = useState('')   // holds the base slug
+  const [tag, setTag]               = useState('')
   const [packages, setPackages]     = useState([])
   const [envVars, setEnvVars]       = useState([])
   const [ports, setPorts]           = useState([])
   const [copies, setCopies]         = useState([])
   const [buildCommand, setBuildCommand] = useState('')
+  const [workdir, setWorkdir]       = useState('')
   const [entrypoint, setEntrypoint] = useState('')
   const [cmd, setCmd]               = useState('')
   const [nonRoot, setNonRoot]       = useState(true)
@@ -138,25 +141,41 @@ export default function CleanImageBuilderPage() {
   useEffect(() => {
     getBuilderOptions()
       .then((d) => {
-        const arr = Array.isArray(d) ? d : (f(d, 'baseImages', 'bases', 'images', 'options') ?? [])
+        const arr = Array.isArray(d) ? d : (f(d, 'bases', 'baseImages', 'images', 'options') ?? [])
         setBaseImages(Array.isArray(arr) ? arr : [])
+        setLimits(f(d, 'limits') ?? null)
       })
       .catch(() => {})
   }, [])
 
-  const payload = () => ({
-    name,
-    baseImage,
-    packages,
-    env: envVars.filter((e) => e.key).map(({ key, value }) => ({ key, value })),
-    ports: ports.map((p) => Number(p)).filter((n) => Number.isFinite(n)),
-    copies: copies.filter((c) => c.key).map(({ key, value }) => ({ source: key, dest: value })),
-    buildCommand: buildCommand || null,
-    entrypoint: entrypoint || null,
-    cmd: cmd || null,
-    nonRoot,
-    fips,
-  })
+  const selectedBase = baseImages.find((b) => (f(b, 'slug', 'name', 'id', 'value') ?? '') === baseImage)
+  const isDistroless = !!f(selectedBase, 'distroless')
+
+  /* Split an exec-form field ("/app/server --serve") into an argv array */
+  const toArgv = (s) => {
+    const parts = (s || '').trim().split(/\s+/).filter(Boolean)
+    return parts.length ? parts : null
+  }
+
+  const payload = () => {
+    const env = {}
+    envVars.filter((e) => e.key).forEach(({ key, value }) => { env[key] = value })
+    return {
+      imageName: name,
+      baseImage,                                   // slug
+      tag: tag || undefined,
+      packages: isDistroless ? [] : packages,
+      env,                                          // { KEY: "value" } map
+      ports: ports.map((p) => Number(p)).filter((n) => Number.isFinite(n)),
+      artifacts: copies.filter((c) => c.key).map(({ key, value }) => ({ source: key, dest: value })),
+      buildCommand: buildCommand || undefined,
+      workdir: workdir || undefined,
+      entrypoint: toArgv(entrypoint) || undefined,
+      cmd: toArgv(cmd) || undefined,
+      nonRoot,
+      fips,
+    }
+  }
 
   const handleGenerate = async (e) => {
     e.preventDefault()
@@ -223,7 +242,7 @@ export default function CleanImageBuilderPage() {
         </div>
 
         <form onSubmit={handleGenerate} className="space-y-5 bg-white/[0.03] border border-white/10 rounded-2xl p-6 mb-8">
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid sm:grid-cols-3 gap-4">
             <Field label="Image name">
               <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="my-service" className={inputCls} />
             </Field>
@@ -237,19 +256,29 @@ export default function CleanImageBuilderPage() {
                 >
                   <option value="" disabled>Select a base…</option>
                   {baseImages.map((b, i) => {
-                    const val   = typeof b === 'string' ? b : (f(b, 'name', 'slug', 'id', 'value') ?? '')
-                    const label = typeof b === 'string' ? b : (f(b, 'label', 'name', 'slug') ?? val)
-                    return <option key={i} value={val}>{label}</option>
+                    const val   = typeof b === 'string' ? b : (f(b, 'slug', 'name', 'id', 'value') ?? '')
+                    const label = typeof b === 'string' ? b : (f(b, 'name', 'slug', 'label') ?? val)
+                    const dl    = typeof b === 'string' ? false : !!f(b, 'distroless')
+                    return <option key={i} value={val}>{label}{dl ? ' (distroless)' : ''}</option>
                   })}
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
               </div>
             </Field>
+            <Field label="Tag (optional)">
+              <input value={tag} onChange={(e) => setTag(e.target.value)} placeholder="1.23 · latest" className={inputCls} />
+            </Field>
           </div>
 
-          <Field label="Packages" hint="Press Enter or comma to add.">
-            <TagInput value={packages} onChange={setPackages} placeholder="curl, ca-certificates…" />
-          </Field>
+          {isDistroless ? (
+            <p className="text-xs text-gray-500 bg-white/[0.03] border border-white/10 rounded-xl px-3.5 py-2.5">
+              {f(selectedBase, 'name') ?? 'This base'} is <span className="text-gray-300 font-medium">distroless</span> — it has no package manager, so extra packages can't be added.
+            </p>
+          ) : (
+            <Field label="Packages" hint={`Press Enter or comma to add.${limits?.maxPackages ? ` Up to ${limits.maxPackages}.` : ''}`}>
+              <TagInput value={packages} onChange={setPackages} placeholder="curl, ca-certificates…" />
+            </Field>
+          )}
 
           <Field label="Environment variables">
             <PairRows rows={envVars} onChange={setEnvVars} keyPlaceholder="KEY" valPlaceholder="value" addLabel="Add env var" />
@@ -263,14 +292,20 @@ export default function CleanImageBuilderPage() {
             <PairRows rows={copies} onChange={setCopies} keyPlaceholder="./source/path" valPlaceholder="/dest/path" addLabel="Add copy" />
           </Field>
 
-          <div className="grid sm:grid-cols-3 gap-4">
+          <div className="grid sm:grid-cols-2 gap-4">
             <Field label="Build command (optional)">
               <input value={buildCommand} onChange={(e) => setBuildCommand(e.target.value)} placeholder="npm ci && npm run build" className={inputCls} />
             </Field>
-            <Field label="Entrypoint (optional)">
-              <input value={entrypoint} onChange={(e) => setEntrypoint(e.target.value)} placeholder="/usr/bin/my-service" className={inputCls} />
+            <Field label="Working directory (optional)">
+              <input value={workdir} onChange={(e) => setWorkdir(e.target.value)} placeholder="/app" className={inputCls} />
             </Field>
-            <Field label="CMD (optional)">
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-4">
+            <Field label="Entrypoint (optional)" hint="Space-separated exec form.">
+              <input value={entrypoint} onChange={(e) => setEntrypoint(e.target.value)} placeholder="/app/server" className={inputCls} />
+            </Field>
+            <Field label="CMD (optional)" hint="Space-separated exec form.">
               <input value={cmd} onChange={(e) => setCmd(e.target.value)} placeholder="--serve" className={inputCls} />
             </Field>
           </div>

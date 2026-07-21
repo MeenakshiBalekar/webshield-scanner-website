@@ -2,7 +2,11 @@ import React, { useState, useEffect } from 'react'
 import { X, Loader2, AlertCircle, CheckCircle2, Send } from 'lucide-react'
 import { submitImageRequest } from '../services/api'
 
-const URGENCIES = ['Low', 'Medium', 'High', 'Urgent']
+const URGENCIES = [
+  { value: 'standard', label: 'Standard' },
+  { value: 'priority', label: 'Priority' },
+  { value: 'urgent',   label: 'Urgent'   },
+]
 
 const inputCls =
   'w-full bg-white/5 border border-white/15 focus:border-crimson-500 text-white placeholder-gray-600 px-3.5 py-2.5 rounded-xl text-sm outline-none transition-colors'
@@ -21,8 +25,8 @@ function Field({ label, required, children }) {
 export default function RequestImageModal({ open, onClose, defaultImage = '' }) {
   const [form, setForm] = useState({
     name: '', email: '', company: '',
-    imageNeeded: defaultImage, basePreference: '', packages: '',
-    description: '', fipsNeeded: false, urgency: 'Medium',
+    imageName: defaultImage, baseImage: '', packages: '',
+    description: '', needsFips: false, urgency: 'standard',
   })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError]           = useState(null)
@@ -31,7 +35,7 @@ export default function RequestImageModal({ open, onClose, defaultImage = '' }) 
   /* Seed "image needed" with the current image when opening from a detail page */
   useEffect(() => {
     if (open && defaultImage) {
-      setForm((f) => (f.imageNeeded ? f : { ...f, imageNeeded: defaultImage }))
+      setForm((f) => (f.imageName ? f : { ...f, imageName: defaultImage }))
     }
   }, [open, defaultImage])
 
@@ -116,11 +120,11 @@ export default function RequestImageModal({ open, onClose, defaultImage = '' }) 
             </Field>
 
             <div className="grid sm:grid-cols-2 gap-4">
-              <Field label="Image needed" required>
-                <input required value={form.imageNeeded} onChange={set('imageNeeded')} placeholder="e.g. nginx with custom modules" className={inputCls} />
+              <Field label="Image name" required>
+                <input required value={form.imageName} onChange={set('imageName')} placeholder="e.g. nginx with custom modules" className={inputCls} />
               </Field>
               <Field label="Base preference">
-                <input value={form.basePreference} onChange={set('basePreference')} placeholder="e.g. alpine, distroless" className={inputCls} />
+                <input value={form.baseImage} onChange={set('baseImage')} placeholder="e.g. alpine, distroless" className={inputCls} />
               </Field>
             </div>
 
@@ -142,8 +146,8 @@ export default function RequestImageModal({ open, onClose, defaultImage = '' }) 
               <label className="flex items-center gap-2.5 text-sm text-gray-300 cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={form.fipsNeeded}
-                  onChange={set('fipsNeeded')}
+                  checked={form.needsFips}
+                  onChange={set('needsFips')}
                   className="w-4 h-4 rounded accent-crimson-500"
                 />
                 FIPS build needed
@@ -151,7 +155,7 @@ export default function RequestImageModal({ open, onClose, defaultImage = '' }) 
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-500">Urgency</span>
                 <select value={form.urgency} onChange={set('urgency')} className="bg-white/5 border border-white/15 focus:border-crimson-500 text-white px-2.5 py-1.5 rounded-lg text-xs outline-none transition-colors cursor-pointer">
-                  {URGENCIES.map((u) => <option key={u} value={u}>{u}</option>)}
+                  {URGENCIES.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
                 </select>
               </div>
             </div>

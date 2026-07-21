@@ -131,6 +131,7 @@ const COMMON_NAV = [
       { label: 'Trust Badge',   href: '/trust' },
       { label: 'CVE Database',  href: '/cve-database' },
       { label: 'Clean Images',  href: '/images' },
+      { label: 'Helm Charts',   href: '/helm' },
       { label: 'Blog',          href: '/blog' },
       { label: 'Help',          href: '/help' },
       { label: 'Pricing',       href: '/pricing' },

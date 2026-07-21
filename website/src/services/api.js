@@ -639,3 +639,18 @@ export const downloadDockerfile  = (data) => blobRequest('/api/images/builder/ge
 export const submitImageRequest  = (data) => request('/api/images/requests', { method: 'POST', body: JSON.stringify(data) })
 export const getImageRequests    = ()     => request('/api/images/requests')
 export const updateImageRequest  = (id, data) => request(`/api/images/requests/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(data) })
+
+// Helm Charts — hardened chart catalog (public, no auth)
+export const getHelmStats      = ()     => request('/api/helm/stats')
+export const getHelmCategories = ()     => request('/api/helm/categories')
+export const getHelmCharts = ({ search = '', category = '', sort = '', page = 1, pageSize } = {}) => {
+  const q = new URLSearchParams()
+  if (search)   q.set('search', search)
+  if (category) q.set('category', category)
+  if (sort)     q.set('sort', sort)
+  if (page)     q.set('page', page)
+  if (pageSize) q.set('pageSize', pageSize)
+  const qs = q.toString()
+  return request(`/api/helm${qs ? `?${qs}` : ''}`)
+}
+export const getHelmChartDetail = (slug) => request(`/api/helm/${encodeURIComponent(slug)}/details`)

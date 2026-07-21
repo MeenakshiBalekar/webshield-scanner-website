@@ -7,6 +7,7 @@ import {
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { getImageDetail, getImageTags, getImageSbom } from '../services/api'
+import { BACKEND } from '../utils/backend.js'
 
 /* Dual-case field accessor */
 function f(obj, ...keys) {
@@ -124,11 +125,20 @@ function OverviewTab({ image }) {
   const pullCommand = f(image, 'pullCommand', 'dockerPull') ?? f(details, 'pullCommand') ??
     `docker pull ${f(image, 'registry') ?? 'registry.udyo360.com'}/${name}:${defaultTag}`
 
+  const slug = f(image, 'slug', 'name', 'id')
+
   return (
     <>
-      {/* Pull command */}
-      <div className="mb-8">
+      {/* Pull command + SBOM download */}
+      <div className="mb-8 space-y-3">
         <PullCommand command={pullCommand} />
+        <a
+          href={`${BACKEND}/api/images/${encodeURIComponent(slug)}/sbom/download`}
+          download
+          className="inline-flex items-center gap-2 bg-white/8 hover:bg-white/15 border border-white/15 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors"
+        >
+          <FileText className="w-4 h-4" /> Download SBOM
+        </a>
       </div>
 
       {/* Security posture */}

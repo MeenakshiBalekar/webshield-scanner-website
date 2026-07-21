@@ -107,17 +107,21 @@ function TabError({ msg }) {
 
 /* ── Overview tab ── */
 function OverviewTab({ image }) {
+  /* API nests security posture under `security` and metadata under `details` */
+  const security = f(image, 'security') ?? {}
+  const details  = f(image, 'details')  ?? {}
+
   const name        = f(image, 'name', 'slug', 'id')
-  const size        = f(image, 'compressedSize', 'size')
-  const cveCount    = f(image, 'cveCount', 'cves', 'vulnerabilities')
-  const reduction   = f(image, 'cveReduction', 'reductionPercent')
-  const fips        = f(image, 'fipsAvailable', 'fips', 'isFips')
-  const sbom        = f(image, 'sbom', 'hasSbom', 'sbomAvailable')
-  const provenance  = f(image, 'signedProvenance', 'provenance', 'signed', 'hasProvenance')
+  const size        = f(details, 'compressedSize', 'size') ?? f(image, 'compressedSize', 'size')
+  const cveCount    = f(security, 'cveCount', 'cves') ?? f(image, 'cveCount', 'cves', 'vulnerabilities')
+  const reduction   = f(security, 'cveReductionPercent', 'cveReduction') ?? f(image, 'cveReductionPercent', 'cveReduction', 'reductionPercent')
+  const fips        = f(security, 'fipsAvailable', 'fips') ?? f(details, 'fipsAvailable') ?? f(image, 'fipsAvailable', 'fips', 'isFips')
+  const sbom        = f(security, 'sbomAvailable', 'sbom') ?? f(image, 'sbomAvailable', 'sbom', 'hasSbom')
+  const provenance  = f(security, 'signedProvenance', 'provenance') ?? f(image, 'signedProvenance', 'provenance', 'signed', 'hasProvenance')
   const tags        = asArray(image, 'tags', 'versions', 'availableTags')
   const related     = asArray(image, 'related', 'relatedImages')
-  const defaultTag  = f(image, 'latestTag', 'version', 'tag') ?? 'latest'
-  const pullCommand = f(image, 'pullCommand', 'dockerPull') ??
+  const defaultTag  = f(details, 'latestTag') ?? f(image, 'latestTag', 'version', 'tag') ?? 'latest'
+  const pullCommand = f(image, 'pullCommand', 'dockerPull') ?? f(details, 'pullCommand') ??
     `docker pull ${f(image, 'registry') ?? 'registry.udyo360.com'}/${name}:${defaultTag}`
 
   return (
@@ -431,8 +435,8 @@ export default function CleanImageDetailPage() {
   const name        = f(image, 'name', 'slug', 'id') ?? slug
   const description = f(image, 'description', 'summary', 'longDescription') ?? ''
   const category    = f(image, 'category') ?? ''
-  const pulls       = f(image, 'pulls', 'pullCount', 'downloads')
-  const fips        = f(image, 'fipsAvailable', 'fips', 'isFips')
+  const pulls       = f(image, 'pulls', 'pullCount', 'downloads') ?? f(f(image, 'details'), 'pulls', 'pullCount')
+  const fips        = f(f(image, 'security'), 'fipsAvailable', 'fips') ?? f(image, 'fipsAvailable', 'fips', 'isFips')
 
   return (
     <div className="min-h-screen page-bg flex flex-col">

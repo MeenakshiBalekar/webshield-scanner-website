@@ -133,6 +133,7 @@ const COMMON_NAV = [
       { label: 'Clean Images',  href: '/images' },
       { label: 'Helm Charts',   href: '/helm' },
       { label: 'Clean Libraries', href: '/libraries' },
+      { label: 'CleanSight',    href: '/cleansight' },
       { label: 'Blog',          href: '/blog' },
       { label: 'Help',          href: '/help' },
       { label: 'Pricing',       href: '/pricing' },

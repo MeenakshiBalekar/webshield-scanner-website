@@ -669,3 +669,18 @@ export const getLibraries = ({ search = '', category = '', sort = '', page = 1, 
   return request(`/api/libraries${qs ? `?${qs}` : ''}`)
 }
 export const getLibraryDetail = (slug) => request(`/api/libraries/${encodeURIComponent(slug)}/details`)
+
+// CleanSight — supply-chain visibility across the Clean family (public, no auth)
+export const getCleanSightStats  = ()   => request('/api/cleansight/stats')
+export const getCleanSight = ({ search = '', category = '', type = '', sort = '', page = 1, pageSize } = {}) => {
+  const q = new URLSearchParams()
+  if (search)   q.set('search', search)
+  if (category) q.set('category', category)
+  if (type)     q.set('type', type)
+  if (sort)     q.set('sort', sort)
+  if (page)     q.set('page', page)
+  if (pageSize) q.set('pageSize', pageSize)
+  const qs = q.toString()
+  return request(`/api/cleansight${qs ? `?${qs}` : ''}`)
+}
+export const getCleanSightDetail = (id) => request(`/api/cleansight/${encodeURIComponent(id)}`)

@@ -1,5 +1,5 @@
 import React from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Login from './pages/Login'
 import LandingPage from './pages/LandingPage'
@@ -107,6 +107,12 @@ function PrivateRoute({ children }) {
   return user ? children : <Navigate to="/login" replace />
 }
 
+/* Legacy /cleansight/:id → /runtime/:id, preserving the id */
+function CleanSightRedirect() {
+  const { id } = useParams()
+  return <Navigate to={`/runtime/${id}`} replace />
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -134,8 +140,10 @@ export default function App() {
           <Route path="/helm/:slug"        element={<HelmChartDetailPage />} />
           <Route path="/libraries"         element={<CleanLibrariesPage />} />
           <Route path="/libraries/:slug"   element={<CleanLibraryDetailPage />} />
-          <Route path="/cleansight"        element={<CleanSightPage />} />
-          <Route path="/cleansight/:id"    element={<CleanSightDetailPage />} />
+          <Route path="/runtime"           element={<CleanSightPage />} />
+          <Route path="/runtime/:id"       element={<CleanSightDetailPage />} />
+          <Route path="/cleansight"        element={<Navigate to="/runtime" replace />} />
+          <Route path="/cleansight/:id"    element={<CleanSightRedirect />} />
           <Route path="/privacy-policy"         element={<PrivacyPolicyPage />} />
           <Route path="/terms-of-service"       element={<TermsOfServicePage />} />
           <Route path="/cookie-policy"          element={<CookiePolicyPage />} />

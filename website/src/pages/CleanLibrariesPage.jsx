@@ -196,7 +196,7 @@ export default function CleanLibrariesPage() {
             <ShieldCheck className="w-3.5 h-3.5" /> Hardened · Signed · Near-Zero CVE
           </div>
           <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-4 leading-tight">
-            Clean <span className="text-crimson-500">Libraries</span>
+            Aegis <span className="text-crimson-500">Libraries</span>
           </h1>
           <p className="text-gray-400 max-w-2xl mx-auto text-lg">
             Hardened, rebuilt language packages across npm, PyPI, Maven, and more —
@@ -322,10 +322,10 @@ export default function CleanLibrariesPage() {
 
         {/* Footer note */}
         <p className="text-center text-xs text-gray-600 mt-12">
-          Part of the Clean supply-chain family.{' '}
-          <Link to="/images" className="text-crimson-400 hover:text-crimson-300 transition-colors">Clean Images</Link>
+          Part of the Aegis supply-chain family.{' '}
+          <Link to="/images" className="text-crimson-400 hover:text-crimson-300 transition-colors">Aegis Images</Link>
           {' · '}
-          <Link to="/helm" className="text-crimson-400 hover:text-crimson-300 transition-colors">Helm Charts</Link>
+          <Link to="/helm" className="text-crimson-400 hover:text-crimson-300 transition-colors">Aegis Charts</Link>
         </p>
       </main>
 

@@ -224,7 +224,7 @@ export default function CleanImageBuilderPage() {
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 pt-24 pb-16">
 
         <Link to="/images" className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors mb-6">
-          <ChevronLeft className="w-4 h-4" /> All Clean Images
+          <ChevronLeft className="w-4 h-4" /> All Aegis Images
         </Link>
 
         {/* Hero */}
@@ -233,10 +233,10 @@ export default function CleanImageBuilderPage() {
             <Hammer className="w-3.5 h-3.5" /> Custom Image Builder
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-3 leading-tight">
-            Build Your Own <span className="text-crimson-500">Clean Image</span>
+            Build Your Own <span className="text-crimson-500">Aegis Image</span>
           </h1>
           <p className="text-gray-400 max-w-xl mx-auto">
-            Compose a hardened Dockerfile from a Clean Images base — non-root by default,
+            Compose a hardened Dockerfile from an Aegis Images base — non-root by default,
             minimal packages, FIPS optional.
           </p>
         </div>
@@ -364,7 +364,7 @@ export default function CleanImageBuilderPage() {
 
         <p className="flex items-center justify-center gap-1.5 text-center text-xs text-gray-600 mt-10">
           <ShieldCheck className="w-3.5 h-3.5" />
-          Generated Dockerfiles follow Clean Images hardening defaults.
+          Generated Dockerfiles follow Aegis Images hardening defaults.
         </p>
       </main>
 

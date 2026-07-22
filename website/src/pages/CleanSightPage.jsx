@@ -141,7 +141,7 @@ export default function CleanSightPage() {
     setError(null)
     getCleanSight(opts)
       .then(setData)
-      .catch(() => setError('Could not load CleanSight data — please try again.'))
+      .catch(() => setError('Could not load Aegis Runtime data — please try again.'))
       .finally(() => setLoading(false))
   }, [])
 
@@ -166,7 +166,7 @@ export default function CleanSightPage() {
     return () => document.removeEventListener('mousedown', close)
   }, [])
 
-  const openRecord = (id) => navigate(`/cleansight/${encodeURIComponent(id)}`)
+  const openRecord = (id) => navigate(`/runtime/${encodeURIComponent(id)}`)
 
   const items = Array.isArray(data)
     ? data
@@ -188,10 +188,10 @@ export default function CleanSightPage() {
             <Eye className="w-3.5 h-3.5" /> Supply-Chain Visibility
           </div>
           <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-4 leading-tight">
-            Clean<span className="text-crimson-500">Sight</span>
+            Aegis <span className="text-crimson-500">Runtime</span>
           </h1>
           <p className="text-gray-400 max-w-2xl mx-auto text-lg">
-            One view across your entire Clean supply chain — images, charts, and libraries.
+            One view across your entire Aegis supply chain — images, libraries, and charts.
             Track CVE posture, provenance, and SBOM coverage for every artifact, and see
             exactly what's clean and what needs attention.
           </p>
@@ -295,11 +295,11 @@ export default function CleanSightPage() {
         {/* Footer note */}
         <p className="text-center text-xs text-gray-600 mt-12">
           Visibility across{' '}
-          <Link to="/images" className="text-crimson-400 hover:text-crimson-300 transition-colors">Clean Images</Link>
+          <Link to="/images" className="text-crimson-400 hover:text-crimson-300 transition-colors">Aegis Images</Link>
           {' · '}
-          <Link to="/helm" className="text-crimson-400 hover:text-crimson-300 transition-colors">Helm Charts</Link>
+          <Link to="/libraries" className="text-crimson-400 hover:text-crimson-300 transition-colors">Aegis Libraries</Link>
           {' · '}
-          <Link to="/libraries" className="text-crimson-400 hover:text-crimson-300 transition-colors">Clean Libraries</Link>
+          <Link to="/helm" className="text-crimson-400 hover:text-crimson-300 transition-colors">Aegis Charts</Link>
         </p>
       </main>
 

@@ -209,7 +209,7 @@ export default function CleanImagesPage() {
             <ShieldCheck className="w-3.5 h-3.5" /> Hardened · Near-Zero CVE · Signed
           </div>
           <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-4 leading-tight">
-            Clean <span className="text-crimson-500">Images</span>
+            Aegis <span className="text-crimson-500">Images</span>
           </h1>
           <p className="text-gray-400 max-w-2xl mx-auto text-lg">
             Minimal, hardened container images with near-zero known vulnerabilities.
@@ -343,7 +343,7 @@ export default function CleanImagesPage() {
               <h3 className="text-base font-bold text-white">Community</h3>
             </div>
             <p className="text-sm text-gray-400 leading-relaxed mb-4">
-              Pull any Clean Image for free. Every build is minimal, hardened, and ships
+              Pull any Aegis Image for free. Every build is minimal, hardened, and ships
               with a signed SBOM — no account required.
             </p>
             <Link

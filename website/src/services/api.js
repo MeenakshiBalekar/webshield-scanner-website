@@ -670,8 +670,9 @@ export const getLibraries = ({ search = '', category = '', sort = '', page = 1, 
 }
 export const getLibraryDetail = (slug) => request(`/api/libraries/${encodeURIComponent(slug)}/details`)
 
-// CleanSight — supply-chain visibility across the Clean family (public, no auth)
-export const getCleanSightStats  = ()   => request('/api/cleansight/stats')
+// Aegis Runtime (formerly CleanSight) — supply-chain visibility (public, no auth)
+// Canonical route is /api/runtime/*; backend keeps /api/cleansight/* as a fallback.
+export const getCleanSightStats  = ()   => request('/api/runtime/stats')
 export const getCleanSight = ({ search = '', category = '', type = '', sort = '', page = 1, pageSize } = {}) => {
   const q = new URLSearchParams()
   if (search)   q.set('search', search)
@@ -681,6 +682,6 @@ export const getCleanSight = ({ search = '', category = '', type = '', sort = ''
   if (page)     q.set('page', page)
   if (pageSize) q.set('pageSize', pageSize)
   const qs = q.toString()
-  return request(`/api/cleansight${qs ? `?${qs}` : ''}`)
+  return request(`/api/runtime${qs ? `?${qs}` : ''}`)
 }
-export const getCleanSightDetail = (id) => request(`/api/cleansight/${encodeURIComponent(id)}`)
+export const getCleanSightDetail = (id) => request(`/api/runtime/${encodeURIComponent(id)}`)

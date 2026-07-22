@@ -195,10 +195,10 @@ export default function HelmChartsPage() {
             <ShieldCheck className="w-3.5 h-3.5" /> Hardened · Signed · Near-Zero CVE
           </div>
           <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-4 leading-tight">
-            Helm <span className="text-crimson-500">Charts</span>
+            Aegis <span className="text-crimson-500">Charts</span>
           </h1>
           <p className="text-gray-400 max-w-2xl mx-auto text-lg">
-            Production-ready Helm charts built on Clean Images — hardened defaults,
+            Production-ready Helm charts built on Aegis Images — hardened defaults,
             signed provenance, and near-zero known vulnerabilities. Deploy secure
             workloads to Kubernetes in one command.
           </p>
@@ -321,9 +321,9 @@ export default function HelmChartsPage() {
 
         {/* Footer note */}
         <p className="text-center text-xs text-gray-600 mt-12">
-          Every chart is built on hardened Clean Images.{' '}
+          Every chart is built on hardened Aegis Images.{' '}
           <Link to="/images" className="text-crimson-400 hover:text-crimson-300 transition-colors">
-            Browse the Clean Images catalog →
+            Browse the Aegis Images catalog →
           </Link>
         </p>
       </main>

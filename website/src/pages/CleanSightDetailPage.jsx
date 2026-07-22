@@ -105,8 +105,8 @@ export default function CleanSightDetailPage() {
 
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 pt-24 pb-16">
 
-        <Link to="/cleansight" className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors mb-6">
-          <ChevronLeft className="w-4 h-4" /> Back to CleanSight
+        <Link to="/runtime" className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors mb-6">
+          <ChevronLeft className="w-4 h-4" /> Back to Aegis Runtime
         </Link>
 
         {loading && (
@@ -120,8 +120,8 @@ export default function CleanSightDetailPage() {
             <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm mb-4">
               <AlertCircle className="w-4 h-4 shrink-0" /> {error}
             </div>
-            <button onClick={() => navigate('/cleansight')} className="text-sm text-crimson-400 hover:text-crimson-300 transition-colors">
-              ← Back to CleanSight
+            <button onClick={() => navigate('/runtime')} className="text-sm text-crimson-400 hover:text-crimson-300 transition-colors">
+              ← Back to Aegis Runtime
             </button>
           </div>
         )}

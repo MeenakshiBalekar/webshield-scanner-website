@@ -147,7 +147,7 @@ export default function CleanLibraryDetailPage() {
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 pt-24 pb-16">
 
         <Link to="/libraries" className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors mb-6">
-          <ChevronLeft className="w-4 h-4" /> All Clean Libraries
+          <ChevronLeft className="w-4 h-4" /> All Aegis Libraries
         </Link>
 
         {loading && (

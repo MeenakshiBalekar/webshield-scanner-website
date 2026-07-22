@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-import { getCleanSightStats, getCleanSight } from '../services/api'
+import { getAegisRuntimeStats, getAegisRuntime } from '../services/api'
 
 /* Dual-case field accessor */
 function f(obj, ...keys) {
@@ -116,7 +116,7 @@ function SightCard({ record, onOpen }) {
   )
 }
 
-export default function CleanSightPage() {
+export default function AegisRuntimePage() {
   const navigate = useNavigate()
 
   const [stats, setStats]     = useState(null)
@@ -133,13 +133,13 @@ export default function CleanSightPage() {
   const debRef  = useRef(null)
 
   useEffect(() => {
-    getCleanSightStats().then(setStats).catch(() => {})
+    getAegisRuntimeStats().then(setStats).catch(() => {})
   }, [])
 
   const fetchRecords = useCallback((opts) => {
     setLoading(true)
     setError(null)
-    getCleanSight(opts)
+    getAegisRuntime(opts)
       .then(setData)
       .catch(() => setError('Could not load Aegis Runtime data — please try again.'))
       .finally(() => setLoading(false))

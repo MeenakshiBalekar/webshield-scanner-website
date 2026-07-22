@@ -424,7 +424,7 @@ const TABS = [
   { id: 'sbom',     label: 'SBOM & Scan' },
 ]
 
-export default function CleanImageDetailPage() {
+export default function AegisImageDetailPage() {
   const { slug } = useParams()
   const navigate = useNavigate()
 

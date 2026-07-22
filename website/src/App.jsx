@@ -91,15 +91,15 @@ import ContainerIacPage from './pages/ContainerIacPage'
 import EmailSecurityPage from './pages/EmailSecurityPage'
 import ErrorBoundary from './components/ErrorBoundary'
 import DarkWebPage from './pages/DarkWebPage'
-import CleanImagesPage from './pages/CleanImagesPage'
-import CleanImageDetailPage from './pages/CleanImageDetailPage'
-import CleanImageBuilderPage from './pages/CleanImageBuilderPage'
+import AegisImagesPage from './pages/AegisImagesPage'
+import AegisImageDetailPage from './pages/AegisImageDetailPage'
+import AegisImageBuilderPage from './pages/AegisImageBuilderPage'
 import HelmChartsPage from './pages/HelmChartsPage'
 import HelmChartDetailPage from './pages/HelmChartDetailPage'
-import CleanLibrariesPage from './pages/CleanLibrariesPage'
-import CleanLibraryDetailPage from './pages/CleanLibraryDetailPage'
-import CleanSightPage from './pages/CleanSightPage'
-import CleanSightDetailPage from './pages/CleanSightDetailPage'
+import AegisLibrariesPage from './pages/AegisLibrariesPage'
+import AegisLibraryDetailPage from './pages/AegisLibraryDetailPage'
+import AegisRuntimePage from './pages/AegisRuntimePage'
+import AegisRuntimeDetailPage from './pages/AegisRuntimeDetailPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -108,7 +108,7 @@ function PrivateRoute({ children }) {
 }
 
 /* Legacy /cleansight/:id → /runtime/:id, preserving the id */
-function CleanSightRedirect() {
+function AegisRuntimeRedirect() {
   const { id } = useParams()
   return <Navigate to={`/runtime/${id}`} replace />
 }
@@ -133,17 +133,17 @@ export default function App() {
           <Route path="/cve-database"                   element={<CveDatabasePage />} />
           <Route path="/cve-database/:checkId"          element={<CveDatabasePage />} />
           <Route path="/agent"             element={<AgentPage />} />
-          <Route path="/images"            element={<CleanImagesPage />} />
-          <Route path="/images/builder"    element={<CleanImageBuilderPage />} />
-          <Route path="/images/:slug"      element={<CleanImageDetailPage />} />
+          <Route path="/images"            element={<AegisImagesPage />} />
+          <Route path="/images/builder"    element={<AegisImageBuilderPage />} />
+          <Route path="/images/:slug"      element={<AegisImageDetailPage />} />
           <Route path="/helm"              element={<HelmChartsPage />} />
           <Route path="/helm/:slug"        element={<HelmChartDetailPage />} />
-          <Route path="/libraries"         element={<CleanLibrariesPage />} />
-          <Route path="/libraries/:slug"   element={<CleanLibraryDetailPage />} />
-          <Route path="/runtime"           element={<CleanSightPage />} />
-          <Route path="/runtime/:id"       element={<CleanSightDetailPage />} />
+          <Route path="/libraries"         element={<AegisLibrariesPage />} />
+          <Route path="/libraries/:slug"   element={<AegisLibraryDetailPage />} />
+          <Route path="/runtime"           element={<AegisRuntimePage />} />
+          <Route path="/runtime/:id"       element={<AegisRuntimeDetailPage />} />
           <Route path="/cleansight"        element={<Navigate to="/runtime" replace />} />
-          <Route path="/cleansight/:id"    element={<CleanSightRedirect />} />
+          <Route path="/cleansight/:id"    element={<AegisRuntimeRedirect />} />
           <Route path="/privacy-policy"         element={<PrivacyPolicyPage />} />
           <Route path="/terms-of-service"       element={<TermsOfServicePage />} />
           <Route path="/cookie-policy"          element={<CookiePolicyPage />} />

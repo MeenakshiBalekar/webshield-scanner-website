@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-import { getCleanSightDetail } from '../services/api'
+import { getAegisRuntimeDetail } from '../services/api'
 
 /* Dual-case field accessor */
 function f(obj, ...keys) {
@@ -54,7 +54,7 @@ function PostureItem({ icon: Icon, ok, label, value }) {
   )
 }
 
-export default function CleanSightDetailPage() {
+export default function AegisRuntimeDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
 
@@ -65,7 +65,7 @@ export default function CleanSightDetailPage() {
   useEffect(() => {
     setLoading(true)
     setError(null)
-    getCleanSightDetail(id)
+    getAegisRuntimeDetail(id)
       .then(setRecord)
       .catch(() => setError('Could not load this record — it may not exist.'))
       .finally(() => setLoading(false))

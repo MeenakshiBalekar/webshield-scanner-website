@@ -99,7 +99,7 @@ function MetaRow({ label, value }) {
   )
 }
 
-export default function CleanLibraryDetailPage() {
+export default function AegisLibraryDetailPage() {
   const { slug } = useParams()
   const navigate = useNavigate()
 

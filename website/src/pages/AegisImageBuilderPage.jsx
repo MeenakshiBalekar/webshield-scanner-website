@@ -114,7 +114,7 @@ function Toggle({ checked, onChange, label, hint }) {
   )
 }
 
-export default function CleanImageBuilderPage() {
+export default function AegisImageBuilderPage() {
   const [baseImages, setBaseImages] = useState([])   // [{ slug, name, distroless, fipsAvailable, ... }]
   const [limits, setLimits]         = useState(null)
 

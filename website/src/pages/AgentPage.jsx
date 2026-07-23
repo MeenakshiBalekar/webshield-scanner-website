@@ -140,11 +140,11 @@ const field = (obj, ...keys) => { for (const k of keys) if (obj?.[k] != null) re
 
 export default function AgentPage() {
   const [agentInfo,    setAgentInfo]    = useState(null)
-  const [downloading,  setDownloading]  = useState(null) // 'win' | 'linux' | 'macos' | null
-  const [dlError,      setDlError]      = useState(null)
-  const [apiToken,     setApiToken]     = useState(null) // shown after download for manual config
-  const [tokenCopied,  setTokenCopied]  = useState(false)
+  const [tokenData,    setTokenData]    = useState(null)
+  const [tokenLoading, setTokenLoading] = useState(true)
   const [osPlatform,   setOsPlatform]   = useState('linux') // 'win' | 'linux' | 'macos'
+  const [cmdCopied,    setCmdCopied]    = useState(false)
+  const [keyCopied,    setKeyCopied]    = useState(false)
 
   useEffect(() => {
     fetch(`${BACKEND}/api/agent/info`)
@@ -153,51 +153,56 @@ export default function AgentPage() {
       .catch(() => {})
   }, [])
 
-  const handleDownload = async (platform) => {
-    setDownloading(platform)
-    setDlError(null)
-
-    try {
-      // Use platform-specific URL from /api/agent/info — these are the correct per-OS links
-      const platformUrl =
-        platform === 'win'        ? (agentInfo?.WindowsDownloadUrl    ?? agentInfo?.windowsDownloadUrl)    :
-        platform === 'linux'      ? (agentInfo?.LinuxDownloadUrl      ?? agentInfo?.linuxDownloadUrl)      :
-        platform === 'macos-arm64'? (agentInfo?.MacOsArm64DownloadUrl ?? agentInfo?.macOsArm64DownloadUrl ??
-                                     agentInfo?.MacOsDownloadUrl      ?? agentInfo?.macOsDownloadUrl)      :
-                                    (agentInfo?.MacOsDownloadUrl      ?? agentInfo?.macOsDownloadUrl)
-      const platformParam = platform === 'win' ? 'windows' : platform === 'macos-arm64' ? 'macos-arm64' : platform
-      const url = platformUrl || `${BACKEND}/api/agent/download?platform=${platformParam}`
-
-      const a = document.createElement('a')
-      a.href = url
-      a.rel = 'noopener noreferrer'
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-
-      // Generate API token in background — shown as copyable field for agent config
-      createAgentToken()
-        .then((data) => {
-          const token = data?.token ?? data?.Token
-          if (token) setApiToken(token)
-        })
-        .catch(() => {})
-    } catch {
-      setDlError('Could not start download — please try again.')
-    }
-
-    setDownloading(null)
-  }
-
-  const copyToken = () => {
-    if (!apiToken) return
-    navigator.clipboard.writeText(apiToken)
-    setTokenCopied(true)
-    setTimeout(() => setTokenCopied(false), 1800)
-  }
+  // Fetch an install token on load — gives the one-line install command,
+  // script URLs, and raw-binary URLs (with the API key already embedded).
+  useEffect(() => {
+    setTokenLoading(true)
+    createAgentToken()
+      .then((d) => setTokenData(d))
+      .catch(() => setTokenData(null))
+      .finally(() => setTokenLoading(false))
+  }, [])
 
   const version       = agentInfo?.version       ?? agentInfo?.Version       ?? null
   const usageExamples = agentInfo?.usageExamples ?? agentInfo?.UsageExamples ?? []
+
+  // Token payload shape (dual-case tolerant):
+  //   install:  { linux, macos, windows }   ← one-line copy-paste command
+  //   scripts:  { linux: { url }, … }         ← downloadable .sh / .ps1
+  //   binaries: { linux, macos, windows }     ← raw executable (advanced)
+  const osKey    = osPlatform === 'win' ? 'windows' : osPlatform // 'linux' | 'macos' | 'windows'
+  const install  = field(tokenData, 'install',  'Install')  ?? {}
+  const scripts  = field(tokenData, 'scripts',  'Scripts')  ?? {}
+  const binaries = field(tokenData, 'binaries', 'Binaries') ?? {}
+  const apiKey   = field(tokenData, 'token', 'Token', 'apiKey', 'ApiKey')
+
+  const installCmd  = field(install, osKey)
+  const scriptEntry = field(scripts, osKey)
+  const scriptUrl   = typeof scriptEntry === 'string' ? scriptEntry : field(scriptEntry, 'url', 'Url')
+  const binaryEntry = field(binaries, osKey)
+  const binaryUrl   = typeof binaryEntry === 'string' ? binaryEntry : field(binaryEntry, 'url', 'Url')
+
+  const copyCmd = () => {
+    if (!installCmd) return
+    navigator.clipboard.writeText(installCmd)
+    setCmdCopied(true)
+    setTimeout(() => setCmdCopied(false), 1800)
+  }
+  const copyKey = () => {
+    if (!apiKey) return
+    navigator.clipboard.writeText(apiKey)
+    setKeyCopied(true)
+    setTimeout(() => setKeyCopied(false), 1800)
+  }
+  const downloadFile = (url) => {
+    if (!url) return
+    const a = document.createElement('a')
+    a.href = url
+    a.rel = 'noopener noreferrer'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+  }
 
   return (
     <div className="min-h-screen page-bg flex flex-col">
@@ -219,57 +224,87 @@ export default function AgentPage() {
             Data never leaves your server.
           </p>
 
-          {/* Download buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4 flex-wrap">
-            <button
-              onClick={() => handleDownload('win')}
-              disabled={!!downloading}
-              className="flex items-center gap-2.5 bg-crimson-500 hover:bg-crimson-600 disabled:opacity-60 text-white font-semibold px-6 py-3 rounded-xl text-sm transition-colors w-full sm:w-auto justify-center"
-            >
-              <Download className="w-4 h-4" />
-              {downloading === 'win' ? 'Preparing…' : 'Download for Windows (.exe)'}
-            </button>
-            <button
-              onClick={() => handleDownload('linux')}
-              disabled={!!downloading}
-              className="flex items-center gap-2.5 bg-white/8 hover:bg-white/15 border border-white/15 disabled:opacity-60 text-white font-semibold px-6 py-3 rounded-xl text-sm transition-colors w-full sm:w-auto justify-center"
-            >
-              <Download className="w-4 h-4" />
-              {downloading === 'linux' ? 'Preparing…' : 'Download for Linux'}
-            </button>
-            <button
-              onClick={() => handleDownload('macos')}
-              disabled={!!downloading}
-              className="flex items-center gap-2.5 bg-white/8 hover:bg-white/15 border border-white/15 disabled:opacity-60 text-white font-semibold px-6 py-3 rounded-xl text-sm transition-colors w-full sm:w-auto justify-center"
-            >
-              <Download className="w-4 h-4" />
-              {downloading === 'macos' ? 'Preparing…' : 'macOS Intel (.sh)'}
-            </button>
-            <button
-              onClick={() => handleDownload('macos-arm64')}
-              disabled={!!downloading}
-              className="flex items-center gap-2.5 bg-white/8 hover:bg-white/15 border border-white/15 disabled:opacity-60 text-white font-semibold px-6 py-3 rounded-xl text-sm transition-colors w-full sm:w-auto justify-center"
-            >
-              <Download className="w-4 h-4" />
-              {downloading === 'macos-arm64' ? 'Preparing…' : 'macOS Apple Silicon (.sh)'}
-            </button>
+          {/* OS selector */}
+          <div className="flex justify-center gap-1 bg-white/5 border border-white/10 rounded-xl p-1 mb-5 w-fit mx-auto">
+            {[
+              { id: 'linux', label: 'Linux'   },
+              { id: 'macos', label: 'macOS'   },
+              { id: 'win',   label: 'Windows' },
+            ].map(({ id, label }) => (
+              <button
+                key={id}
+                onClick={() => setOsPlatform(id)}
+                className={`text-sm font-semibold px-5 py-1.5 rounded-lg transition-colors ${
+                  osPlatform === id ? 'bg-crimson-500 text-white' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
 
-          {dlError && (
-            <p className="text-xs text-red-400 mt-2">{dlError}</p>
-          )}
+          {/* Primary CTA: one-line install command */}
+          <div className="max-w-2xl mx-auto text-left mb-4">
+            {tokenLoading ? (
+              <div className="h-[92px] bg-white/3 border border-white/10 rounded-xl animate-pulse" />
+            ) : installCmd ? (
+              <div className="bg-[#0d1117] border border-white/10 rounded-xl overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10">
+                  <div className="flex items-center gap-2">
+                    <Terminal className="w-3.5 h-3.5 text-gray-500" />
+                    <span className="text-xs text-gray-400 font-medium">Install — paste this in your terminal</span>
+                  </div>
+                  <button
+                    onClick={copyCmd}
+                    className="text-xs text-gray-400 hover:text-white transition-colors shrink-0 font-semibold"
+                  >
+                    {cmdCopied ? 'Copied!' : 'Copy'}
+                  </button>
+                </div>
+                <div className="px-4 py-3.5 font-mono text-sm overflow-x-auto">
+                  <span className="text-green-400 whitespace-pre">{installCmd}</span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500 text-center py-4">
+                Couldn't load the install command — use the script or binary below instead.
+              </p>
+            )}
+          </div>
 
-          {/* API token shown after download for agent configuration */}
-          {apiToken && (
-            <div className="mt-4 max-w-lg mx-auto bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-left">
-              <p className="text-xs text-gray-400 mb-1.5">Your API key — paste this when the agent asks on first run:</p>
+          {/* Secondary + advanced download options */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-3 flex-wrap">
+            <button
+              onClick={() => downloadFile(scriptUrl)}
+              disabled={!scriptUrl}
+              className="flex items-center gap-2 bg-white/8 hover:bg-white/15 border border-white/15 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors w-full sm:w-auto justify-center"
+            >
+              <Download className="w-4 h-4" /> Download script
+            </button>
+            <button
+              onClick={() => downloadFile(binaryUrl)}
+              disabled={!binaryUrl}
+              className="flex items-center gap-2 text-gray-400 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed font-medium px-4 py-2.5 rounded-xl text-sm transition-colors w-full sm:w-auto justify-center"
+            >
+              <Download className="w-4 h-4" /> Download raw binary
+            </button>
+          </div>
+          <p className="text-[11px] text-gray-600 max-w-xl mx-auto">
+            The one-liner is the full install. The script saves as <span className="font-mono text-gray-500">.sh</span>/<span className="font-mono text-gray-500">.ps1</span> — run with <span className="font-mono text-gray-500">bash webshield-agent.sh</span>.
+            The raw binary needs <span className="font-mono text-gray-500">chmod +x</span> and unquarantine, so it's for advanced setups only.
+          </p>
+
+          {/* API key — already embedded in the command above; shown for manual config */}
+          {apiKey && (
+            <div className="mt-5 max-w-lg mx-auto bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-left">
+              <p className="text-xs text-gray-400 mb-1.5">Your API key (already embedded in the command above) — for manual config:</p>
               <div className="flex items-center gap-2">
-                <code className="text-xs text-green-400 font-mono flex-1 truncate">{apiToken}</code>
+                <code className="text-xs text-green-400 font-mono flex-1 truncate">{apiKey}</code>
                 <button
-                  onClick={copyToken}
+                  onClick={copyKey}
                   className="text-xs text-gray-500 hover:text-gray-200 transition-colors shrink-0"
                 >
-                  {tokenCopied ? 'Copied!' : 'Copy'}
+                  {keyCopied ? 'Copied!' : 'Copy'}
                 </button>
               </div>
             </div>

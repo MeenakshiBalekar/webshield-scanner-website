@@ -298,8 +298,6 @@ export default function AegisRuntimePage() {
           <Link to="/images" className="text-crimson-400 hover:text-crimson-300 transition-colors">Aegis Images</Link>
           {' · '}
           <Link to="/libraries" className="text-crimson-400 hover:text-crimson-300 transition-colors">Aegis Libraries</Link>
-          {' · '}
-          <Link to="/helm" className="text-crimson-400 hover:text-crimson-300 transition-colors">Aegis Charts</Link>
         </p>
       </main>
 

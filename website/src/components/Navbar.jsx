@@ -133,7 +133,7 @@ const COMMON_NAV = [
       { label: 'Aegis Images',    href: '/images' },
       { label: 'Aegis Libraries', href: '/libraries' },
       { label: 'Aegis Runtime',   href: '/runtime' },
-      { label: 'Aegis Charts',    href: '/helm' },
+      // { label: 'Aegis Charts',    href: '/helm' },  // hidden temporarily — restore when ready
       { label: 'Blog',            href: '/blog' },
       { label: 'Help',          href: '/help' },
       { label: 'Pricing',       href: '/pricing' },

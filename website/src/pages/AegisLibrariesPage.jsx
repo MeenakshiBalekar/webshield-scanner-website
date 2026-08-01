@@ -324,8 +324,6 @@ export default function AegisLibrariesPage() {
         <p className="text-center text-xs text-gray-600 mt-12">
           Part of the Aegis supply-chain family.{' '}
           <Link to="/images" className="text-crimson-400 hover:text-crimson-300 transition-colors">Aegis Images</Link>
-          {' · '}
-          <Link to="/helm" className="text-crimson-400 hover:text-crimson-300 transition-colors">Aegis Charts</Link>
         </p>
       </main>
 

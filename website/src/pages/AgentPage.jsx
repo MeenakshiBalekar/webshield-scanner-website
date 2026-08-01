@@ -51,7 +51,6 @@ const LINUX_STEPS = [
 ]
 
 const MACOS_STEPS = [
-  { cmd: "curl -sSL 'https://webshield-backend-api.onrender.com/api/agent/download?platform=macos' | sudo bash", comment: '# one-liner: download & install' },
   { cmd: 'udyo360-agent --baseline', comment: '# first run: save baseline' },
   { cmd: 'udyo360-agent',            comment: '# scan & compare drift (runs daily via LaunchAgent)' },
 ]

@@ -100,6 +100,9 @@ import AegisLibrariesPage from './pages/AegisLibrariesPage'
 import AegisLibraryDetailPage from './pages/AegisLibraryDetailPage'
 import AegisRuntimePage from './pages/AegisRuntimePage'
 import AegisRuntimeDetailPage from './pages/AegisRuntimeDetailPage'
+// Held for now — global chat widget; conflicts with the existing Security Copilot.
+// To enable: uncomment this import and the <AegisAssistant /> mount below.
+// import AegisAssistant from './components/AegisAssistant'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -255,6 +258,7 @@ export default function App() {
           <Route path="/dark-web" element={<PrivateRoute><DarkWebPage /></PrivateRoute>} />
         </Routes>
         </ErrorBoundary>
+        {/* <AegisAssistant /> — held; enable once the Security Copilot overlap is resolved */}
       </BrowserRouter>
     </AuthProvider>
   )

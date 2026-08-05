@@ -118,7 +118,8 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <SecurityCopilot />
+        {/* Security Copilot replaced by the site-wide Aegis Assistant (mounted below) */}
+        {/* <SecurityCopilot /> */}
         <ErrorBoundary>
         <Routes>
           {/* Marketing */}

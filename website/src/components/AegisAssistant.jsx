@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MessageCircle, X, Send, Loader2, ExternalLink, Sparkles } from 'lucide-react'
 import { askAssistant } from '../services/api'
+import { useAuth } from '../context/AuthContext'
 
 /* Dual-case field accessor */
 function f(obj, ...keys) {
@@ -27,6 +28,7 @@ const GREETING = {
 
 export default function AegisAssistant() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [open, setOpen]         = useState(false)
   const [messages, setMessages] = useState([GREETING])
   const [input, setInput]       = useState('')
@@ -80,6 +82,11 @@ export default function AegisAssistant() {
       navigate(url)
     }
   }
+
+  // Logged-in users get the Security Copilot widget (also bottom-right);
+  // show the Aegis Assistant only when that one isn't present, so the two
+  // never overlap.
+  if (user) return null
 
   return (
     <>

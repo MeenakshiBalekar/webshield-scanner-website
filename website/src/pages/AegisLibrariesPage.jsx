@@ -2,11 +2,11 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Search, ChevronLeft, ChevronRight, ChevronDown, AlertCircle,
-  ShieldCheck, Ship, Download, BadgeCheck, Boxes,
+  ShieldCheck, Library, Download, BadgeCheck, Boxes,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-import { getHelmStats, getHelmCategories, getHelmCharts } from '../services/api'
+import { getLibraryStats, getLibraryCategories, getLibraries } from '../services/api'
 
 /* Dual-case field accessor */
 function f(obj, ...keys) {
@@ -40,10 +40,10 @@ const SORTS = [
 /* ── Stat band ── */
 function StatBand({ stats }) {
   const items = [
-    { icon: Boxes,       value: compact(f(stats, 'totalCharts', 'charts', 'totalImages')),      label: 'Hardened Charts' },
-    { icon: BadgeCheck,  value: compact(f(stats, 'fipsCharts', 'fips', 'fipsImages')),          label: 'FIPS Available'  },
-    { icon: Download,    value: compact(f(stats, 'totalPulls', 'pulls', 'downloads')),          label: 'Total Installs'  },
-    { icon: ShieldCheck, value: compact(f(stats, 'cvesRemediated', 'cvesFixed', 'totalCves')),  label: 'CVEs Remediated' },
+    { icon: Boxes,       value: compact(f(stats, 'totalLibraries', 'libraries', 'totalImages')),  label: 'Hardened Libraries' },
+    { icon: BadgeCheck,  value: compact(f(stats, 'ecosystems', 'totalEcosystems')),               label: 'Ecosystems'         },
+    { icon: Download,    value: compact(f(stats, 'totalPulls', 'pulls', 'downloads')),            label: 'Total Downloads'    },
+    { icon: ShieldCheck, value: compact(f(stats, 'cvesRemediated', 'cvesFixed', 'totalCves')),    label: 'CVEs Remediated'    },
   ]
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -58,17 +58,18 @@ function StatBand({ stats }) {
   )
 }
 
-/* ── Chart card ── */
-function ChartCard({ chart, onOpen }) {
-  const security = f(chart, 'security') ?? {}
-  const name    = f(chart, 'name', 'slug', 'id') ?? '—'
-  const slug    = f(chart, 'slug', 'name', 'id') ?? ''
-  const desc    = f(chart, 'description', 'summary', 'shortDescription') ?? ''
-  const category = f(chart, 'category') ?? ''
-  const pulls   = f(chart, 'pulls', 'pullCount', 'downloads', 'installs')
-  const version = f(chart, 'version', 'chartVersion', 'latestVersion', 'appVersion')
-  const fips    = f(security, 'fipsAvailable', 'fips') ?? f(chart, 'fipsAvailable', 'fips', 'isFips')
-  const cveCount = f(security, 'cveCount', 'cves') ?? f(chart, 'cveCount', 'cves', 'vulnerabilities')
+/* ── Library card ── */
+function LibraryCard({ library, onOpen }) {
+  const security = f(library, 'security') ?? {}
+  const name    = f(library, 'name', 'slug', 'id') ?? '—'
+  const slug    = f(library, 'slug', 'name', 'id') ?? ''
+  const desc    = f(library, 'description', 'summary', 'shortDescription') ?? ''
+  const category = f(library, 'category') ?? ''
+  const ecosystem = f(library, 'ecosystem', 'language', 'packageManager', 'registry')
+  const pulls   = f(library, 'pulls', 'pullCount', 'downloads')
+  const version = f(library, 'version', 'latestVersion')
+  const fips    = f(security, 'fipsAvailable', 'fips') ?? f(library, 'fipsAvailable', 'fips', 'isFips')
+  const cveCount = f(security, 'cveCount', 'cves') ?? f(library, 'cveCount', 'cves', 'vulnerabilities')
 
   return (
     <button
@@ -78,11 +79,11 @@ function ChartCard({ chart, onOpen }) {
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-9 h-9 rounded-lg bg-crimson-500/10 border border-crimson-500/20 flex items-center justify-center shrink-0">
-            <Ship className="w-4 h-4 text-crimson-400" />
+            <Library className="w-4 h-4 text-crimson-400" />
           </div>
           <div className="min-w-0">
             <h3 className="text-sm font-bold text-white truncate group-hover:text-crimson-300 transition-colors">{name}</h3>
-            {category && <p className="text-[11px] text-gray-500 truncate">{category}</p>}
+            <p className="text-[11px] text-gray-500 truncate">{ecosystem || category}</p>
           </div>
         </div>
         {fips && (
@@ -114,7 +115,7 @@ function ChartCard({ chart, onOpen }) {
   )
 }
 
-export default function HelmChartsPage() {
+export default function AegisLibrariesPage() {
   const navigate = useNavigate()
 
   const [stats, setStats]           = useState(null)
@@ -134,8 +135,8 @@ export default function HelmChartsPage() {
   const debRef   = useRef(null)
 
   useEffect(() => {
-    getHelmStats().then(setStats).catch(() => {})
-    getHelmCategories()
+    getLibraryStats().then(setStats).catch(() => {})
+    getLibraryCategories()
       .then((d) => {
         const arr = Array.isArray(d) ? d : (f(d, 'categories', 'items') ?? [])
         setCategories(Array.isArray(arr) ? arr : [])
@@ -143,17 +144,17 @@ export default function HelmChartsPage() {
       .catch(() => {})
   }, [])
 
-  const fetchCharts = useCallback((opts) => {
+  const fetchLibraries = useCallback((opts) => {
     setLoading(true)
     setError(null)
-    getHelmCharts(opts)
+    getLibraries(opts)
       .then(setData)
-      .catch(() => setError('Could not load charts — please try again.'))
+      .catch(() => setError('Could not load libraries — please try again.'))
       .finally(() => setLoading(false))
   }, [])
 
   useEffect(() => {
-    fetchCharts({ search, category, sort, page, pageSize: PAGE_SIZE })
+    fetchLibraries({ search, category, sort, page, pageSize: PAGE_SIZE })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category, sort, page])
 
@@ -163,7 +164,7 @@ export default function HelmChartsPage() {
     if (debRef.current) clearTimeout(debRef.current)
     debRef.current = setTimeout(() => {
       setPage(1)
-      fetchCharts({ search: q, category, sort, page: 1, pageSize: PAGE_SIZE })
+      fetchLibraries({ search: q, category, sort, page: 1, pageSize: PAGE_SIZE })
     }, 300)
   }
 
@@ -173,11 +174,11 @@ export default function HelmChartsPage() {
     return () => document.removeEventListener('mousedown', close)
   }, [])
 
-  const openChart = (slug) => navigate(`/helm/${encodeURIComponent(slug)}`)
+  const openLibrary = (slug) => navigate(`/libraries/${encodeURIComponent(slug)}`)
 
   const items = Array.isArray(data)
     ? data
-    : (f(data, 'charts', 'items', 'results', 'data') ?? [])
+    : (f(data, 'libraries', 'items', 'results', 'data') ?? [])
   const total      = f(data, 'total', 'totalCount', 'count') ?? (Array.isArray(items) ? items.length : 0)
   const totalPages = f(data, 'totalPages', 'pages') ?? Math.max(1, Math.ceil(total / PAGE_SIZE))
 
@@ -195,12 +196,12 @@ export default function HelmChartsPage() {
             <ShieldCheck className="w-3.5 h-3.5" /> Hardened · Signed · Near-Zero CVE
           </div>
           <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-4 leading-tight">
-            Aegis <span className="text-crimson-500">Charts</span>
+            Aegis <span className="text-crimson-500">Libraries</span>
           </h1>
           <p className="text-gray-400 max-w-2xl mx-auto text-lg">
-            Production-ready Helm charts built on Aegis Images — hardened defaults,
-            signed provenance, and near-zero known vulnerabilities. Deploy secure
-            workloads to Kubernetes in one command.
+            Hardened, rebuilt language packages across npm, PyPI, Maven, and more —
+            with signed provenance, a complete SBOM, and near-zero known vulnerabilities.
+            A secure drop-in for the dependencies you already use.
           </p>
         </div>
 
@@ -216,7 +217,7 @@ export default function HelmChartsPage() {
             <input
               value={search}
               onChange={onSearch}
-              placeholder="Search charts — postgresql, redis, nginx…"
+              placeholder="Search libraries — lodash, requests, jackson…"
               className="w-full bg-white/5 border border-white/10 focus:border-crimson-500 text-white placeholder-gray-500 pl-10 pr-4 py-3 rounded-xl text-sm outline-none transition-colors"
             />
           </div>
@@ -227,9 +228,9 @@ export default function HelmChartsPage() {
               onChange={(e) => { setCategory(e.target.value); setPage(1) }}
               className="w-full appearance-none bg-white/5 border border-white/10 focus:border-crimson-500 text-white px-4 py-3 pr-9 rounded-xl text-sm outline-none transition-colors cursor-pointer"
             >
-              <option value="">All Categories</option>
+              <option value="">All Ecosystems</option>
               {categories.map((c, i) => {
-                const cname = f(c, 'name', 'category') ?? (typeof c === 'string' ? c : '')
+                const cname = f(c, 'name', 'category', 'ecosystem') ?? (typeof c === 'string' ? c : '')
                 const count = f(c, 'count')
                 return (
                   <option key={i} value={cname}>
@@ -285,15 +286,15 @@ export default function HelmChartsPage() {
         {!loading && !error && items.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <Search className="w-10 h-10 text-gray-600 mb-3" />
-            <p className="text-white font-semibold mb-1">No charts found</p>
-            <p className="text-gray-500 text-sm">Try a different search term or category.</p>
+            <p className="text-white font-semibold mb-1">No libraries found</p>
+            <p className="text-gray-500 text-sm">Try a different search term or ecosystem.</p>
           </div>
         )}
 
         {!loading && !error && items.length > 0 && (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {items.map((chart, i) => (
-              <ChartCard key={f(chart, 'slug', 'name', 'id') ?? i} chart={chart} onOpen={openChart} />
+            {items.map((lib, i) => (
+              <LibraryCard key={f(lib, 'slug', 'name', 'id') ?? i} library={lib} onOpen={openLibrary} />
             ))}
           </div>
         )}
@@ -321,10 +322,8 @@ export default function HelmChartsPage() {
 
         {/* Footer note */}
         <p className="text-center text-xs text-gray-600 mt-12">
-          Every chart is built on hardened Aegis Images.{' '}
-          <Link to="/images" className="text-crimson-400 hover:text-crimson-300 transition-colors">
-            Browse the Aegis Images catalog →
-          </Link>
+          Part of the Aegis supply-chain family.{' '}
+          <Link to="/images" className="text-crimson-400 hover:text-crimson-300 transition-colors">Aegis Images</Link>
         </p>
       </main>
 

@@ -130,10 +130,10 @@ const COMMON_NAV = [
       { label: 'White Label',   href: '/whitelabel' },
       { label: 'Trust Badge',   href: '/trust' },
       { label: 'CVE Database',    href: '/cve-database' },
-      { label: 'Aegis Images',    href: '/images' },
-      { label: 'Aegis Libraries', href: '/libraries' },
-      { label: 'Aegis Runtime',   href: '/runtime' },
-      // { label: 'Aegis Charts',    href: '/helm' },  // hidden temporarily — restore when ready
+      { label: 'Udyo360 Images',    href: '/images' },
+      { label: 'Udyo360 Libraries', href: '/libraries' },
+      { label: 'Udyo360 Runtime',   href: '/runtime' },
+      // { label: 'Udyo360 Charts',    href: '/helm' },  // hidden temporarily — restore when ready
       { label: 'Blog',            href: '/blog' },
       { label: 'Help',          href: '/help' },
       { label: 'Pricing',       href: '/pricing' },
@@ -379,7 +379,7 @@ export default function Navbar({ banner }) {
 
       {/* Mobile Menu */}
       {mobileOpen && (
-        <div className="md:hidden bg-navy-900 border-t border-white/10">
+        <div className="md:hidden bg-navy-900 border-t border-white/10 max-h-[calc(100vh-8rem)] overflow-y-auto overscroll-contain">
           <div className="px-4 py-4 space-y-1">
             {navLinks.map((link) => (
               <div key={link.label}>

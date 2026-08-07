@@ -16,16 +16,16 @@ function f(obj, ...keys) {
 
 const GREETING = {
   role: 'assistant',
-  answer: "Hi! I'm the Aegis assistant. Ask me about hardened images, libraries, runtime visibility, the agent, scanning, or anything else on the platform.",
+  answer: "Hi! I'm the Udyo360 assistant. Ask me about hardened images, libraries, runtime visibility, the agent, scanning, or anything else on the platform.",
   sources: [],
   suggestions: [
-    'What is Aegis Images?',
+    'What is Udyo360 Images?',
     'How do I install the agent?',
     'How does the Custom Image Builder work?',
   ],
 }
 
-export default function AegisAssistant() {
+export default function Udyo360Assistant() {
   const navigate = useNavigate()
   const [open, setOpen]         = useState(false)
   const [messages, setMessages] = useState([GREETING])
@@ -99,7 +99,7 @@ export default function AegisAssistant() {
               <Sparkles className="w-4 h-4 text-crimson-400" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-bold text-white leading-tight">Aegis Assistant</p>
+              <p className="text-sm font-bold text-white leading-tight">Udyo360 Assistant</p>
               <p className="text-[11px] text-gray-500">Ask about the platform</p>
             </div>
           </div>

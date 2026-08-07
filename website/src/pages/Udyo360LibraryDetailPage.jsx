@@ -99,7 +99,7 @@ function MetaRow({ label, value }) {
   )
 }
 
-export default function AegisLibraryDetailPage() {
+export default function Udyo360LibraryDetailPage() {
   const { slug } = useParams()
   const navigate = useNavigate()
 
@@ -147,7 +147,7 @@ export default function AegisLibraryDetailPage() {
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 pt-24 pb-16">
 
         <Link to="/libraries" className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors mb-6">
-          <ChevronLeft className="w-4 h-4" /> All Aegis Libraries
+          <ChevronLeft className="w-4 h-4" /> All Udyo360 Libraries
         </Link>
 
         {loading && (

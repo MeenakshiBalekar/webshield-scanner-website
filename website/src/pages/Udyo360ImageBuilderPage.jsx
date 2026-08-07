@@ -114,7 +114,7 @@ function Toggle({ checked, onChange, label, hint }) {
   )
 }
 
-export default function AegisImageBuilderPage() {
+export default function Udyo360ImageBuilderPage() {
   const [baseImages, setBaseImages] = useState([])   // [{ slug, name, distroless, fipsAvailable, ... }]
   const [limits, setLimits]         = useState(null)
 
@@ -224,7 +224,7 @@ export default function AegisImageBuilderPage() {
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 pt-24 pb-16">
 
         <Link to="/images" className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors mb-6">
-          <ChevronLeft className="w-4 h-4" /> All Aegis Images
+          <ChevronLeft className="w-4 h-4" /> All Udyo360 Images
         </Link>
 
         {/* Hero */}
@@ -233,10 +233,10 @@ export default function AegisImageBuilderPage() {
             <Hammer className="w-3.5 h-3.5" /> Custom Image Builder
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-3 leading-tight">
-            Build Your Own <span className="text-crimson-500">Aegis Image</span>
+            Build Your Own <span className="text-crimson-500">Udyo360 Image</span>
           </h1>
           <p className="text-gray-400 max-w-xl mx-auto">
-            Compose a hardened Dockerfile from an Aegis Images base — non-root by default,
+            Compose a hardened Dockerfile from an Udyo360 Images base — non-root by default,
             minimal packages, FIPS optional.
           </p>
         </div>
@@ -364,7 +364,7 @@ export default function AegisImageBuilderPage() {
 
         <p className="flex items-center justify-center gap-1.5 text-center text-xs text-gray-600 mt-10">
           <ShieldCheck className="w-3.5 h-3.5" />
-          Generated Dockerfiles follow Aegis Images hardening defaults.
+          Generated Dockerfiles follow Udyo360 Images hardening defaults.
         </p>
       </main>
 

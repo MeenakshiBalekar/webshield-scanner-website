@@ -2,11 +2,11 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Search, ChevronLeft, ChevronRight, ChevronDown, AlertCircle,
-  ShieldCheck, Library, Download, BadgeCheck, Boxes,
+  ShieldCheck, Eye, ShieldAlert, Boxes, Activity,
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-import { getLibraryStats, getLibraryCategories, getLibraries } from '../services/api'
+import { getUdyo360RuntimeStats, getUdyo360Runtime } from '../services/api'
 
 /* Dual-case field accessor */
 function f(obj, ...keys) {
@@ -31,19 +31,32 @@ function compact(n) {
 const PAGE_SIZE = 12
 
 const SORTS = [
-  { id: 'latest',  label: 'Latest'       },
-  { id: 'popular', label: 'Most Popular' },
-  { id: 'name',    label: 'Name (A–Z)'   },
-  { id: 'secure',  label: 'Most Secure'  },
+  { id: 'latest',   label: 'Latest'         },
+  { id: 'severity', label: 'Highest Risk'   },
+  { id: 'name',     label: 'Name (A–Z)'     },
 ]
+
+/* Severity → chip style */
+const SEV = {
+  critical: 'text-red-400 bg-red-500/10 border-red-500/25',
+  high:     'text-orange-400 bg-orange-500/10 border-orange-500/25',
+  medium:   'text-amber-400 bg-amber-500/10 border-amber-500/25',
+  low:      'text-blue-400 bg-blue-500/10 border-blue-500/25',
+  none:     'text-green-400 bg-green-500/10 border-green-500/25',
+  clean:    'text-green-400 bg-green-500/10 border-green-500/25',
+}
+function sevKey(raw) {
+  const s = String(raw ?? '').toLowerCase()
+  return SEV[s] ? s : (s ? 'low' : 'none')
+}
 
 /* ── Stat band ── */
 function StatBand({ stats }) {
   const items = [
-    { icon: Boxes,       value: compact(f(stats, 'totalLibraries', 'libraries', 'totalImages')),  label: 'Hardened Libraries' },
-    { icon: BadgeCheck,  value: compact(f(stats, 'ecosystems', 'totalEcosystems')),               label: 'Ecosystems'         },
-    { icon: Download,    value: compact(f(stats, 'totalPulls', 'pulls', 'downloads')),            label: 'Total Downloads'    },
-    { icon: ShieldCheck, value: compact(f(stats, 'cvesRemediated', 'cvesFixed', 'totalCves')),    label: 'CVEs Remediated'    },
+    { icon: Boxes,       value: compact(f(stats, 'totalArtifacts', 'total', 'monitored')),        label: 'Artifacts Monitored' },
+    { icon: ShieldCheck, value: compact(f(stats, 'clean', 'cleanCount', 'passing')),              label: 'Clean' },
+    { icon: ShieldAlert, value: compact(f(stats, 'atRisk', 'flagged', 'vulnerable')),             label: 'At Risk' },
+    { icon: Activity,    value: compact(f(stats, 'cvesRemediated', 'cvesFixed', 'remediated')),   label: 'CVEs Remediated' },
   ]
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -58,105 +71,84 @@ function StatBand({ stats }) {
   )
 }
 
-/* ── Library card ── */
-function LibraryCard({ library, onOpen }) {
-  const security = f(library, 'security') ?? {}
-  const name    = f(library, 'name', 'slug', 'id') ?? '—'
-  const slug    = f(library, 'slug', 'name', 'id') ?? ''
-  const desc    = f(library, 'description', 'summary', 'shortDescription') ?? ''
-  const category = f(library, 'category') ?? ''
-  const ecosystem = f(library, 'ecosystem', 'language', 'packageManager', 'registry')
-  const pulls   = f(library, 'pulls', 'pullCount', 'downloads')
-  const version = f(library, 'version', 'latestVersion')
-  const fips    = f(security, 'fipsAvailable', 'fips') ?? f(library, 'fipsAvailable', 'fips', 'isFips')
-  const cveCount = f(security, 'cveCount', 'cves') ?? f(library, 'cveCount', 'cves', 'vulnerabilities')
+/* ── Record card ── */
+function SightCard({ record, onOpen }) {
+  const id       = f(record, 'id', 'slug', 'name') ?? ''
+  const name     = f(record, 'name', 'title', 'artifact', 'id') ?? '—'
+  const desc     = f(record, 'description', 'summary') ?? ''
+  const type     = f(record, 'type', 'kind', 'category', 'source') ?? ''
+  const sev      = f(record, 'severity', 'risk', 'status')
+  const cveCount = f(record, 'cveCount', 'cves', 'findings', 'issues')
+  const sk       = sevKey(sev)
+  const sevLabel = sev ? String(sev) : (Number(cveCount) > 0 ? 'At risk' : 'Clean')
 
   return (
     <button
-      onClick={() => onOpen(slug)}
+      onClick={() => onOpen(id)}
       className="text-left bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-white/20 rounded-2xl p-5 transition-colors flex flex-col h-full group"
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-9 h-9 rounded-lg bg-crimson-500/10 border border-crimson-500/20 flex items-center justify-center shrink-0">
-            <Library className="w-4 h-4 text-crimson-400" />
+            <Eye className="w-4 h-4 text-crimson-400" />
           </div>
           <div className="min-w-0">
             <h3 className="text-sm font-bold text-white truncate group-hover:text-crimson-300 transition-colors">{name}</h3>
-            <p className="text-[11px] text-gray-500 truncate">{ecosystem || category}</p>
+            {type && <p className="text-[11px] text-gray-500 truncate">{type}</p>}
           </div>
         </div>
-        {fips && (
-          <span className="shrink-0 text-[9px] font-bold uppercase tracking-wider text-blue-300 bg-blue-500/10 border border-blue-500/25 rounded px-1.5 py-0.5">
-            FIPS
-          </span>
-        )}
+        <span className={`shrink-0 text-[9px] font-bold uppercase tracking-wider rounded px-1.5 py-0.5 border ${SEV[sk]}`}>
+          {sevLabel}
+        </span>
       </div>
 
       {desc && <p className="text-xs text-gray-400 leading-relaxed line-clamp-2 mb-4 flex-1">{desc}</p>}
 
       <div className="flex items-center flex-wrap gap-1.5 mt-auto">
-        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-green-400 bg-green-500/10 border border-green-500/20 rounded px-1.5 py-0.5">
+        <span className={`inline-flex items-center gap-1 text-[10px] font-semibold rounded px-1.5 py-0.5 border ${
+          Number(cveCount) > 0 ? SEV.medium : SEV.none
+        }`}>
           <ShieldCheck className="w-3 h-3" />
-          {Number(cveCount) === 0 || cveCount == null ? '0 CVEs' : `${cveCount} CVEs`}
+          {Number(cveCount) > 0 ? `${cveCount} findings` : '0 findings'}
         </span>
-        {version && (
-          <span className="font-mono text-[10px] text-gray-400 bg-white/5 border border-white/10 rounded px-1.5 py-0.5 truncate max-w-[110px]">
-            v{String(version).replace(/^v/, '')}
-          </span>
-        )}
-        {pulls != null && (
-          <span className="ml-auto inline-flex items-center gap-1 text-[10px] text-gray-500">
-            <Download className="w-3 h-3" /> {compact(pulls)}
-          </span>
-        )}
       </div>
     </button>
   )
 }
 
-export default function AegisLibrariesPage() {
+export default function Udyo360RuntimePage() {
   const navigate = useNavigate()
 
-  const [stats, setStats]           = useState(null)
-  const [categories, setCategories] = useState([])
-
-  const [search, setSearch]     = useState('')
-  const [category, setCategory] = useState('')
-  const [sort, setSort]         = useState('popular')
-  const [page, setPage]         = useState(1)
+  const [stats, setStats]     = useState(null)
+  const [search, setSearch]   = useState('')
+  const [sort, setSort]       = useState('latest')
+  const [page, setPage]       = useState(1)
 
   const [data, setData]       = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState(null)
 
   const [sortOpen, setSortOpen] = useState(false)
-  const sortRef  = useRef(null)
-  const debRef   = useRef(null)
+  const sortRef = useRef(null)
+  const debRef  = useRef(null)
 
   useEffect(() => {
-    getLibraryStats().then(setStats).catch(() => {})
-    getLibraryCategories()
-      .then((d) => {
-        const arr = Array.isArray(d) ? d : (f(d, 'categories', 'items') ?? [])
-        setCategories(Array.isArray(arr) ? arr : [])
-      })
-      .catch(() => {})
+    getUdyo360RuntimeStats().then(setStats).catch(() => {})
   }, [])
 
-  const fetchLibraries = useCallback((opts) => {
+  const fetchRecords = useCallback((opts) => {
     setLoading(true)
     setError(null)
-    getLibraries(opts)
+    getUdyo360Runtime(opts)
       .then(setData)
-      .catch(() => setError('Could not load libraries — please try again.'))
+      .catch(() => setError('Could not load Udyo360 Runtime data — please try again.'))
       .finally(() => setLoading(false))
   }, [])
 
   useEffect(() => {
-    fetchLibraries({ search, category, sort, page, pageSize: PAGE_SIZE })
+    fetchRecords({ search, sort, page, pageSize: PAGE_SIZE })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, sort, page])
+  }, [sort, page])
 
   const onSearch = (e) => {
     const q = e.target.value
@@ -164,7 +156,7 @@ export default function AegisLibrariesPage() {
     if (debRef.current) clearTimeout(debRef.current)
     debRef.current = setTimeout(() => {
       setPage(1)
-      fetchLibraries({ search: q, category, sort, page: 1, pageSize: PAGE_SIZE })
+      fetchRecords({ search: q, sort, page: 1, pageSize: PAGE_SIZE })
     }, 300)
   }
 
@@ -174,11 +166,11 @@ export default function AegisLibrariesPage() {
     return () => document.removeEventListener('mousedown', close)
   }, [])
 
-  const openLibrary = (slug) => navigate(`/libraries/${encodeURIComponent(slug)}`)
+  const openRecord = (id) => navigate(`/runtime/${encodeURIComponent(id)}`)
 
   const items = Array.isArray(data)
     ? data
-    : (f(data, 'libraries', 'items', 'results', 'data') ?? [])
+    : (f(data, 'records', 'items', 'results', 'data', 'artifacts') ?? [])
   const total      = f(data, 'total', 'totalCount', 'count') ?? (Array.isArray(items) ? items.length : 0)
   const totalPages = f(data, 'totalPages', 'pages') ?? Math.max(1, Math.ceil(total / PAGE_SIZE))
 
@@ -193,15 +185,15 @@ export default function AegisLibrariesPage() {
         {/* Hero */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 bg-crimson-500/10 border border-crimson-500/25 text-crimson-400 text-xs font-semibold px-3 py-1.5 rounded-full mb-5">
-            <ShieldCheck className="w-3.5 h-3.5" /> Hardened · Signed · Near-Zero CVE
+            <Eye className="w-3.5 h-3.5" /> Supply-Chain Visibility
           </div>
           <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-4 leading-tight">
-            Aegis <span className="text-crimson-500">Libraries</span>
+            Udyo360 <span className="text-crimson-500">Runtime</span>
           </h1>
           <p className="text-gray-400 max-w-2xl mx-auto text-lg">
-            Hardened, rebuilt language packages across npm, PyPI, Maven, and more —
-            with signed provenance, a complete SBOM, and near-zero known vulnerabilities.
-            A secure drop-in for the dependencies you already use.
+            One view across your entire Udyo360 supply chain — images, libraries, and charts.
+            Track CVE posture, provenance, and SBOM coverage for every artifact, and see
+            exactly what's clean and what needs attention.
           </p>
         </div>
 
@@ -217,32 +209,12 @@ export default function AegisLibrariesPage() {
             <input
               value={search}
               onChange={onSearch}
-              placeholder="Search libraries — lodash, requests, jackson…"
+              placeholder="Search artifacts…"
               className="w-full bg-white/5 border border-white/10 focus:border-crimson-500 text-white placeholder-gray-500 pl-10 pr-4 py-3 rounded-xl text-sm outline-none transition-colors"
             />
           </div>
 
-          <div className="relative sm:w-56">
-            <select
-              value={category}
-              onChange={(e) => { setCategory(e.target.value); setPage(1) }}
-              className="w-full appearance-none bg-white/5 border border-white/10 focus:border-crimson-500 text-white px-4 py-3 pr-9 rounded-xl text-sm outline-none transition-colors cursor-pointer"
-            >
-              <option value="">All Ecosystems</option>
-              {categories.map((c, i) => {
-                const cname = f(c, 'name', 'category', 'ecosystem') ?? (typeof c === 'string' ? c : '')
-                const count = f(c, 'count')
-                return (
-                  <option key={i} value={cname}>
-                    {cname}{count != null ? ` (${count})` : ''}
-                  </option>
-                )
-              })}
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
-          </div>
-
-          <div className="relative sm:w-44" ref={sortRef}>
+          <div className="relative sm:w-48" ref={sortRef}>
             <button
               onClick={() => setSortOpen((v) => !v)}
               className="w-full flex items-center justify-between bg-white/5 border border-white/10 hover:border-white/20 text-white px-4 py-3 rounded-xl text-sm transition-colors"
@@ -278,7 +250,7 @@ export default function AegisLibrariesPage() {
         {loading && (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-40 bg-white/3 border border-white/5 rounded-2xl animate-pulse" />
+              <div key={i} className="h-36 bg-white/3 border border-white/5 rounded-2xl animate-pulse" />
             ))}
           </div>
         )}
@@ -286,15 +258,15 @@ export default function AegisLibrariesPage() {
         {!loading && !error && items.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <Search className="w-10 h-10 text-gray-600 mb-3" />
-            <p className="text-white font-semibold mb-1">No libraries found</p>
-            <p className="text-gray-500 text-sm">Try a different search term or ecosystem.</p>
+            <p className="text-white font-semibold mb-1">Nothing to show yet</p>
+            <p className="text-gray-500 text-sm">No artifacts match your search.</p>
           </div>
         )}
 
         {!loading && !error && items.length > 0 && (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {items.map((lib, i) => (
-              <LibraryCard key={f(lib, 'slug', 'name', 'id') ?? i} library={lib} onOpen={openLibrary} />
+            {items.map((rec, i) => (
+              <SightCard key={f(rec, 'id', 'slug', 'name') ?? i} record={rec} onOpen={openRecord} />
             ))}
           </div>
         )}
@@ -322,8 +294,10 @@ export default function AegisLibrariesPage() {
 
         {/* Footer note */}
         <p className="text-center text-xs text-gray-600 mt-12">
-          Part of the Aegis supply-chain family.{' '}
-          <Link to="/images" className="text-crimson-400 hover:text-crimson-300 transition-colors">Aegis Images</Link>
+          Visibility across{' '}
+          <Link to="/images" className="text-crimson-400 hover:text-crimson-300 transition-colors">Udyo360 Images</Link>
+          {' · '}
+          <Link to="/libraries" className="text-crimson-400 hover:text-crimson-300 transition-colors">Udyo360 Libraries</Link>
         </p>
       </main>
 

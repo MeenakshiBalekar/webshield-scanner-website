@@ -615,7 +615,7 @@ export const getPhishingCampaigns   = ()     => request('/api/phishing/campaigns
 export const createPhishingCampaign = (data) => request('/api/phishing/campaign', { method: 'POST', body: JSON.stringify(data) })
 export const getPhishingResults     = (id)   => request(`/api/phishing/campaigns/${encodeURIComponent(id)}/results`)
 
-// Aegis Images — hardened container image catalog (public, no auth)
+// Udyo360 Images — hardened container image catalog (public, no auth)
 export const getImageStats      = ()     => request('/api/images/stats')
 export const getImageCategories = ()     => request('/api/images/categories')
 export const getImages = ({ search = '', category = '', sort = '', page = 1, pageSize } = {}) => {
@@ -632,7 +632,7 @@ export const getImageDetail = (slug) => request(`/api/images/${encodeURIComponen
 export const getImageTags   = (slug) => request(`/api/images/${encodeURIComponent(slug)}/tags`)
 export const getImageSbom   = (slug) => request(`/api/images/${encodeURIComponent(slug)}/sbom`)
 
-// Aegis Images — custom image builder & requests
+// Udyo360 Images — custom image builder & requests
 export const getBuilderOptions   = ()     => request('/api/images/builder/options')
 export const generateDockerfile  = (data) => request('/api/images/builder/generate', { method: 'POST', body: JSON.stringify(data) })
 export const downloadDockerfile  = (data) => blobRequest('/api/images/builder/generate?download=true', { method: 'POST', body: JSON.stringify(data) })
@@ -640,7 +640,7 @@ export const submitImageRequest  = (data) => request('/api/images/requests', { m
 export const getImageRequests    = ()     => request('/api/images/requests')
 export const updateImageRequest  = (id, data) => request(`/api/images/requests/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(data) })
 
-// Aegis Charts — hardened chart catalog (public, no auth)
+// Udyo360 Charts — hardened chart catalog (public, no auth)
 export const getHelmStats      = ()     => request('/api/helm/stats')
 export const getHelmCategories = ()     => request('/api/helm/categories')
 export const getHelmCharts = ({ search = '', category = '', sort = '', page = 1, pageSize } = {}) => {
@@ -655,7 +655,7 @@ export const getHelmCharts = ({ search = '', category = '', sort = '', page = 1,
 }
 export const getHelmChartDetail = (slug) => request(`/api/helm/${encodeURIComponent(slug)}/details`)
 
-// Aegis Libraries — hardened language package catalog (public, no auth)
+// Udyo360 Libraries — hardened language package catalog (public, no auth)
 export const getLibraryStats      = ()     => request('/api/libraries/stats')
 export const getLibraryCategories = ()     => request('/api/libraries/categories')
 export const getLibraries = ({ search = '', category = '', sort = '', page = 1, pageSize } = {}) => {
@@ -670,10 +670,10 @@ export const getLibraries = ({ search = '', category = '', sort = '', page = 1, 
 }
 export const getLibraryDetail = (slug) => request(`/api/libraries/${encodeURIComponent(slug)}/details`)
 
-// Aegis Runtime (formerly AegisRuntime) — supply-chain visibility (public, no auth)
+// Udyo360 Runtime (formerly Udyo360Runtime) — supply-chain visibility (public, no auth)
 // Canonical route is /api/runtime/*; backend keeps /api/cleansight/* as a fallback.
-export const getAegisRuntimeStats  = ()   => request('/api/runtime/stats')
-export const getAegisRuntime = ({ search = '', category = '', type = '', sort = '', page = 1, pageSize } = {}) => {
+export const getUdyo360RuntimeStats  = ()   => request('/api/runtime/stats')
+export const getUdyo360Runtime = ({ search = '', category = '', type = '', sort = '', page = 1, pageSize } = {}) => {
   const q = new URLSearchParams()
   if (search)   q.set('search', search)
   if (category) q.set('category', category)
@@ -684,9 +684,9 @@ export const getAegisRuntime = ({ search = '', category = '', type = '', sort = 
   const qs = q.toString()
   return request(`/api/runtime${qs ? `?${qs}` : ''}`)
 }
-export const getAegisRuntimeDetail = (id) => request(`/api/runtime/${encodeURIComponent(id)}`)
+export const getUdyo360RuntimeDetail = (id) => request(`/api/runtime/${encodeURIComponent(id)}`)
 
-// Aegis Assistant — site-wide Q&A chat (public)
+// Udyo360 Assistant — site-wide Q&A chat (public)
 // POST /api/assistant/ask { question } → { answer, sources[], suggestions[], poweredBy }
 export const askAssistant = (question) =>
   request('/api/assistant/ask', { method: 'POST', body: JSON.stringify({ question }) })

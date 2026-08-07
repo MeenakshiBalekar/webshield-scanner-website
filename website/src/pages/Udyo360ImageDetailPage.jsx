@@ -424,7 +424,7 @@ const TABS = [
   { id: 'sbom',     label: 'SBOM & Scan' },
 ]
 
-export default function AegisImageDetailPage() {
+export default function Udyo360ImageDetailPage() {
   const { slug } = useParams()
   const navigate = useNavigate()
 
@@ -461,7 +461,7 @@ export default function AegisImageDetailPage() {
           to="/images"
           className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors mb-6"
         >
-          <ChevronLeft className="w-4 h-4" /> All Aegis Images
+          <ChevronLeft className="w-4 h-4" /> All Udyo360 Images
         </Link>
 
         {loading && (

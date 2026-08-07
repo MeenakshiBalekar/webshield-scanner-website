@@ -122,7 +122,7 @@ function ImageCard({ image, onOpen }) {
   )
 }
 
-export default function AegisImagesPage() {
+export default function Udyo360ImagesPage() {
   const navigate = useNavigate()
 
   const [stats, setStats]           = useState(null)
@@ -209,7 +209,7 @@ export default function AegisImagesPage() {
             <ShieldCheck className="w-3.5 h-3.5" /> Hardened · Near-Zero CVE · Signed
           </div>
           <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-4 leading-tight">
-            Aegis <span className="text-crimson-500">Images</span>
+            Udyo360 <span className="text-crimson-500">Images</span>
           </h1>
           <p className="text-gray-400 max-w-2xl mx-auto text-lg">
             Minimal, hardened container images with near-zero known vulnerabilities.
@@ -343,7 +343,7 @@ export default function AegisImagesPage() {
               <h3 className="text-base font-bold text-white">Community</h3>
             </div>
             <p className="text-sm text-gray-400 leading-relaxed mb-4">
-              Pull any Aegis Image for free. Every build is minimal, hardened, and ships
+              Pull any Udyo360 Image for free. Every build is minimal, hardened, and ships
               with a signed SBOM — no account required.
             </p>
             <Link

@@ -91,16 +91,16 @@ import ContainerIacPage from './pages/ContainerIacPage'
 import EmailSecurityPage from './pages/EmailSecurityPage'
 import ErrorBoundary from './components/ErrorBoundary'
 import DarkWebPage from './pages/DarkWebPage'
-import AegisImagesPage from './pages/AegisImagesPage'
-import AegisImageDetailPage from './pages/AegisImageDetailPage'
-import AegisImageBuilderPage from './pages/AegisImageBuilderPage'
+import Udyo360ImagesPage from './pages/Udyo360ImagesPage'
+import Udyo360ImageDetailPage from './pages/Udyo360ImageDetailPage'
+import Udyo360ImageBuilderPage from './pages/Udyo360ImageBuilderPage'
 import HelmChartsPage from './pages/HelmChartsPage'
 import HelmChartDetailPage from './pages/HelmChartDetailPage'
-import AegisLibrariesPage from './pages/AegisLibrariesPage'
-import AegisLibraryDetailPage from './pages/AegisLibraryDetailPage'
-import AegisRuntimePage from './pages/AegisRuntimePage'
-import AegisRuntimeDetailPage from './pages/AegisRuntimeDetailPage'
-import AegisAssistant from './components/AegisAssistant'
+import Udyo360LibrariesPage from './pages/Udyo360LibrariesPage'
+import Udyo360LibraryDetailPage from './pages/Udyo360LibraryDetailPage'
+import Udyo360RuntimePage from './pages/Udyo360RuntimePage'
+import Udyo360RuntimeDetailPage from './pages/Udyo360RuntimeDetailPage'
+import Udyo360Assistant from './components/Udyo360Assistant'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -109,7 +109,7 @@ function PrivateRoute({ children }) {
 }
 
 /* Legacy /cleansight/:id → /runtime/:id, preserving the id */
-function AegisRuntimeRedirect() {
+function Udyo360RuntimeRedirect() {
   const { id } = useParams()
   return <Navigate to={`/runtime/${id}`} replace />
 }
@@ -118,7 +118,7 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        {/* Security Copilot replaced by the site-wide Aegis Assistant (mounted below) */}
+        {/* Security Copilot replaced by the site-wide Udyo360 Assistant (mounted below) */}
         {/* <SecurityCopilot /> */}
         <ErrorBoundary>
         <Routes>
@@ -135,17 +135,17 @@ export default function App() {
           <Route path="/cve-database"                   element={<CveDatabasePage />} />
           <Route path="/cve-database/:checkId"          element={<CveDatabasePage />} />
           <Route path="/agent"             element={<AgentPage />} />
-          <Route path="/images"            element={<AegisImagesPage />} />
-          <Route path="/images/builder"    element={<AegisImageBuilderPage />} />
-          <Route path="/images/:slug"      element={<AegisImageDetailPage />} />
+          <Route path="/images"            element={<Udyo360ImagesPage />} />
+          <Route path="/images/builder"    element={<Udyo360ImageBuilderPage />} />
+          <Route path="/images/:slug"      element={<Udyo360ImageDetailPage />} />
           <Route path="/helm"              element={<HelmChartsPage />} />
           <Route path="/helm/:slug"        element={<HelmChartDetailPage />} />
-          <Route path="/libraries"         element={<AegisLibrariesPage />} />
-          <Route path="/libraries/:slug"   element={<AegisLibraryDetailPage />} />
-          <Route path="/runtime"           element={<AegisRuntimePage />} />
-          <Route path="/runtime/:id"       element={<AegisRuntimeDetailPage />} />
+          <Route path="/libraries"         element={<Udyo360LibrariesPage />} />
+          <Route path="/libraries/:slug"   element={<Udyo360LibraryDetailPage />} />
+          <Route path="/runtime"           element={<Udyo360RuntimePage />} />
+          <Route path="/runtime/:id"       element={<Udyo360RuntimeDetailPage />} />
           <Route path="/cleansight"        element={<Navigate to="/runtime" replace />} />
-          <Route path="/cleansight/:id"    element={<AegisRuntimeRedirect />} />
+          <Route path="/cleansight/:id"    element={<Udyo360RuntimeRedirect />} />
           <Route path="/privacy-policy"         element={<PrivacyPolicyPage />} />
           <Route path="/terms-of-service"       element={<TermsOfServicePage />} />
           <Route path="/cookie-policy"          element={<CookiePolicyPage />} />
@@ -257,7 +257,7 @@ export default function App() {
           <Route path="/dark-web" element={<PrivateRoute><DarkWebPage /></PrivateRoute>} />
         </Routes>
         </ErrorBoundary>
-        <AegisAssistant />
+        <Udyo360Assistant />
       </BrowserRouter>
     </AuthProvider>
   )

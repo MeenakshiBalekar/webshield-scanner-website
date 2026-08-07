@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-import { getAegisRuntimeDetail } from '../services/api'
+import { getUdyo360RuntimeDetail } from '../services/api'
 
 /* Dual-case field accessor */
 function f(obj, ...keys) {
@@ -54,7 +54,7 @@ function PostureItem({ icon: Icon, ok, label, value }) {
   )
 }
 
-export default function AegisRuntimeDetailPage() {
+export default function Udyo360RuntimeDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
 
@@ -65,7 +65,7 @@ export default function AegisRuntimeDetailPage() {
   useEffect(() => {
     setLoading(true)
     setError(null)
-    getAegisRuntimeDetail(id)
+    getUdyo360RuntimeDetail(id)
       .then(setRecord)
       .catch(() => setError('Could not load this record — it may not exist.'))
       .finally(() => setLoading(false))
@@ -106,7 +106,7 @@ export default function AegisRuntimeDetailPage() {
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 pt-24 pb-16">
 
         <Link to="/runtime" className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors mb-6">
-          <ChevronLeft className="w-4 h-4" /> Back to Aegis Runtime
+          <ChevronLeft className="w-4 h-4" /> Back to Udyo360 Runtime
         </Link>
 
         {loading && (
@@ -121,7 +121,7 @@ export default function AegisRuntimeDetailPage() {
               <AlertCircle className="w-4 h-4 shrink-0" /> {error}
             </div>
             <button onClick={() => navigate('/runtime')} className="text-sm text-crimson-400 hover:text-crimson-300 transition-colors">
-              ← Back to Aegis Runtime
+              ← Back to Udyo360 Runtime
             </button>
           </div>
         )}

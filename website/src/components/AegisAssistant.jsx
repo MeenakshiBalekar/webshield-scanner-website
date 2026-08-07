@@ -43,14 +43,11 @@ export default function AegisAssistant() {
     const q = (text ?? input).trim()
     if (!q || loading) return
     setInput('')
-    const history = messages
-      .filter((m) => m.role === 'user' || m.answer)
-      .map((m) => ({ role: m.role, content: m.role === 'user' ? m.text : m.answer }))
 
     setMessages((prev) => [...prev, { role: 'user', text: q }])
     setLoading(true)
     try {
-      const res = await askAssistant(q, history)
+      const res = await askAssistant(q)
       const answer = f(res, 'answer', 'response', 'reply', 'text') ?? "Sorry, I couldn't find an answer to that."
       const sources = (f(res, 'sources', 'links', 'references') ?? []).map((s) => ({
         title: (typeof s === 'string' ? s : f(s, 'title', 'label', 'name', 'url')) ?? 'Source',
@@ -59,7 +56,8 @@ export default function AegisAssistant() {
       const suggestions = (f(res, 'suggestions', 'followups', 'followUps', 'chips') ?? []).map((s) =>
         typeof s === 'string' ? s : (f(s, 'text', 'label', 'question') ?? '')
       ).filter(Boolean)
-      setMessages((prev) => [...prev, { role: 'assistant', answer, sources, suggestions }])
+      const poweredBy = f(res, 'poweredBy', 'powered_by')
+      setMessages((prev) => [...prev, { role: 'assistant', answer, sources, suggestions, poweredBy }])
     } catch {
       setMessages((prev) => [...prev, {
         role: 'assistant',
@@ -152,6 +150,11 @@ export default function AegisAssistant() {
                         </button>
                       ))}
                     </div>
+                  )}
+
+                  {/* Powered-by attribution */}
+                  {m.poweredBy && (
+                    <p className="text-[10px] text-gray-600 px-1">Powered by {m.poweredBy}</p>
                   )}
                 </div>
               )

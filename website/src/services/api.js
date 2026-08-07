@@ -687,5 +687,6 @@ export const getAegisRuntime = ({ search = '', category = '', type = '', sort = 
 export const getAegisRuntimeDetail = (id) => request(`/api/runtime/${encodeURIComponent(id)}`)
 
 // Aegis Assistant — site-wide Q&A chat (public)
-export const askAssistant = (question, history) =>
-  request('/api/assistant/ask', { method: 'POST', body: JSON.stringify({ question, history }) })
+// POST /api/assistant/ask { question } → { answer, sources[], suggestions[], poweredBy }
+export const askAssistant = (question) =>
+  request('/api/assistant/ask', { method: 'POST', body: JSON.stringify({ question }) })

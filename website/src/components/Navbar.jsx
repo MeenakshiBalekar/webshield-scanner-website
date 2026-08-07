@@ -379,7 +379,7 @@ export default function Navbar({ banner }) {
 
       {/* Mobile Menu */}
       {mobileOpen && (
-        <div className="md:hidden bg-navy-900 border-t border-white/10">
+        <div className="md:hidden bg-navy-900 border-t border-white/10 max-h-[calc(100vh-8rem)] overflow-y-auto overscroll-contain">
           <div className="px-4 py-4 space-y-1">
             {navLinks.map((link) => (
               <div key={link.label}>

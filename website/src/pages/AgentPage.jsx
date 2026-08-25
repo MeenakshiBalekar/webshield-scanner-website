@@ -215,37 +215,7 @@ export default function AgentPage() {
           <h2 className="text-xl font-bold text-white mb-1">Installation</h2>
           <p className="text-sm text-gray-400 mb-4">No installer. Single binary — download and run.</p>
 
-          {/* Platform tabs */}
-          <div className="flex gap-1 bg-white/5 border border-white/10 rounded-xl p-1 mb-4 w-fit">
-            {[
-              { id: 'win',   label: 'Windows' },
-              { id: 'linux', label: 'Linux'   },
-              { id: 'macos', label: 'macOS'   },
-            ].map(({ id, label }) => (
-              <button
-                key={id}
-                onClick={() => setOsPlatform(id)}
-                className={`text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors ${
-                  osPlatform === id
-                    ? 'bg-crimson-500 text-white'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {osPlatform === 'win'   && <CodeBlock steps={WIN_STEPS}   platform="Windows" />}
-          {osPlatform === 'linux' && <CodeBlock steps={LINUX_STEPS} platform="Linux" />}
-          {osPlatform === 'macos' && (
-            <div className="space-y-3">
-              <CodeBlock steps={MACOS_STEPS} platform="macOS" />
-              <p className="text-xs text-gray-500 px-1">
-                The installer registers a <span className="text-gray-300 font-mono">launchd</span> LaunchAgent so the agent runs automatically every day — the macOS equivalent of a cron job. No manual scheduling needed.
-              </p>
-            </div>
-          )}
+          <CodeBlock steps={WIN_STEPS} platform="Windows" />
 
           {/* Live CLI usage from /api/agent/info */}
           {usageExamples.length > 0 && (
